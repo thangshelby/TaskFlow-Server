@@ -1,0 +1,55 @@
+name: TaskFlow CI Pipeline
+on:
+  push:
+    branches: ["backend/develop"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: testdb
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping -h 127.0.0.1 --silent" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: "22.14.0"
+
+      - name: Create .env file
+        run: |
+          echo "DB_TYPE=mysql" >> .env
+          echo "DB_HOST=127.0.0.1" >> .env
+          echo "DB_PORT=3306" >> .env
+          echo "DB_USER=test_user" >> .env
+          echo "DB_PASS=test_password" >> .env
+          echo "DB_NAME=testdb" >> .env
+        working-directory: services/auth-services
+
+      - name: Install dependencies
+        run: |
+          cd services/auth-services
+          npm install
+
+      - name: Run Tests
+        env:
+          DB_TYPE: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: test_user
+          DB_PASS: test_password
+          DB_NAME: testdb
+        run: |
+          cd services/auth-services
+          npm test

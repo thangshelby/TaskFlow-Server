@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package pb;
+import "task/search_task.proto";
+option go_package = "/pb";
+
+
+service StatService {
+    rpc SearchTask (task.SearchTaskReq) returns (task.SearchTaskRes) {
+        
+    }
+    
+}

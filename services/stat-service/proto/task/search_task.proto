@@ -1,0 +1,13 @@
+syntax = "proto3";
+import "task/task.proto";
+
+package task;
+option go_package = "/pb";
+
+
+message SearchTaskReq {      
+	string task_id = 1;
+}
+message SearchTaskRes {    
+	Task data = 1;
+}
