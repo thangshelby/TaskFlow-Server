@@ -25,22 +25,35 @@ export class UserController {
   }
   async getListUser(req: Request, res: Response): Promise<void> {
     try {
-      const { page, limit } = validatePaginationParams(req);
-
-      const { data, total, totalPages } = await this.userUseCase.getUser({
-        limit,
-        page
-      });
       res.status(200).json({
-        // data: data,
-        firstUser: data[0],
-        status: 'success',
-        pagination: {
-          page,
-          limit,
-          total_pages: totalPages,
-          total_items: total
-        }
+        status: 'success'
+      });
+      // const { page, limit } = validatePaginationParams(req);
+
+      // const { data, total, totalPages } = await this.userUseCase.getUser({
+      //   limit,
+      //   page
+      // });
+      // res.status(200).json({
+      //   // data: data,
+      //   firstUser: data[0],
+      //   status: 'success',
+      //   pagination: {
+      //     page,
+      //     limit,
+      //     total_pages: totalPages,
+      //     total_items: total
+      //   }
+      // });
+    } catch (error) {
+      console.log(error);
+      res.status(400).json({ error: error });
+    }
+  }
+  async healthCheck(req: Request, res: Response): Promise<void> {
+    try {
+      res.status(200).json({
+        status: 'Healthcheck ssuccess'
       });
     } catch (error) {
       console.log(error);
