@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "H:\\Hoc\\hoc\\Nam 3\\DA1\\TaskFlow\\services\\net-service\\NetService\\NetService.csproj": {}
+    "H:\\Hoc\\hoc\\Nam 3\\DA1\\TaskFlowService\\TaskFlow-Server\\services\\net-service\\NetService\\NetService.csproj": {}
   },
   "projects": {
-    "H:\\Hoc\\hoc\\Nam 3\\DA1\\TaskFlow\\services\\net-service\\NetService\\NetService.csproj": {
+    "H:\\Hoc\\hoc\\Nam 3\\DA1\\TaskFlowService\\TaskFlow-Server\\services\\net-service\\NetService\\NetService.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "H:\\Hoc\\hoc\\Nam 3\\DA1\\TaskFlow\\services\\net-service\\NetService\\NetService.csproj",
+        "projectUniqueName": "H:\\Hoc\\hoc\\Nam 3\\DA1\\TaskFlowService\\TaskFlow-Server\\services\\net-service\\NetService\\NetService.csproj",
         "projectName": "NetService",
-        "projectPath": "H:\\Hoc\\hoc\\Nam 3\\DA1\\TaskFlow\\services\\net-service\\NetService\\NetService.csproj",
+        "projectPath": "H:\\Hoc\\hoc\\Nam 3\\DA1\\TaskFlowService\\TaskFlow-Server\\services\\net-service\\NetService\\NetService.csproj",
         "packagesPath": "C:\\Users\\tuank\\.nuget\\packages\\",
-        "outputPath": "H:\\Hoc\\hoc\\Nam 3\\DA1\\TaskFlow\\services\\net-service\\NetService\\obj\\",
+        "outputPath": "H:\\Hoc\\hoc\\Nam 3\\DA1\\TaskFlowService\\TaskFlow-Server\\services\\net-service\\NetService\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\tuank\\AppData\\Roaming\\NuGet\\NuGet.Config",
