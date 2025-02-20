@@ -13,6 +13,7 @@ import { UserController } from '~/presentation/controllers/user.controller';
 import userRoutes from '~/routes/user.routes';
 export const setupApp = async () => {
   const app = express();
+  console.log(process.env.DB_PASS);
   app.use(express.json());
   // Setup MongoDB
   // await connectDB();
