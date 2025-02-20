@@ -1,12 +1,12 @@
 import { USER_EVENT, USER_QUEUE } from '~/domain/constant/user';
 import { RabbitMQService } from '~/infras/queue/rabbitmq';
+import { MongoUserRepository } from '~/infras/repositories/mongo/user/user';
 // import { ElasticsearchService } from '~/infras/repositories/elastic';
-import { MySQLUserRepository } from '~/infras/repositories/mysql/user/user';
 
 export async function startWorker(
   rabbitMQService: RabbitMQService,
   // elasticService: ElasticsearchService,
-  userRepository: MySQLUserRepository
+  userRepository: MongoUserRepository
 ) {
   try {
     if (!rabbitMQService['channel']) {
