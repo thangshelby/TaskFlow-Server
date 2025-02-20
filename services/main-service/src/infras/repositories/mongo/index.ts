@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 export const connectDB = async () => {
   try {
-    await mongoose.connect('mongodb://localhost:27017/clean-arch');
+    await mongoose.connect(process.env.MONGO_CONNECTION_STRING as string);
     console.log('✅ MongoDB connected');
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);

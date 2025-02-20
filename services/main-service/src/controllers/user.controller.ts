@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { UserUseCase } from '../../domain/usecases/user';
-import { validatePaginationParams } from '~/utils/validator';
+import { UserUseCase } from '../domain/usecases/user';
+// import { validatePaginationParams } from '~/utils/validator';
 
 export class UserController {
   constructor(private userUseCase: UserUseCase) {}
@@ -53,7 +53,7 @@ export class UserController {
   async healthCheck(req: Request, res: Response): Promise<void> {
     try {
       res.status(200).json({
-        status: 'Healthcheck ssuccess'
+        status: 'Healthcheck success'
       });
     } catch (error) {
       console.log(error);
