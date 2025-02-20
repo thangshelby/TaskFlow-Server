@@ -3,6 +3,8 @@ container-up:
 container-down:
 	docker compose down
 node-server:
-	cd services/auth-services && npm run dev
+	cd services/main-service && npm run dev
+mysql:
+	docker start mysql-container
 
 .PHONY: container-up container-down node-server
