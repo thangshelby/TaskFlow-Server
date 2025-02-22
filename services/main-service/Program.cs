@@ -1,14 +1,33 @@
+using MainService.Domain.Interfaces;
+using MainService.Domain.UseCases;
+using MainService.Infras;
+using MainService.Infras.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
+// Configure Services
+builder.Services.AddSingleton<MongoDbService>();
+
+// Add Swagger and Controllers
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
+
+// Register DI
+builder.Services.AddScoped<UserUseCase>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Check connection
+app.Services.GetRequiredService<MongoDbService>();
+
+
+// Configure Middleware
 if (app.Environment.IsDevelopment())
 {
   app.UseSwagger();
@@ -17,11 +36,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Test Endpoint
+app.MapGet("/health/test", () => "Live!!");
 
-app.MapGet("/health", () =>
-{
-  return ("Live!!");
-});
-// app.MapControllers();
+// Register Controllers
+app.MapControllers();
 
 app.Run();
