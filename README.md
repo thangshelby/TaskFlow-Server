@@ -1,38 +1,54 @@
-# Microservices Project Template 🚀
+# TaskFlow - Project Management System Using DI & Clean Architechture🚀  
 
-This repository serves as a boilerplate for a microservices architecture using **Node.js (Express)** and **Go**. It includes an **API Gateway**, **shared libraries**, and **RabbitMQ** for communication between services.
+**TaskFlow** is a project management system inspired by **Jira**, built using a **microservices architecture**. It is designed for scalability and flexibility, leveraging the best technologies suited for each service's requirements.  
 
-## ⚙️ Technologies Used
+---
 
-### Backend Services:
-- **Node.js**
-  - [Express](https://expressjs.com/) (for `auth-service`)
-- **Go**
-  - [Gin](https://github.com/gin-gonic/gin) (for `payment-service`)
+## ⚙️ Technologies Used  
 
-### Infrastructure & Communication:
-- **RabbitMQ** – Message broker for inter-service communication
-- **Docker** – Containerized services
-- **Kubernetes (Optional)** – Deployment orchestration
-- **MySQL/PostgreSQL/MongoDB** – Database (depending on service needs)
-- **Redis** – Caching layer
+### Backend Services:  
+- **C#**  
+  - ASP.NET Core for `main-service` responsible for managing tasks, users, groups, projects and boards  
+- **Go**  
+  - [Gin](https://github.com/gin-gonic/gin) for `metrics-service` to collect and expose metrics  
+- **Node.js + TypeScript**  
+  - [Express](https://expressjs.com/) for `notification-service` and `payment-service`  
 
-## 🚀 Getting Started
+### Infrastructure & Communication:  
+- **RabbitMQ** – For asynchronous messaging between services  
+- **gRPC** – For high-performance synchronous communication  
+- **Kong** – API Gateway for routing and managing microservices  
+- **Docker** – Containerized services  
+- **Kubernetes (Optional)** – Deployment orchestration  
+- **MySQL/PostgreSQL/MongoDB** – Database (depending on service needs)  
+- **Redis** – Caching layer  
+- **Clean Architecture** – For maintainable and testable codebase  
 
-### Prerequisites
+---
 
-Ensure you have the following installed:
-- [Docker](https://www.docker.com/)
-- [Node.js](https://nodejs.org/) (for Node services)
-- [Go](https://go.dev/) (for Go services)
-- [RabbitMQ](https://www.rabbitmq.com/) (optional, can be run via Docker)
+## 🚀 Getting Started  
 
-To-Do Features:
+### Prerequisites  
 
-  1️⃣ Implement gRPC for High-Performance Interactions
-  
-  2️⃣ Add Authentication using JWT 
-  
-  3️⃣ Improve Logging with a Centralized System  
-  
-  4️⃣ Implement GraphQL for API Gateway  
+Ensure you have the following installed:  
+- [Docker](https://www.docker.com/)  
+- [Node.js](https://nodejs.org/) (for Node services)  
+- [Go](https://go.dev/) (for Go services)  
+- [RabbitMQ](https://www.rabbitmq.com/) (can be run via Docker)  
+- [ASP.NET Core](https://dotnet.microsoft.com/) (for main service)  
+- [Kong](https://konghq.com/) (API Gateway)  
+
+---
+
+## 🔥 To-Do Features:  
+
+1. **Implement gRPC** for High-Performance Interactions  
+2. **Add Authentication using JWT**  
+3. **Improve Logging** with a Centralized System  
+4. **Implement GraphQL** for API Gateway  
+5. **Integrate Real-Time Notifications**  
+6. **Enhance Metrics and Monitoring Dashboard**  
+
+---
+
+Feel free to contribute and modify this template to suit your needs! 🚀
