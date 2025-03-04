@@ -24,6 +24,7 @@ plugins:
     always_use_authenticated_groups: false
     deny: null
     hide_groups_header: false
+    include_consumer_groups: false
   enabled: true
   name: acl
   protocols:

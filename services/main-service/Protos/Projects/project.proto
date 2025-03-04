@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option csharp_namespace = "TaskFlow.ProjectService";
+
+package project_service;
+
+// Define the gRPC service
+service ProjectService {
+  rpc CreateProject (CreateProjectReq) returns (CreateProjectRes);
+}
+
+// Define request message
+message CreateProjectReq {
+  string name = 1;
+  string description = 2;
+  string owner_id = 3;
+}
+
+// Define response message
+message CreateProjectRes {
+  string message = 1;
+}

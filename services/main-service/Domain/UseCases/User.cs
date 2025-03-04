@@ -14,8 +14,7 @@ public class UserUseCase
 
     public async Task<UserDomain> CreateUser(UserDomain user)
     {
-        // Hash the password
-
+        // logic business
 
         // Save the user
         return await _userRepository.CreateUserAsync(user);
