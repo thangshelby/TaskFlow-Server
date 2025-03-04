@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option csharp_namespace = "TaskFlow.CommentService";
+
+package greet;
+
+// Define the gRPC service
+service CommentService {
+  rpc CreateComment (CreateCommentReq) returns (CreateCommentRes);
+}
+
+// Define request message
+message CreateCommentReq {
+  string name = 1;
+}
+
+// Define response message
+message CreateCommentRes {
+  string message = 1;
+}
