@@ -1,10 +1,24 @@
+using FluentValidation;
+using FluentValidation.Results;
 using Grpc.Core;
 using TaskFlow.ProjectService;
 
 public class ProjectServiceImpl : ProjectService.ProjectServiceBase
 {
-    public override Task<CreateProjectRes> CreateProject(CreateProjectReq request, ServerCallContext context)
+
+    private readonly IValidator<CreateProjectReq> _validator;
+    public ProjectServiceImpl(IValidator<CreateProjectReq> validator)
     {
+        _validator = validator;
+    }
+
+    public override async Task<CreateProjectRes> CreateProject(CreateProjectReq request, ServerCallContext context)
+    {
+        ValidationResult validationResult = await _validator.ValidateAsync(request);
+        if (!validationResult.IsValid)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
+        }
         // Create response data
         var projectResponse = new ProjectRes
         {
@@ -14,9 +28,6 @@ public class ProjectServiceImpl : ProjectService.ProjectServiceBase
             OwnerId = request.OwnerId
         };
 
-        return Task.FromResult(new CreateProjectRes
-        {
-            Data = projectResponse,
-        });
+        return new CreateProjectRes { Data = projectResponse };
     }
 }

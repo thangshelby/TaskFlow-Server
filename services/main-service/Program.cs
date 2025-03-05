@@ -4,11 +4,13 @@ using MainService.Domain.Interfaces;
 using MainService.Domain.UseCases;
 using MainService.Infras;
 using MainService.Infras.Repositories;
+using FluentValidation;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Services
+builder.Host.UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration));
 builder.Services.AddSingleton<MongoDbService>();
 
 // Add Swagger and Controllers
@@ -24,9 +26,9 @@ builder.Services.AddGrpcReflection();
 builder.Services.AddScoped<UserUseCase>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProjectRepository, projectRepository>();
-builder.Host.UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration));
 
-
+// Register Validator
+builder.Services.AddValidatorsFromAssemblyContaining<CreateProjectValidator>();
 builder.Services.AddAutoMapper(typeof(Program));
 
 
