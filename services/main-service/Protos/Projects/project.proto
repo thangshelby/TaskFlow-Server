@@ -4,9 +4,18 @@ option csharp_namespace = "TaskFlow.ProjectService";
 
 package project_service;
 
+
+import "google/api/annotations.proto"; // Import Google API annotations
+
+
 // Define the gRPC service
 service ProjectService {
-  rpc CreateProject (CreateProjectReq) returns (CreateProjectRes);
+  rpc CreateProject (CreateProjectReq) returns (CreateProjectRes) {
+    option (google.api.http) = {
+      post: "/v1/projects"
+      body: "*"
+    };
+  }
 }
 
 // Define request message
@@ -18,5 +27,20 @@ message CreateProjectReq {
 
 // Define response message
 message CreateProjectRes {
-  string message = 1;
+  ProjectRes data = 1;
+  optional PaginationRes pagination = 2;
+}
+
+message ProjectRes {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string owner_id = 4;
+}
+
+message PaginationRes {
+  int32 total_items = 1;
+  int32 total_pages = 2;
+  int32 current_page = 3;
+  int32 limit = 4;
 }

@@ -23,7 +23,11 @@ builder.Services.AddGrpcReflection();
 // Register DI
 builder.Services.AddScoped<UserUseCase>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IProjectRepository, projectRepository>();
 builder.Host.UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration));
+
+
+builder.Services.AddAutoMapper(typeof(Program));
 
 
 var app = builder.Build();
