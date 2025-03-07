@@ -13,6 +13,7 @@
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
     <PackageReference Include="Google.Api.CommonProtos" Version="2.16.0" />
     <Protobuf Include="Protos\Projects\project.proto" GrpcServices="Server" ProtoRoot="Protos" />
+    <Protobuf Include="Protos\Users\user.proto" GrpcServices="Server" ProtoRoot="Protos" />
     <Protobuf Include="Protos\Comments\comment.proto" GrpcServices="Server" ProtoRoot="Protos" />
     <!-- <Protobuf Include="Protos/google/api/annotations.proto" GrpcServices="Server" ProtoRoot="Protos"/> -->
 

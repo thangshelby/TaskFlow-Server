@@ -1,36 +1,21 @@
-
-using Serilog;
-using MainService.Domain.Interfaces;
-using MainService.Domain.UseCases;
 using MainService.Infras;
-using MainService.Infras.Repositories;
-using FluentValidation;
-
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Services
-builder.Host.UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration));
-builder.Services.AddSingleton<MongoDbService>();
+// Configure Logging
+builder.Host.UseSerilog((context, configuration) =>
+    configuration.ReadFrom.Configuration(context.Configuration));
 
-// Add Swagger and Controllers
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-// builder.Services.AddCarter();
-
-builder.Services.AddGrpc();
-
-builder.Services.AddGrpcReflection();
-
-// Register DI
-builder.Services.AddScoped<UserUseCase>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IProjectRepository, projectRepository>();
-
-// Register Validator
-builder.Services.AddValidatorsFromAssemblyContaining<CreateProjectValidator>();
+// Register Services using Extensions
+builder.Services.AddProjectServices();    // Register Use Cases & Repositories
+builder.Services.AddGrpcServices();       // Register gRPC Services
+builder.Services.AddValidationServices(); // Register Validators
 builder.Services.AddAutoMapper(typeof(Program));
 
+// Add Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 app.UseSerilogRequestLogging();
@@ -39,12 +24,8 @@ var logger = app.Services.GetRequiredService<ILogger<Program>>();
 var kestrelUrl = builder.Configuration.GetValue<string>("Kestrel:Endpoints:Http:Url");
 logger.LogInformation("🚀 GRPC server starting on {Addresses}", kestrelUrl);
 
-
-
-// Check connection
+// Check MongoDB connection
 app.Services.GetRequiredService<MongoDbService>();
-
-
 
 // Configure Middleware
 if (app.Environment.IsDevelopment())
@@ -53,15 +34,16 @@ if (app.Environment.IsDevelopment())
   app.UseSwaggerUI();
 }
 
-// Map GRPC
-app.MapGrpcService<ProjectServiceImpl>(); // Map the service
-app.MapGrpcService<CommentServiceImpl>(); // Map the service
+// Map GRPC Services
+app.MapGrpcService<ProjectServiceImpl>();
+app.MapGrpcService<CommentServiceImpl>();
+app.MapGrpcService<UserServiceImpl>();
 if (app.Environment.IsDevelopment())
 {
   app.MapGrpcReflectionService();
 }
+
+// Default Route
 app.MapGet("/", () => "This is a gRPC service. Use a gRPC client to communicate.");
-
-
 
 app.Run();
