@@ -11,5 +11,6 @@ public class AutoMapperProfiles : Profile
     public AutoMapperProfiles()
     {
         CreateMap<Project, ProjectDomain>().ReverseMap();
+        CreateMap<User, UserDomain>().ReverseMap();
     }
 }

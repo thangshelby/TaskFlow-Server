@@ -1,5 +1,7 @@
+using MainService.Domain.Enums;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Driver;
 
 namespace MainService.Infras.Entities;
 public class User
@@ -9,8 +11,11 @@ public class User
     public string? Id { get; set; }
 
 
-    [BsonElement("username")]
-    public string Username { get; set; } = null!;
+    [BsonElement("first_name")]
+    public string FirstName { get; set; } = null!;
+
+    [BsonElement("last_name")]
+    public string LastName { get; set; } = null!;
 
     [BsonElement("email")]
     public string Email { get; set; } = null!;
@@ -20,4 +25,8 @@ public class User
 
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [BsonElement("role")]
+    [BsonRepresentation(BsonType.String)]
+    public UserRole Role { get; set; } = UserRole.User;
 }

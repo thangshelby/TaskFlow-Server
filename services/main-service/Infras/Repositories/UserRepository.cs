@@ -15,6 +15,13 @@ public class UserRepository : IUserRepository
         var database = mongoDbService.Database;
         _users = database.GetCollection<User>("users");
         _mapper = mapper;
+
+
+        // Indexing email 
+        var indexKeys = Builders<User>.IndexKeys.Ascending(u => u.Email);
+        var indexOptions = new CreateIndexOptions { Unique = true };
+        var indexModel = new CreateIndexModel<User>(indexKeys, indexOptions);
+        _users.Indexes.CreateOne(indexModel);
     }
 
     public async Task<UserDomain> CreateUserAsync(UserDomain userDomain)
