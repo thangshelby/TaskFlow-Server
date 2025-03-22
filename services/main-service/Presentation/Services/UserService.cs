@@ -4,39 +4,44 @@ using Grpc.Core;
 using MainService.Domain.Entities;
 using MainService.Domain.Enums;
 using MainService.Domain.UseCases;
-using MainService.Infras.Entities;
 using TaskFlow.UserService;
 
 public class UserServiceImpl : UserService.UserServiceBase
 {
-
-    private readonly IValidator<CreateUserReq> _validator;
+    private readonly IValidator<CreateUserReq> _createUserValidator;
+    private readonly IValidator<LoginUserReq> _loginUserValidator;
     private readonly UserUseCase _userUseCase;
     private readonly ILogger<UserServiceImpl> _logger;
-    public UserServiceImpl(IValidator<CreateUserReq> validator, UserUseCase userUseCase, ILogger<UserServiceImpl> logger)
-    {
-        _validator = validator;
-        _userUseCase = userUseCase;
-        _logger = logger;
-    }
+
+    public UserServiceImpl(
+        IValidator<CreateUserReq> createUserValidator,
+        IValidator<LoginUserReq> loginUserValidator,
+        UserUseCase userUseCase,
+        ILogger<UserServiceImpl> logger)
+        => (_createUserValidator, _loginUserValidator, _userUseCase, _logger)
+        = (createUserValidator, loginUserValidator, userUseCase, logger);
+
 
     public override async Task<CreateUserRes> CreateUser(CreateUserReq request, ServerCallContext context)
     {
-        ValidationResult validationResult = await _validator.ValidateAsync(request);
+        ValidationResult validationResult = await _createUserValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
+
+        string hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
         var user = await _userUseCase.CreateUser(new UserDomain
         {
             FirstName = request.FirstName,
             LastName = request.LastName,
             Email = request.Email,
-            Password = request.Password,
+            Password = hashedPassword,
             Role = Enum.TryParse(request.Role, out UserRole parsedRole) ? parsedRole : UserRole.User,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         });
+
         return new CreateUserRes
         {
             Status = "User created successfully",
@@ -46,8 +51,23 @@ public class UserServiceImpl : UserService.UserServiceBase
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Role = user.Role.ToString(),
+                CreatedAt = user.CreatedAt.ToString("o"),
+                UpdatedAt = user.UpdatedAt.ToString("o"),
             }
         };
     }
+    public override async Task<LoginUserRes> Login(LoginUserReq request, ServerCallContext context)
+    {
+        ValidationResult validationResult = await _loginUserValidator.ValidateAsync(request);
+        if (!validationResult.IsValid)
+        {
 
+            throw new RpcException(new Status(StatusCode.InvalidArgument, string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
+        }
+
+        return new LoginUserRes
+        {
+            Status = "Login successfully",
+        };
+    }
 }

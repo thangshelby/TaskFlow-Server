@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+option csharp_namespace = "TaskFlow.UserService";
+
+package project_service;
+
+message LoginUserReq {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginUserRes {
+  string status = 1;
+}

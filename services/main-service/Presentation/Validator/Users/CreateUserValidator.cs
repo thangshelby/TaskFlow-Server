@@ -18,7 +18,8 @@ public class CreateUserValidator : AbstractValidator<CreateUserReq>
             .NotEmpty().WithMessage("Email is required");
 
         RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Password is required");
+            .NotEmpty().WithMessage("Password is required")
+            .SetValidator(new PasswordValidator());
 
         RuleFor(x => x.Role.ToString())
             .Must(role => Enum.IsDefined(typeof(UserRole), role))

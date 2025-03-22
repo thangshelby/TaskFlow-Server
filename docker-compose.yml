@@ -1,66 +1,75 @@
-version: "3"
-
-networks:
-  kong-net:
-    driver: bridge
+version: "3.8"
 services:
-  postgres:
-    image: postgres:13
-    container_name: kong-database
-    environment:
-      POSTGRES_USER: kong
-      POSTGRES_DB: kong
-      POSTGRES_PASSWORD: kongpass
+  envoy:
+    image: envoyproxy/envoy:v1.28.0
+    container_name: envoy_proxy
+    # ports:
+    #   - "8080:8080"  # HTTP (REST to gRPC)
+    #   - "9901:9901"  # Admin Panel
     volumes:
-      - kong-data:/var/lib/postgresql/data
-    networks:
-      - kong-net
-    ports:
-      - "5432:5432"
-  kong-migrations:
-    image: kong/kong-gateway:3.9.0.1
-    container_name: kong-migrations
-    environment:
-      KONG_DATABASE: postgres
-      KONG_PG_HOST: kong-database
-      KONG_PG_USER: kong
-      KONG_PG_PASSWORD: kongpass
-      KONG_PASSWORD: test
-    networks:
-      - kong-net
-    depends_on:
-      - postgres
-    entrypoint: ["/bin/sh", "-c", "kong migrations bootstrap"]
-    restart: on-failure
-
-  kong:
-    image: kong/kong-gateway:3.9.0.1
-    container_name: kong-gateway
-    environment:
-      KONG_DATABASE: postgres
-      KONG_PG_HOST: kong-database
-      KONG_PG_USER: kong
-      KONG_PG_PASSWORD: kongpass
-      KONG_PROXY_ACCESS_LOG: /dev/stdout
-      KONG_ADMIN_ACCESS_LOG: /dev/stdout
-      KONG_PROXY_ERROR_LOG: /dev/stderr
-      KONG_ADMIN_ERROR_LOG: /dev/stderr
-      KONG_ADMIN_LISTEN: 0.0.0.0:8001
-      KONG_ADMIN_GUI_URL: http://localhost:8002
-    ports:
-      - "8000:8000"
-      - "8443:8443"
-      - "8001:8001"
-      - "8444:8444"
-      - "8002:8002"
-      - "8445:8445"
-      - "8003:8003"
-      - "8004:8004"
-    networks:
-      - kong-net
-    depends_on:
-      - kong-migrations
-    restart: on-failure
+      - ./envoy.yaml:/etc/envoy/envoy.yaml
+      - ./proto.pb:/etc/envoy/proto.pb
+    network_mode: "host"
+  # postgres:
+  #   image: postgres:13
+  #   container_name: kong-database
+  #   environment:
+  #     POSTGRES_USER: kong
+  #     POSTGRES_DB: kong
+  #     POSTGRES_PASSWORD: kongpass
+  #   volumes:
+  #     - kong-data:/var/lib/postgresql/data
+  #   networks:
+  #     - kong-net
+  #   ports:
+  #     - "5432:5432"
+  # kong-migrations:
+  #   image: kong/kong-gateway:3.9.0.1
+  #   container_name: kong-migrations
+  #   environment:
+  #     KONG_DATABASE: postgres
+  #     KONG_PG_HOST: kong-database
+  #     KONG_PG_USER: kong
+  #     KONG_PG_PASSWORD: kongpass
+  #     KONG_PASSWORD: test
+  #   networks:
+  #     - kong-net
+  #   depends_on:
+  #     - postgres
+  #   entrypoint: ["/bin/sh", "-c", "kong migrations bootstrap"]
+  #   restart: on-failure
+  # kong:
+  #   image: kong/kong-gateway:3.9.0.1
+  #   container_name: kong-gateway
+  #   environment:
+  #     KONG_DATABASE: postgres
+  #     KONG_PG_HOST: kong-database
+  #     KONG_PG_USER: kong
+  #     KONG_PG_PASSWORD: kongpass
+  #     KONG_LOG_LEVEL: error
+  #     KONG_PROXY_ACCESS_LOG: /dev/stdout
+  #     KONG_ADMIN_ACCESS_LOG: /dev/stdout
+  #     KONG_PROXY_ERROR_LOG: /dev/stderr
+  #     KONG_ADMIN_ERROR_LOG: /dev/stderr
+  #     KONG_ADMIN_LISTEN: 0.0.0.0:8001
+  #     KONG_PROXY_LISTEN: 0.0.0.0:8000 http2, 0.0.0.0:8443 http2 ssl
+  #     KONG_ADMIN_GUI_URL: http://localhost:8002
+  #   volumes:
+  #     - ./services/main-service/Protos:/Protos/
+  #   ports:
+  #     - "8000:8000"
+  #     - "8443:8443"
+  #     - "8001:8001"
+  #     - "8444:8444"
+  #     - "8002:8002"
+  #     - "8445:8445"
+  #     - "8003:8003"
+  #     - "8004:8004"
+  #   networks:
+  #     - kong-net
+  #   depends_on:
+  #     - kong-migrations
+  #   restart: on-failure
   # elasticsearch:
   #   image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
   #   container_name: elasticsearch
@@ -91,11 +100,11 @@ services:
   #   image: redis:latest
   #   ports:
   #     - "6379:6379"
-  rabbit-mq:
-    image: rabbitmq:4.0-management
-    ports:
-      - "15672:15672"
-      - "5672:5672"
+  # rabbit-mq:
+  #   image: rabbitmq:4.0-management
+  #   ports:
+  #     - "15672:15672"
+  #     - "5672:5672"
 volumes:
   esdata: {}
   kong-data: {}

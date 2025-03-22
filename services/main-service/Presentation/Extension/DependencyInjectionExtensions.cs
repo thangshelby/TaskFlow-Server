@@ -34,8 +34,9 @@ public static class DependencyInjectionExtensions
 
     public static IServiceCollection AddValidationServices(this IServiceCollection services)
     {
-        services.AddValidatorsFromAssemblyContaining<CreateProjectValidator>();
+        // services.AddValidatorsFromAssemblyContaining<CreateProjectValidator>();
         services.AddValidatorsFromAssemblyContaining<CreateUserValidator>();
+        services.AddValidatorsFromAssemblyContaining<LoginUserValidator>();
         return services;
     }
 }
