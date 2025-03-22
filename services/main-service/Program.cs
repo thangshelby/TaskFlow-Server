@@ -1,31 +1,31 @@
-using MainService.Domain.Interfaces;
-using MainService.Domain.UseCases;
 using MainService.Infras;
-using MainService.Infras.Repositories;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
+// Configure Logging
+builder.Host.UseSerilog((context, configuration) =>
+    configuration.ReadFrom.Configuration(context.Configuration));
 
-// Configure Services
-builder.Services.AddSingleton<MongoDbService>();
+// Register Services using Extensions
+builder.Services.AddProjectServices();    // Register Use Cases & Repositories
+builder.Services.AddGrpcServices();       // Register gRPC Services
+builder.Services.AddValidationServices(); // Register Validators
+builder.Services.AddAutoMapper(typeof(Program));
 
-// Add Swagger and Controllers
+// Add Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddControllers();
-
-// Register DI
-builder.Services.AddScoped<UserUseCase>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-
 
 var app = builder.Build();
+app.UseSerilogRequestLogging();
 
-// Check connection
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+var kestrelUrl = builder.Configuration.GetValue<string>("Kestrel:Endpoints:Http:Url");
+logger.LogInformation("🚀 GRPC server starting on {Addresses}", kestrelUrl);
+
+// Check MongoDB connection
 app.Services.GetRequiredService<MongoDbService>();
-
 
 // Configure Middleware
 if (app.Environment.IsDevelopment())
@@ -34,12 +34,16 @@ if (app.Environment.IsDevelopment())
   app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Map GRPC Services
+app.MapGrpcService<ProjectServiceImpl>();
+app.MapGrpcService<CommentServiceImpl>();
+app.MapGrpcService<UserServiceImpl>();
+if (app.Environment.IsDevelopment())
+{
+  app.MapGrpcReflectionService();
+}
 
-// Test Endpoint
-app.MapGet("/health/test", () => "Live!!");
-
-// Register Controllers
-app.MapControllers();
+// Default Route
+app.MapGet("/", () => "This is a gRPC service. Use a gRPC client to communicate.");
 
 app.Run();

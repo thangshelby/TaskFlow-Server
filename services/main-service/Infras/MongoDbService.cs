@@ -1,6 +1,5 @@
 using MongoDB.Driver;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using MongoDB.Bson;
 
 namespace MainService.Infras;
 public class MongoDbService
@@ -24,7 +23,13 @@ public class MongoDbService
             var connectionStr = _configuration.GetConnectionString("MongoDb");
             var mongoUrl = MongoUrl.Create(connectionStr);
             var mongoClient = new MongoClient(mongoUrl);
-            _database = mongoClient.GetDatabase(mongoUrl.DatabaseName);
+
+            var dbName = mongoUrl.DatabaseName ?? "taskflow";
+            _database = mongoClient.GetDatabase(dbName);
+
+            var collection = _database.GetCollection<BsonDocument>("dummy_collection");
+            var dummyDocument = new BsonDocument { { "initialized", true } };
+            collection.InsertOne(dummyDocument);
 
             _logger.LogInformation("MongoDB connection successful!");
         }
@@ -33,4 +38,5 @@ public class MongoDbService
             _logger.LogError($"MongoDB connection failed: {ex.Message}");
         }
     }
+
 }

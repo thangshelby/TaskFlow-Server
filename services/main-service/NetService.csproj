@@ -8,9 +8,28 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
+    <PackageReference Include="Google.Api.CommonProtos" Version="2.16.0" />
+    <Protobuf Include="Protos\Projects\project.proto" GrpcServices="Server" ProtoRoot="Protos" />
+    <Protobuf Include="Protos\Users\user.proto" GrpcServices="Server" ProtoRoot="Protos" />
+    <Protobuf Include="Protos\Comments\comment.proto" GrpcServices="Server" ProtoRoot="Protos" />
+    <!-- <Protobuf Include="Protos/google/api/annotations.proto" GrpcServices="Server" ProtoRoot="Protos"/> -->
+
+    <PackageReference Include="Google.Protobuf" Version="3.29.3" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.67.0" />
+    <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.67.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.70.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    
     <PackageReference Include="AspNetCore.HealthChecks.MongoDb" Version="9.0.0" />
+    <PackageReference Include="Carter" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.10" />
     <PackageReference Include="MongoDB.Driver" Version="3.2.1" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
   </ItemGroup>
 

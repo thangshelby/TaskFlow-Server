@@ -1,3 +1,4 @@
+using AutoMapper;
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using MainService.Infras.Entities;
@@ -8,17 +9,25 @@ namespace MainService.Infras.Repositories;
 public class UserRepository : IUserRepository
 {
     private readonly IMongoCollection<User> _users;
-
-    public UserRepository(MongoDbService mongoDbService)
+    private readonly IMapper _mapper;
+    public UserRepository(MongoDbService mongoDbService, IMapper mapper)
     {
         var database = mongoDbService.Database;
         _users = database.GetCollection<User>("users");
+        _mapper = mapper;
+
+
+        // Indexing email 
+        var indexKeys = Builders<User>.IndexKeys.Ascending(u => u.Email);
+        var indexOptions = new CreateIndexOptions { Unique = true };
+        var indexModel = new CreateIndexModel<User>(indexKeys, indexOptions);
+        _users.Indexes.CreateOne(indexModel);
     }
 
     public async Task<UserDomain> CreateUserAsync(UserDomain userDomain)
     {
         // Convert Domain to Entity
-        var userEntity = MapToEntity(userDomain);
+        var userEntity = _mapper.Map<User>(userDomain);
 
         await _users.InsertOneAsync(userEntity);
 
@@ -36,32 +45,8 @@ public class UserRepository : IUserRepository
         if (userEntity == null)
             return null;
 
-        return MapToDomain(userEntity);
+        return _mapper.Map<UserDomain>(userEntity);
     }
 
-    // Helper Method: Map Domain to Entity
-    private static User MapToEntity(UserDomain domain)
-    {
-        return new User
-        {
-            Id = domain.Id,
-            Username = domain.Username,
-            Email = domain.Email,
-            Password = domain.Password,
-            CreatedAt = domain.CreatedAt
-        };
-    }
 
-    // Helper Method: Map Entity to Domain
-    private static UserDomain MapToDomain(User entity)
-    {
-        return new UserDomain
-        {
-            Id = entity.Id,
-            Username = entity.Username,
-            Email = entity.Email,
-            Password = entity.Password,
-            CreatedAt = entity.CreatedAt
-        };
-    }
 }
