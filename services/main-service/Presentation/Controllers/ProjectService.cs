@@ -3,11 +3,11 @@ using FluentValidation.Results;
 using Grpc.Core;
 using TaskFlow.ProjectService;
 
-public class ProjectServiceImpl : ProjectService.ProjectServiceBase
+public class ProjectController : ProjectService.ProjectServiceBase
 {
 
     private readonly IValidator<CreateProjectReq> _validator;
-    public ProjectServiceImpl(IValidator<CreateProjectReq> validator)
+    public ProjectController(IValidator<CreateProjectReq> validator)
     {
         _validator = validator;
     }

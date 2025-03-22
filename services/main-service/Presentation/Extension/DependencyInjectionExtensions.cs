@@ -29,13 +29,15 @@ public static class DependencyInjectionExtensions
             options.Interceptors.Add<GrpcExceptionInterceptor>();
         });
         services.AddGrpcReflection();
+
         return services;
     }
 
     public static IServiceCollection AddValidationServices(this IServiceCollection services)
     {
-        services.AddValidatorsFromAssemblyContaining<CreateProjectValidator>();
+        // services.AddValidatorsFromAssemblyContaining<CreateProjectValidator>();
         services.AddValidatorsFromAssemblyContaining<CreateUserValidator>();
+        services.AddValidatorsFromAssemblyContaining<LoginUserValidator>();
         return services;
     }
 }

@@ -6,37 +6,21 @@ package project_service;
 
 
 import "google/api/annotations.proto"; // Import Google API annotations
-
+import "Users/login_rpc.proto";
+import "Users/create_user.proto";
 
 // Define the gRPC service
 service UserService {
   rpc CreateUser (CreateUserReq) returns (CreateUserRes) {
     option (google.api.http) = {
-      post: "/v1/users"
+      post: "/api/v1/users"
       body: "*"
     };
   }
-}
-
-// Define request message
-message CreateUserReq {
-  string firstName = 1;
-  string lastName = 2;
-  string email = 3;
-  string password = 4;
-  string role = 5;
-}
-
-// Define response message
-message CreateUserRes {
-  string status = 1;
-  UserRes data = 2;
-}
-
-
-message UserRes{
-  string firstName = 1;
-  string lastName = 2;
-  string email = 3;
-  string role = 4;
+  rpc Login (LoginUserReq) returns (LoginUserRes) {
+    option (google.api.http) = {
+      post: "/api/v1/users/login"
+      body: "*"
+    };
+  }
 }
