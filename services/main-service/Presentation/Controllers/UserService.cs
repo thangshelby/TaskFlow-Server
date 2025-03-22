@@ -6,18 +6,18 @@ using MainService.Domain.Enums;
 using MainService.Domain.UseCases;
 using TaskFlow.UserService;
 
-public class UserServiceImpl : UserService.UserServiceBase
+public class UserController : UserService.UserServiceBase
 {
     private readonly IValidator<CreateUserReq> _createUserValidator;
     private readonly IValidator<LoginUserReq> _loginUserValidator;
     private readonly UserUseCase _userUseCase;
-    private readonly ILogger<UserServiceImpl> _logger;
+    private readonly ILogger<UserController> _logger;
 
-    public UserServiceImpl(
+    public UserController(
         IValidator<CreateUserReq> createUserValidator,
         IValidator<LoginUserReq> loginUserValidator,
         UserUseCase userUseCase,
-        ILogger<UserServiceImpl> logger)
+        ILogger<UserController> logger)
         => (_createUserValidator, _loginUserValidator, _userUseCase, _logger)
         = (createUserValidator, loginUserValidator, userUseCase, logger);
 

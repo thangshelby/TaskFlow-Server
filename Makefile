@@ -15,5 +15,7 @@ update-gateway:
 gen-protobuf:
 	protoc -I ./services/main-service/Protos --include_imports --include_source_info \
     --descriptor_set_out=proto.pb ./services/main-service/Protos/user.proto
+gen-testtoken:
+	cd services/node-service && node genjwt.js
 
 .PHONY: container-up container-down node-server sync-gateway update-gateway gen-protobuf

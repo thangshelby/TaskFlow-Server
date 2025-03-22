@@ -29,6 +29,7 @@ public static class DependencyInjectionExtensions
             options.Interceptors.Add<GrpcExceptionInterceptor>();
         });
         services.AddGrpcReflection();
+
         return services;
     }
 

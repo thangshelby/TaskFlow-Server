@@ -50,7 +50,8 @@ static_resources:
                                 }
                               ]
                             }
-                        forward: true  
+                        forward: true
+                        payload_in_metadata: "jwt_payload"  
                     rules:
                       - match:
                           prefix: ""
@@ -62,48 +63,31 @@ static_resources:
                     rules:
                       action: ALLOW
                       policies:
-
-                        # Policy for users with role "user_role" accessing /api/v1/users/login
-                        user_access:
+                        "all-access-policy":
                           permissions:
-                            # - and_rules:
-                            #     rules:
-                            #       - header:
-                            #           name: ":path"
-                            #           exact_match: "/api/v1/users/login"
                             - any: true
                           principals:
-                              - metadata:
-                                  filter: envoy.filters.http.jwt_authn
-                                  path:
-                                    - key: jwt
-                                    - key: claims
-                                    - key: role
-                                  value:
-                                    string_match:
-                                      exact: "user_role"
-
-                        # Policy for admins accessing /api/v1/user with POST method
-                        # admin_access:
+                            - any: true
+                        # "user-login-policy":
                         #   permissions:
                         #     - and_rules:
                         #         rules:
                         #           - header:
-                        #               name: ":path"
-                        #               exact_match: "/api/v1/users"
-                        #           - header:
                         #               name: ":method"
-                        #               exact_match: "POST"
+                        #               string_match:
+                        #                 exact: "POST"
+                        #           - url_path:
+                        #               path:
+                        #                 prefix: "/api/v1/users/login"
                         #   principals:
-                        #       - metadata:
-                        #           filter: envoy.filters.http.jwt_authn
-                        #           path:
-                        #             - key: jwt
-                        #             - key: claims
-                        #             - key: role
-                        #           value:
-                        #             string_match:
-                        #               exact: "admin_role"
+                        #     - metadata:
+                        #         filter: "envoy.filters.http.jwt_authn"
+                        #         path: 
+                        #           - key: "jwt_payload"  
+                        #           - key: "role" 
+                        #         value:
+                        #           string_match:
+                        #             exact: "user_role"
                 - name: envoy.filters.http.grpc_json_transcoder
                   typed_config:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_json_transcoder.v3.GrpcJsonTranscoder
