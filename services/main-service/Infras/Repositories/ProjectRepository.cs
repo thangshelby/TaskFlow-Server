@@ -6,11 +6,12 @@ using MongoDB.Driver;
 
 namespace MainService.Infras.Repositories;
 
-public class projectRepository : IProjectRepository
+public class ProjectRepository : IProjectRepository
 {
     private readonly IMongoCollection<Project> _projects;
     private readonly IMapper _mapper;
-    public projectRepository(MongoDbService mongoDbService, IMapper mapper)
+
+    public ProjectRepository(MongoDbService mongoDbService, IMapper mapper)
     {
         var database = mongoDbService.Database;
         _projects = database.GetCollection<Project>("projects");
@@ -19,14 +20,45 @@ public class projectRepository : IProjectRepository
 
     public async Task<ProjectDomain> CreateProject(ProjectDomain projectDomain)
     {
-        // Convert Domain to Entity
         var projectEntity = _mapper.Map<Project>(projectDomain);
-
         await _projects.InsertOneAsync(projectEntity);
-
-        // Update domain with new ID
-        projectEntity.Id = projectEntity.Id;
+        projectDomain.Id = projectEntity.Id;
         return projectDomain;
     }
 
+    public async Task<ProjectDomain> GetProject(string id)
+    {
+        var projectEntity = await _projects.Find(p => p.Id == id).FirstOrDefaultAsync();
+        if (projectEntity == null)
+            throw new Exception("Project not found");
+        return _mapper.Map<ProjectDomain>(projectEntity);
+    }
+
+    public async Task<ProjectDomain> UpdateProject(ProjectDomain projectDomain)
+    {
+        var projectEntity = _mapper.Map<Project>(projectDomain);
+        var result = await _projects.ReplaceOneAsync(p => p.Id == projectDomain.Id, projectEntity);
+        if (result.MatchedCount == 0)
+            throw new Exception("Project not found");
+        return projectDomain;
+    }
+
+    public async Task DeleteProject(string id)
+    {
+        var result = await _projects.DeleteOneAsync(p => p.Id == id);
+        if (result.DeletedCount == 0)
+            throw new Exception("Project not found");
+    }
+
+    public async Task<(List<ProjectDomain> Projects, int TotalCount)> ListProjects(int page, int pageSize)
+    {
+        var filter = Builders<Project>.Filter.Empty;
+        var totalCount = await _projects.CountDocumentsAsync(filter);
+        var projects = await _projects.Find(filter)
+            .Skip((page - 1) * pageSize)
+            .Limit(pageSize)
+            .ToListAsync();
+        
+        return (_mapper.Map<List<ProjectDomain>>(projects), (int)totalCount);
+    }
 }

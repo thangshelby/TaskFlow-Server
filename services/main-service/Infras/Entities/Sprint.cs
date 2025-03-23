@@ -3,7 +3,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace MainService.Infras.Entities;
 
-public class Project
+public class Sprint
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
@@ -12,21 +12,24 @@ public class Project
     [BsonElement("name")]
     public string Name { get; set; } = string.Empty;
 
-    [BsonElement("key")]
-    public string Key { get; set; } = string.Empty;
+    [BsonElement("date_started")]
+    public DateTime DateStarted { get; set; }
 
-    [BsonElement("access")]
-    public string Access { get; set; } = "PUBLIC";
+    [BsonElement("date_ended")]
+    public DateTime DateEnded { get; set; }
 
-    [BsonElement("type")]
-    public string Type { get; set; } = "Scrum";
+    [BsonElement("duration")]
+    public int Duration { get; set; }
 
-    [BsonElement("owner_id")]
-    public string OwnerId { get; set; } = string.Empty;
+    [BsonElement("goal")]
+    public string Goal { get; set; } = string.Empty;
 
     [BsonElement("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     [BsonElement("updated_at")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    [BsonElement("project_id")]
+    public string ProjectId { get; set; } = string.Empty;
 }

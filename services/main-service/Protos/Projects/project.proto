@@ -4,7 +4,7 @@ option csharp_namespace = "TaskFlow.ProjectService";
 
 package project_service;
 
-
+import "google/protobuf/empty.proto";
 import "google/api/annotations.proto"; // Import Google API annotations
 
 
@@ -16,27 +16,89 @@ service ProjectService {
       body: "*"
     };
   }
+  rpc GetProject (GetProjectReq) returns (ProjectRes) {
+    option (google.api.http) = {
+      get: "/v1/projects/{id}"
+    };
+  }
+  rpc UpdateProject (UpdateProjectReq) returns (ProjectRes) {
+    option (google.api.http) = {
+      put: "/v1/projects/{id}"
+      body: "*"
+    };
+  }
+  rpc DeleteProject (DeleteProjectReq) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/projects/{id}"
+    };
+  }
+  rpc ListProjects (ListProjectsReq) returns (ListProjectsRes) {
+    option (google.api.http) = {
+      get: "/v1/projects"
+    };
+  }
 }
 
 // Define request message
+enum ProjectAccess {
+  PUBLIC = 0;
+  PRIVATE = 1;
+  RESTRICTED = 2;
+}
+enum ProjectType {
+  Scrum = 0;
+  Kanban = 1;
+}
 message CreateProjectReq {
   string name = 1;
-  string description = 2;
-  string owner_id = 3;
+  string key = 2;
+  ProjectAccess access = 3;
+  ProjectType type = 4;
+  string owner_id = 5;
+}
+message GetProjectReq {
+  string id = 1;
 }
 
-// Define response message
-message CreateProjectRes {
-  ProjectRes data = 1;
-  optional PaginationRes pagination = 2;
+message UpdateProjectReq {
+  string id = 1;
+  string name = 2;
+  string key = 3;
+  ProjectAccess access = 4;
+  ProjectType type = 5;
+  string owner_id = 6;
+}
+
+message DeleteProjectReq {
+  string id = 1;
+}
+
+message ListProjectsReq {
+  int32 page = 1;
+  int32 limit = 2;
 }
 
 message ProjectRes {
   string id = 1;
   string name = 2;
-  string description = 3;
-  string owner_id = 4;
+  string key = 3;
+  ProjectAccess access = 4;
+  ProjectType type = 5;
+  string owner_id = 6;
+  string created_at = 7;
+  string updated_at = 8;
 }
+
+message CreateProjectRes {
+  ProjectRes data = 1;
+  optional PaginationRes pagination = 2;
+}
+
+message ListProjectsRes {
+  repeated ProjectRes data = 1;
+  PaginationRes pagination = 2;
+}
+
 
 message PaginationRes {
   int32 total_items = 1;
@@ -44,3 +106,4 @@ message PaginationRes {
   int32 current_page = 3;
   int32 limit = 4;
 }
+message Empty {}
