@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+option csharp_namespace = "TaskFlow.SprintService";
+
+package project_service;
+
+
+import "google/api/annotations.proto"; // Import Google API annotations
+
+service SprintService {
+  rpc CreateSprint (CreateSprintReq) returns (CreateSprintRes) {
+    option (google.api.http) = {
+      post: "/v1/sprints"
+      body: "*"
+    };
+  }
+  rpc GetSprint (GetSprintReq) returns (SprintRes) {
+    option (google.api.http) = {
+      get: "/v1/sprints/{id}"
+    };
+  }
+  rpc UpdateSprint (UpdateSprintReq) returns (SprintRes) {
+    option (google.api.http) = {
+      put: "/v1/sprints/{id}"
+      body: "*"
+    };
+  }
+  rpc DeleteSprint (DeleteSprintReq) returns (Empty) {
+    option (google.api.http) = {
+      delete: "/v1/sprints/{id}"
+    };
+  }
+  rpc ListSprints (ListSprintsReq) returns (ListSprintsRes) {
+    option (google.api.http) = {
+      get: "/v1/sprints"
+    };
+  }
+}
+// Sprint Messages
+message CreateSprintReq {
+  string name = 1;
+  string date_started = 2;
+  string date_ended = 3;
+  int32 duration = 4;
+  string goal = 5;
+  string project_id = 6;
+}
+
+message GetSprintReq {
+  string id = 1;
+}
+
+message UpdateSprintReq {
+  string id = 1;
+  string name = 2;
+  string date_started = 3;
+  string date_ended = 4;
+  int32 duration = 5;
+  string goal = 6;
+  string project_id = 7;
+}
+
+message DeleteSprintReq {
+  string id = 1;
+}
+
+message ListSprintsReq {
+  string project_id = 1;
+  int32 page = 2;
+  int32 limit = 3;
+}
+
+message SprintRes {
+  string id = 1;
+  string name = 2;
+  string date_started = 3;
+  string date_ended = 4;
+  int32 duration = 5;
+  string goal = 6;
+  string created_at = 7;
+  string updated_at = 8;
+  string project_id = 9;
+}
+
+message CreateSprintRes {
+  SprintRes data = 1;
+  optional PaginationRes pagination = 2;
+}
+
+message ListSprintsRes {
+  repeated SprintRes data = 1;
+  PaginationRes pagination = 2;
+}
+message PaginationRes {
+  int32 total_items = 1;
+  int32 total_pages = 2;
+  int32 current_page = 3;
+  int32 limit = 4;
+}
+
+message Empty {}

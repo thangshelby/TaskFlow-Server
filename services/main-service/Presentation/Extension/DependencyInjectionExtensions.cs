@@ -14,10 +14,15 @@ public static class DependencyInjectionExtensions
 
         // Use Cases
         services.AddScoped<UserUseCase>();
+        services.AddScoped<ProjectUseCase>();
+        services.AddScoped<SprintUseCase>();
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<IProjectRepository, projectRepository>();
+        services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<ISprintRepository, SprintRepository>();
+
+
 
         return services;
     }
@@ -35,6 +40,8 @@ public static class DependencyInjectionExtensions
     public static IServiceCollection AddValidationServices(this IServiceCollection services)
     {
         services.AddValidatorsFromAssemblyContaining<CreateProjectValidator>();
+        services.AddValidatorsFromAssemblyContaining<UpdateProjectValidator>();
+
         services.AddValidatorsFromAssemblyContaining<CreateUserValidator>();
         return services;
     }

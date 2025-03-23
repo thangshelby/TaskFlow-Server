@@ -1,4 +1,6 @@
 using MainService.Infras;
+// using MainService.Presentation.Services;
+
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,6 +38,7 @@ if (app.Environment.IsDevelopment())
 
 // Map GRPC Services
 app.MapGrpcService<ProjectServiceImpl>();
+app.MapGrpcService<SprintServiceImpl>();
 app.MapGrpcService<CommentServiceImpl>();
 app.MapGrpcService<UserServiceImpl>();
 if (app.Environment.IsDevelopment())
