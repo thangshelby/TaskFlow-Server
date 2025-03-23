@@ -1,30 +1,23 @@
+using AutoMapper;
 using FluentValidation;
-using FluentValidation.Results;
 using Grpc.Core;
-using TaskFlow.ProjectService;
 using MainService.Domain.UseCases;
 using MainService.Domain.Entities;
-using AutoMapper;
+using TaskFlow.ProjectService;
+using Google.Protobuf.WellKnownTypes;
 
-// namespace MainService.Presentation.Services;
-
-public class ProjectController : ProjectService.ProjectServiceBase
+public class ProjectServiceImpl : ProjectService.ProjectServiceBase
 {
     private readonly ProjectUseCase _projectUseCase;
     private readonly IMapper _mapper;
     private readonly IValidator<CreateProjectReq> _createProjectValidator;
     private readonly IValidator<UpdateProjectReq> _updateProjectValidator;
 
-<<<<<<< HEAD:services/main-service/Presentation/Services/ProjectService.cs
     public ProjectServiceImpl(
         ProjectUseCase projectUseCase,
         IMapper mapper,
         IValidator<CreateProjectReq> createProjectValidator,
-        IValidator<UpdateProjectReq> updateProjectValidator) 
-=======
-    private readonly IValidator<CreateProjectReq> _validator;
-    public ProjectController(IValidator<CreateProjectReq> validator)
->>>>>>> e4191904108ed03875990cb3d4675ea322fbee40:services/main-service/Presentation/Controllers/ProjectService.cs
+        IValidator<UpdateProjectReq> updateProjectValidator)
     {
         _projectUseCase = projectUseCase;
         _mapper = mapper;
@@ -32,7 +25,6 @@ public class ProjectController : ProjectService.ProjectServiceBase
         _updateProjectValidator = updateProjectValidator;
     }
 
-    // Project Service Methods
     public override async Task<CreateProjectRes> CreateProject(CreateProjectReq request, ServerCallContext context)
     {
         var validationResult = await _createProjectValidator.ValidateAsync(request);
@@ -44,10 +36,7 @@ public class ProjectController : ProjectService.ProjectServiceBase
 
         var projectDomain = _mapper.Map<ProjectDomain>(request);
         var result = await _projectUseCase.CreateProject(projectDomain);
-        return new CreateProjectRes 
-        { 
-            Data = _mapper.Map<ProjectRes>(result)
-        };
+        return new CreateProjectRes { Data = _mapper.Map<ProjectRes>(result) };
     }
 
     public override async Task<ProjectRes> GetProject(GetProjectReq request, ServerCallContext context)
@@ -77,18 +66,19 @@ public class ProjectController : ProjectService.ProjectServiceBase
         return _mapper.Map<ProjectRes>(result);
     }
 
-    public override async Task<Empty> DeleteProject(DeleteProjectReq request, ServerCallContext context)
+    public override async Task<Google.Protobuf.WellKnownTypes.Empty> DeleteProject(DeleteProjectReq request, ServerCallContext context)
     {
         try
         {
             await _projectUseCase.DeleteProject(request.Id);
-            return new Empty();
+            return new Google.Protobuf.WellKnownTypes.Empty();
         }
         catch (KeyNotFoundException ex)
         {
             throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
         }
     }
+
 
     public override async Task<ListProjectsRes> ListProjects(ListProjectsReq request, ServerCallContext context)
     {

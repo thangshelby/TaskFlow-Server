@@ -4,7 +4,7 @@ option csharp_namespace = "TaskFlow.ProjectService";
 
 package project_service;
 
-
+import "google/protobuf/empty.proto";
 import "google/api/annotations.proto"; // Import Google API annotations
 
 
@@ -27,7 +27,7 @@ service ProjectService {
       body: "*"
     };
   }
-  rpc DeleteProject (DeleteProjectReq) returns (Empty) {
+  rpc DeleteProject (DeleteProjectReq) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       delete: "/v1/projects/{id}"
     };

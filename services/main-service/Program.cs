@@ -39,11 +39,10 @@ if (app.Environment.IsDevelopment())
 // Map GRPC Services
 app.MapGrpcService<ProjectServiceImpl>();
 app.MapGrpcService<SprintServiceImpl>();
-app.MapGrpcService<CommentServiceImpl>();
-app.MapGrpcService<UserServiceImpl>();
 // app.MapGrpcService<CommentServiceImpl>();
+// app.MapGrpcService<UserServiceImpl>();
 app.MapGrpcService<UserController>();
-app.MapGrpcService<ProjectController>();
+// app.MapGrpcService<ProjectController>();
 if (app.Environment.IsDevelopment())
 {
   app.MapGrpcReflectionService();
