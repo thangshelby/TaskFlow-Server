@@ -23,8 +23,13 @@ public class User
     [BsonElement("password")]
     public string Password { get; set; } = null!;
 
-    [BsonElement("createdAt")]
+    [BsonElement("created_at")]
+    [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [BsonElement("updated_at")]
+    [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     [BsonElement("role")]
     [BsonRepresentation(BsonType.String)]

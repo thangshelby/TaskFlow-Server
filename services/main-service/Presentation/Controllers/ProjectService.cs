@@ -8,18 +8,23 @@ using AutoMapper;
 
 // namespace MainService.Presentation.Services;
 
-public class ProjectServiceImpl : ProjectService.ProjectServiceBase
+public class ProjectController : ProjectService.ProjectServiceBase
 {
     private readonly ProjectUseCase _projectUseCase;
     private readonly IMapper _mapper;
     private readonly IValidator<CreateProjectReq> _createProjectValidator;
     private readonly IValidator<UpdateProjectReq> _updateProjectValidator;
 
+<<<<<<< HEAD:services/main-service/Presentation/Services/ProjectService.cs
     public ProjectServiceImpl(
         ProjectUseCase projectUseCase,
         IMapper mapper,
         IValidator<CreateProjectReq> createProjectValidator,
         IValidator<UpdateProjectReq> updateProjectValidator) 
+=======
+    private readonly IValidator<CreateProjectReq> _validator;
+    public ProjectController(IValidator<CreateProjectReq> validator)
+>>>>>>> e4191904108ed03875990cb3d4675ea322fbee40:services/main-service/Presentation/Controllers/ProjectService.cs
     {
         _projectUseCase = projectUseCase;
         _mapper = mapper;
