@@ -82,8 +82,10 @@ public class ProjectServiceImpl : ProjectService.ProjectServiceBase
 
     public override async Task<ListProjectsRes> ListProjects(ListProjectsReq request, ServerCallContext context)
     {
-        var (projects, totalCount) = await _projectUseCase.ListProjects(request.Page, request.Limit);
-        var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
+        int page = request.Page > 0 ? request.Page : 1;
+        int limit = request.Limit > 0 ? request.Limit : 10;
+        var (projects, totalCount) = await _projectUseCase.ListProjects(page, limit);
+        var totalPages = (int)Math.Ceiling((double)totalCount / limit);
         
         return new ListProjectsRes
         {
@@ -93,7 +95,7 @@ public class ProjectServiceImpl : ProjectService.ProjectServiceBase
                 TotalItems = totalCount,
                 TotalPages = totalPages,
                 CurrentPage = request.Page,
-                Limit = request.Limit
+                Limit = limit
             }
         };
     }

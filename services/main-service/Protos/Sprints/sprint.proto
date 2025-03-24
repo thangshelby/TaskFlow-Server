@@ -57,7 +57,6 @@ message UpdateSprintReq {
   string date_ended = 4;
   int32 duration = 5;
   string goal = 6;
-  string project_id = 7;
 }
 
 message DeleteSprintReq {

@@ -15,13 +15,15 @@ public class SprintServiceImpl : SprintService.SprintServiceBase
     private readonly IValidator<UpdateSprintReq> _updateSprintValidator;
 
     public SprintServiceImpl(
-        SprintUseCase sprintUseCase,
-        IMapper mapper,
-        IValidator<CreateSprintReq> createSprintValidator,
-        IValidator<UpdateSprintReq> updateSprintValidator) // No trailing comma
+    SprintUseCase sprintUseCase,
+    IMapper mapper,
+    IValidator<CreateSprintReq> createSprintValidator,
+    IValidator<UpdateSprintReq> updateSprintValidator)
     {
-        _sprintUseCase = sprintUseCase;
-        _mapper = mapper;
+        _sprintUseCase = sprintUseCase ?? throw new ArgumentNullException(nameof(sprintUseCase));
+        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        _createSprintValidator = createSprintValidator ?? throw new ArgumentNullException(nameof(createSprintValidator));
+        _updateSprintValidator = updateSprintValidator ?? throw new ArgumentNullException(nameof(updateSprintValidator));
     }
 
     // Sprint Service Methods
@@ -84,9 +86,13 @@ public class SprintServiceImpl : SprintService.SprintServiceBase
 
     public override async Task<ListSprintsRes> ListSprints(ListSprintsReq request, ServerCallContext context)
     {
-        var (sprints, totalCount) = await _sprintUseCase.ListSprints(request.ProjectId, request.Page, request.Limit);
-        var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
-        
+        // Apply default values if not provided
+        int page = request.Page > 0 ? request.Page : 1;
+        int limit = request.Limit > 0 ? request.Limit : 10;
+
+        var (sprints, totalCount) = await _sprintUseCase.ListSprints(request.ProjectId, page, limit);
+        var totalPages = (int)Math.Ceiling((double)totalCount / limit);
+
         return new ListSprintsRes
         {
             Data = { _mapper.Map<IEnumerable<SprintRes>>(sprints) },
@@ -94,9 +100,10 @@ public class SprintServiceImpl : SprintService.SprintServiceBase
             {
                 TotalItems = totalCount,
                 TotalPages = totalPages,
-                CurrentPage = request.Page,
-                Limit = request.Limit
+                CurrentPage = page,
+                Limit = limit
             }
         };
     }
+
 }
