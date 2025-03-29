@@ -7,14 +7,14 @@ using TaskFlow.SprintService;
 
 // namespace MainService.Presentation.Services;
 
-public class SprintServiceImpl : SprintService.SprintServiceBase
+public class SprintController : SprintService.SprintServiceBase
 {
     private readonly SprintUseCase _sprintUseCase;
     private readonly IMapper _mapper;
     private readonly IValidator<CreateSprintReq> _createSprintValidator;
     private readonly IValidator<UpdateSprintReq> _updateSprintValidator;
 
-    public SprintServiceImpl(
+    public SprintController(
         SprintUseCase sprintUseCase,
         IMapper mapper,
         IValidator<CreateSprintReq> createSprintValidator,
