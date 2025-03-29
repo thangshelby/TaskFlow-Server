@@ -53,8 +53,28 @@ static_resources:
                         forward: true
                         payload_in_metadata: "jwt_payload"  
                     rules:
+                      # Public route
                       - match:
-                          prefix: ""
+                          path: "/api/v1/users/login"
+                          headers:
+                            - name: ":method"
+                              string_match:
+                                exact: "POST"
+                        requires:
+                          allow_missing: {} 
+
+                      - match:
+                          path: "/api/v1/users"
+                          headers:
+                            - name: ":method"
+                              string_match:
+                                exact: "POST"
+                        requires:
+                          allow_missing: {}
+                           
+                      # Private route
+                      - match:
+                          prefix: "/"
                         requires:
                           provider_name: "my_jwt_provider"
                 - name: envoy.filters.http.rbac
