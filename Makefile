@@ -14,7 +14,7 @@ update-gateway:
 	deck gateway dump -o kong.yaml 
 gen-protobuf:
 	protoc -I ./services/main-service/Protos --include_imports --include_source_info \
-    --descriptor_set_out=proto.pb ./services/main-service/Protos/user.proto
+		--descriptor_set_out=./proto.pb $(shell find ./services/main-service/Protos -name "*.proto")
 gen-testtoken:
 	cd services/node-service && node genjwt.js
 
