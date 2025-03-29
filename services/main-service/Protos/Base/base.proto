@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+
+option csharp_namespace = "BaseService";
+
+package base;
+
+
+message PaginationRes {
+    int32 total_items = 1;
+    int32 total_pages = 2;
+    int32 current_page = 3;
+    int32 limit = 4;
+}

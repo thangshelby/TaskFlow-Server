@@ -4,8 +4,6 @@ using Grpc.Core;
 using MainService.Domain.UseCases;
 using MainService.Domain.Entities;
 using TaskFlow.ProjectService;
-using Google.Protobuf.WellKnownTypes;
-
 public class ProjectServiceImpl : ProjectService.ProjectServiceBase
 {
     private readonly ProjectUseCase _projectUseCase;
@@ -84,12 +82,11 @@ public class ProjectServiceImpl : ProjectService.ProjectServiceBase
     {
         var (projects, totalCount) = await _projectUseCase.ListProjects(request.Page, request.Limit);
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
-        
+
         return new ListProjectsRes
         {
             Data = { _mapper.Map<IEnumerable<ProjectRes>>(projects) },
-            Pagination = new PaginationRes
-            {
+            Pagination = {
                 TotalItems = totalCount,
                 TotalPages = totalPages,
                 CurrentPage = request.Page,
