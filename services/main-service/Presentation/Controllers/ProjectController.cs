@@ -4,14 +4,14 @@ using Grpc.Core;
 using MainService.Domain.UseCases;
 using MainService.Domain.Entities;
 using TaskFlow.ProjectService;
-public class ProjectServiceImpl : ProjectService.ProjectServiceBase
+public class ProjectController : ProjectService.ProjectServiceBase
 {
     private readonly ProjectUseCase _projectUseCase;
     private readonly IMapper _mapper;
     private readonly IValidator<CreateProjectReq> _createProjectValidator;
     private readonly IValidator<UpdateProjectReq> _updateProjectValidator;
 
-    public ProjectServiceImpl(
+    public ProjectController(
         ProjectUseCase projectUseCase,
         IMapper mapper,
         IValidator<CreateProjectReq> createProjectValidator,

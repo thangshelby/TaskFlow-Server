@@ -1,4 +1,5 @@
 using FluentValidation;
+using MainService.Domain.Entities;
 using TaskFlow.IssueService;
 
 public class CreateIssueValidator : AbstractValidator<CreateIssueReq>
@@ -26,17 +27,17 @@ public class CreateIssueValidator : AbstractValidator<CreateIssueReq>
 
         RuleFor(x => x.Type)
             .NotEmpty().WithMessage("Type is required.")
-            .Must(type => new[] { "Bug", "Task", "Story", "Epic" }.Contains(type))
+            .Must(type => Enum.TryParse<IssueType>(type, true, out _))
             .WithMessage("Invalid issue type. Allowed values: Bug, Task, Story, Epic.");
 
         RuleFor(x => x.Status)
             .NotEmpty().WithMessage("Status is required.")
-            .Must(status => new[] { "Open", "InProgress", "Resolved", "Closed" }.Contains(status))
+            .Must(status => Enum.TryParse<IssueStatus>(status, true, out _))
             .WithMessage("Invalid issue status. Allowed values: Open, InProgress, Resolved, Closed.");
 
         RuleFor(x => x.Priority)
             .NotEmpty().WithMessage("Priority is required.")
-            .Must(priority => new[] { "Low", "Medium", "High", "Critical" }.Contains(priority))
+            .Must(priority => Enum.TryParse<IssuePriority>(priority, true, out _))
             .WithMessage("Invalid priority. Allowed values: Low, Medium, High, Critical.");
 
         RuleFor(x => x.Summary)

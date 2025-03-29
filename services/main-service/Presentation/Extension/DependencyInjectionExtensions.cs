@@ -16,11 +16,13 @@ public static class DependencyInjectionExtensions
         services.AddScoped<UserUseCase>();
         services.AddScoped<ProjectUseCase>();
         services.AddScoped<SprintUseCase>();
+        services.AddScoped<IssueUseCase>();
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<ISprintRepository, SprintRepository>();
+        services.AddScoped<IIssueRepository, IssueRepository>();
 
 
 
@@ -46,6 +48,10 @@ public static class DependencyInjectionExtensions
         // services.AddValidatorsFromAssemblyContaining<CreateProjectValidator>();
         services.AddValidatorsFromAssemblyContaining<CreateUserValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginUserValidator>();
+
+        services.AddValidatorsFromAssemblyContaining<CreateIssueValidator>();
+        services.AddValidatorsFromAssemblyContaining<UpdateIssueValidator>();
+
         return services;
     }
 }
