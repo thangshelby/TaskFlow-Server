@@ -13,29 +13,29 @@ import "Base/base.proto";
 service ProjectService {
   rpc CreateProject (CreateProjectReq) returns (CreateProjectRes) {
     option (google.api.http) = {
-      post: "/v1/projects"
+      post: "/api/v1/projects"
       body: "*"
     };
   }
   rpc GetProject (GetProjectReq) returns (ProjectRes) {
     option (google.api.http) = {
-      get: "/v1/projects/{id}"
+      get: "/api/v1/projects/{id}"
     };
   }
   rpc UpdateProject (UpdateProjectReq) returns (ProjectRes) {
     option (google.api.http) = {
-      put: "/v1/projects/{id}"
+      put: "/api/v1/projects/{id}"
       body: "*"
     };
   }
   rpc DeleteProject (DeleteProjectReq) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      delete: "/v1/projects/{id}"
+      delete: "/api/v1/projects/{id}"
     };
   }
   rpc ListProjects (ListProjectsReq) returns (ListProjectsRes) {
     option (google.api.http) = {
-      get: "/v1/projects"
+      get: "/api/v1/projects"
     };
   }
 }
