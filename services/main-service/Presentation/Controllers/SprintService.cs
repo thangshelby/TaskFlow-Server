@@ -36,8 +36,8 @@ public class SprintServiceImpl : SprintService.SprintServiceBase
 
         var sprintDomain = _mapper.Map<SprintDomain>(request);
         var result = await _sprintUseCase.CreateSprint(sprintDomain);
-        return new CreateSprintRes 
-        { 
+        return new CreateSprintRes
+        {
             Data = _mapper.Map<SprintRes>(result)
         };
     }
@@ -86,12 +86,11 @@ public class SprintServiceImpl : SprintService.SprintServiceBase
     {
         var (sprints, totalCount) = await _sprintUseCase.ListSprints(request.ProjectId, request.Page, request.Limit);
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
-        
+
         return new ListSprintsRes
         {
             Data = { _mapper.Map<IEnumerable<SprintRes>>(sprints) },
-            Pagination = new PaginationRes
-            {
+            Pagination = {
                 TotalItems = totalCount,
                 TotalPages = totalPages,
                 CurrentPage = request.Page,

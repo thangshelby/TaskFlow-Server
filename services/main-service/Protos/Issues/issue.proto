@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+option csharp_namespace = "TaskFlow.IssueService";
+
+package project_service;
+
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto"; // Import Google API annotations
+import "Base/base.proto";
+// Define the gRPC service
+service IssueService {
+  rpc CreateIssue (CreateIssueReq) returns (CreateIssueRes) {
+    option (google.api.http) = {
+      post: "/api/v1/issues"
+      body: "*"
+    };
+  }
+  rpc GetIssue (GetIssueReq) returns (IssueRes) {
+    option (google.api.http) = {
+      get: "/api/v1/issues/{id}"
+    };
+  }
+  rpc UpdateIssue (UpdateIssueReq) returns (IssueRes) {
+    option (google.api.http) = {
+      put: "/api/v1/issues/{id}"
+      body: "*"
+    };
+  }
+  rpc DeleteIssue (DeleteIssueReq) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/issues/{id}"
+    };
+  }
+  rpc ListIssues (ListIssuesReq) returns (ListIssuesRes) {
+    option (google.api.http) = {
+      get: "/api/v1/issues"
+    };
+  }
+}
+
+// Get by ID
+message GetIssueReq {
+  string id = 1;
+}
+
+// DElete by ID
+message DeleteIssueReq {
+  string id = 1;
+}
+//Update
+message UpdateIssueReq {
+  optional string issue_id = 1;
+  optional string project_id = 2;
+  optional string sprint_id = 3;
+  optional string assignee_id = 4;
+  optional string parent_id = 5;
+  optional string reporter_id = 6;
+  optional string title = 7;
+  optional string summary = 8;
+  optional string description = 9;
+  optional string type = 10;
+  optional string status = 11;
+  optional string priority = 12;
+  optional int32 story_point = 13;
+  repeated string attachments = 14;
+}
+
+
+// List All
+message ListIssuesReq {
+  int32 page = 1;
+  int32 limit = 2;
+}
+message ListIssuesRes {
+  repeated IssueRes data = 1;
+  base.PaginationRes pagination = 2;
+}
+
+// Create
+message CreateIssueReq {
+  string title = 1;
+  string project_id = 2;
+  string sprint_id = 3;
+  string assignee_id = 4;
+  string parent_id = 5;
+  string reporter_id = 6;
+  string type = 7;
+  string status = 8;
+  string priority = 9;
+  string summary = 10;
+  string description = 11;
+  int32 story_point = 12;
+  repeated string attachments = 13;
+}
+
+message CreateIssueRes {
+  string status = 1;
+  IssueRes data = 2;
+}
+
+// Common
+message IssueRes {
+  string id = 1;
+  string title = 2;
+  string project_id = 3;
+  string sprint_id = 4;
+  string assignee_id = 5;
+  string parent_id = 6;
+  string reporter_id = 7;
+  string type = 8;
+  string status = 9;
+  string priority = 10;
+  string summary = 11;
+  string description = 12;
+  int32 story_point = 13;
+  repeated string attachments = 14;
+  string created_at = 15;
+  string updated_at = 16;
+}

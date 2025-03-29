@@ -58,7 +58,7 @@ public class ProjectRepository : IProjectRepository
             .Skip((page - 1) * pageSize)
             .Limit(pageSize)
             .ToListAsync();
-        
+
         return (_mapper.Map<List<ProjectDomain>>(projects), (int)totalCount);
     }
 }

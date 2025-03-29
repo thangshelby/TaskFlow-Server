@@ -42,6 +42,7 @@ app.MapGrpcService<SprintServiceImpl>();
 // app.MapGrpcService<CommentServiceImpl>();
 // app.MapGrpcService<UserServiceImpl>();
 app.MapGrpcService<UserController>();
+app.MapGrpcService<IssueController>();
 // app.MapGrpcService<ProjectController>();
 if (app.Environment.IsDevelopment())
 {

@@ -6,6 +6,7 @@ package project_service;
 
 import "google/protobuf/empty.proto";
 import "google/api/annotations.proto"; // Import Google API annotations
+import "Base/base.proto";
 
 
 // Define the gRPC service
@@ -91,19 +92,13 @@ message ProjectRes {
 
 message CreateProjectRes {
   ProjectRes data = 1;
-  optional PaginationRes pagination = 2;
+  optional base.PaginationRes pagination = 2;
 }
 
 message ListProjectsRes {
   repeated ProjectRes data = 1;
-  PaginationRes pagination = 2;
+  base.PaginationRes pagination = 2;
 }
 
 
-message PaginationRes {
-  int32 total_items = 1;
-  int32 total_pages = 2;
-  int32 current_page = 3;
-  int32 limit = 4;
-}
 message Empty {}
