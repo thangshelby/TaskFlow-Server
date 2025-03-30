@@ -1,4 +1,5 @@
 using AutoMapper;
+using Grpc.Core;
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using MainService.Infras.Entities;
@@ -36,17 +37,32 @@ public class UserRepository : IUserRepository
         return userDomain;
     }
 
-    public async Task<UserDomain?> FindUserAsync(string userId)
+    public async Task<UserDomain?> FindUserAsync(UserQueryParams query)
     {
-        var userEntity = await _users
-            .Find(x => x.Id == userId)
-            .FirstOrDefaultAsync();
+        var filters = new List<FilterDefinition<User>>();
 
-        if (userEntity == null)
-            return null;
+        if (!string.IsNullOrEmpty(query.UserId))
+        {
+            filters.Add(Builders<User>.Filter.Eq(x => x.Id, query.UserId));
+        }
 
-        return _mapper.Map<UserDomain>(userEntity);
+        if (!string.IsNullOrEmpty(query.Email))
+        {
+            filters.Add(Builders<User>.Filter.Eq(x => x.Email, query.Email));
+        }
+
+        var filter = filters.Count > 0 ? Builders<User>.Filter.And(filters) : Builders<User>.Filter.Empty;
+
+        var userEntity = await _users.Find(filter).FirstOrDefaultAsync();
+
+        return userEntity == null ? null : _mapper.Map<UserDomain>(userEntity);
     }
-
-
+    public async Task<UserDomain> UpdateUser(UserDomain userDomain)
+    {
+        var userEntity = _mapper.Map<User>(userDomain);
+        var result = await _users.ReplaceOneAsync(i => i.Id == userDomain.Id, userEntity);
+        if (result.MatchedCount == 0)
+            throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
+        return userDomain;
+    }
 }

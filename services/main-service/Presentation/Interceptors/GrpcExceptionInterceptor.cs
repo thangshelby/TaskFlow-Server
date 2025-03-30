@@ -13,6 +13,11 @@ public class GrpcExceptionInterceptor : Interceptor
 
             return await continuation(request, context);
         }
+        catch (RpcException)
+        {
+            // ✅ If it's already an RpcException, rethrow it without modification
+            throw;
+        }
         catch (ValidationException ex)
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
