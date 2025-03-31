@@ -13,17 +13,20 @@ public class SprintController : SprintService.SprintServiceBase
     private readonly IMapper _mapper;
     private readonly IValidator<CreateSprintReq> _createSprintValidator;
     private readonly IValidator<UpdateSprintReq> _updateSprintValidator;
+    private readonly IValidator<ListSprintsReq> _listSprintsValidator;
 
     public SprintController(
         SprintUseCase sprintUseCase,
         IMapper mapper,
         IValidator<CreateSprintReq> createSprintValidator,
-        IValidator<UpdateSprintReq> updateSprintValidator) // No trailing comma
+        IValidator<UpdateSprintReq> updateSprintValidator,
+        IValidator<ListSprintsReq> listSprintsValidator)
     {
         _sprintUseCase = sprintUseCase ?? throw new ArgumentNullException(nameof(sprintUseCase));
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _createSprintValidator = createSprintValidator ?? throw new ArgumentNullException(nameof(createSprintValidator));
         _updateSprintValidator = updateSprintValidator ?? throw new ArgumentNullException(nameof(updateSprintValidator));
+        _listSprintsValidator = listSprintsValidator ?? throw new ArgumentNullException(nameof(listSprintsValidator));
     }
 
     // Sprint Service Methods
@@ -86,19 +89,28 @@ public class SprintController : SprintService.SprintServiceBase
 
     public override async Task<ListSprintsRes> ListSprints(ListSprintsReq request, ServerCallContext context)
     {
+        if (request.Page <= 0) request.Page = 1;
+        if (request.Limit <= 0) request.Limit = 10;
+
+        var validationResult = await _listSprintsValidator.ValidateAsync(request);
+        if (!validationResult.IsValid)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument,
+                string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
+        }
+
         var (sprints, totalCount) = await _sprintUseCase.ListSprints(request.ProjectId, request.Page, request.Limit);
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
 
-        return new ListSprintsRes
+        var response = new ListSprintsRes();
+        response.Data.AddRange(_mapper.Map<List<SprintRes>>(sprints));
+        response.Pagination = new BaseService.PaginationRes
         {
-            Data = { _mapper.Map<IEnumerable<SprintRes>>(sprints) },
-            Pagination = {
-                TotalItems = totalCount,
-                TotalPages = totalPages,
-                CurrentPage = page,
-                Limit = limit
-            }
+            TotalItems = totalCount,
+            TotalPages = totalPages,
+            CurrentPage = request.Page,
+            Limit = request.Limit
         };
+        return response;
     }
-
 }
