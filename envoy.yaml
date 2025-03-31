@@ -30,7 +30,21 @@ static_resources:
                             cluster: grpc_service
                           decorator:
                             operation: "transcoding"
+                      typed_per_filter_config:
+                        envoy.filters.http.cors:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
+                          allow_origin_string_match:
+                            - prefix: "http://localhost:5173"
+                            - prefix: "https://yourfrontend.com"
+                          allow_methods: "GET, POST, PUT, DELETE, OPTIONS"
+                          allow_headers: "content-type, authorization"
+                          expose_headers: "x-custom-header"
+                          max_age: "86400"
+                          allow_credentials: true
                 http_filters:
+                - name: envoy.filters.http.cors
+                  typed_config:
+                    "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
                 - name: envoy.filters.http.jwt_authn
                   typed_config:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
@@ -51,10 +65,32 @@ static_resources:
                               ]
                             }
                         forward: true
-                        payload_in_metadata: "jwt_payload"  
+                        payload_in_metadata: "jwt_payload"
+                        from_cookies:
+                          - token   
                     rules:
+                      # Public route
                       - match:
-                          prefix: ""
+                          path: "/api/v1/users/login"
+                          headers:
+                            - name: ":method"
+                              string_match:
+                                exact: "POST"
+                        requires:
+                          allow_missing: {} 
+
+                      - match:
+                          path: "/api/v1/users"
+                          headers:
+                            - name: ":method"
+                              string_match:
+                                exact: "POST"
+                        requires:
+                          allow_missing: {}
+                           
+                      # Private route
+                      - match:
+                          prefix: "/"
                         requires:
                           provider_name: "my_jwt_provider"
                 - name: envoy.filters.http.rbac
@@ -88,11 +124,21 @@ static_resources:
                         #         value:
                         #           string_match:
                         #             exact: "user_role"
+                - name: envoy.filters.http.lua
+                  typed_config:
+                    "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+                    inline_code: |
+                      function envoy_on_response(response_handle)
+                        local token = response_handle:headers():get("authorization")
+                        if token then
+                          response_handle:headers():add("Set-Cookie", "token=" .. token .. "; Path=/; HttpOnly; Secure; SameSite=None")
+                        end
+                      end
                 - name: envoy.filters.http.grpc_json_transcoder
                   typed_config:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_json_transcoder.v3.GrpcJsonTranscoder
                     proto_descriptor: "/etc/envoy/proto.pb"
-                    services: ["project_service.UserService"]
+                    services: ["project_service.UserService", "project_service.SprintService" , "project_service.ProjectService","project_service.IssueService"]
                     convert_grpc_status: true
                 - name: envoy.filters.http.router
                   typed_config:

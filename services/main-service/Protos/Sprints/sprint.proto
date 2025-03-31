@@ -6,33 +6,34 @@ package project_service;
 
 
 import "google/api/annotations.proto"; // Import Google API annotations
+import "Base/base.proto";
 
 service SprintService {
   rpc CreateSprint (CreateSprintReq) returns (CreateSprintRes) {
     option (google.api.http) = {
-      post: "/v1/sprints"
+      post: "/api/v1/sprints"
       body: "*"
     };
   }
   rpc GetSprint (GetSprintReq) returns (SprintRes) {
     option (google.api.http) = {
-      get: "/v1/sprints/{id}"
+      get: "/api/v1/sprints/{id}"
     };
   }
   rpc UpdateSprint (UpdateSprintReq) returns (SprintRes) {
     option (google.api.http) = {
-      put: "/v1/sprints/{id}"
+      put: "/api/v1/sprints/{id}"
       body: "*"
     };
   }
   rpc DeleteSprint (DeleteSprintReq) returns (Empty) {
     option (google.api.http) = {
-      delete: "/v1/sprints/{id}"
+      delete: "/api/v1/sprints/{id}"
     };
   }
   rpc ListSprints (ListSprintsReq) returns (ListSprintsRes) {
     option (google.api.http) = {
-      get: "/v1/sprints"
+      get: "/api/v1/sprints"
     };
   }
 }
@@ -83,18 +84,12 @@ message SprintRes {
 
 message CreateSprintRes {
   SprintRes data = 1;
-  optional PaginationRes pagination = 2;
+  optional base.PaginationRes pagination = 2;
 }
 
 message ListSprintsRes {
   repeated SprintRes data = 1;
-  PaginationRes pagination = 2;
-}
-message PaginationRes {
-  int32 total_items = 1;
-  int32 total_pages = 2;
-  int32 current_page = 3;
-  int32 limit = 4;
+  base.PaginationRes pagination = 2;
 }
 
 message Empty {}

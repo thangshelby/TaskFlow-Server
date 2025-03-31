@@ -14,3 +14,4 @@ public class UserDomain
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public UserRole Role { get; set; } = UserRole.User;
 }
+

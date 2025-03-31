@@ -4,16 +4,14 @@ using Grpc.Core;
 using MainService.Domain.UseCases;
 using MainService.Domain.Entities;
 using TaskFlow.ProjectService;
-using Google.Protobuf.WellKnownTypes;
-
-public class ProjectServiceImpl : ProjectService.ProjectServiceBase
+public class ProjectController : ProjectService.ProjectServiceBase
 {
     private readonly ProjectUseCase _projectUseCase;
     private readonly IMapper _mapper;
     private readonly IValidator<CreateProjectReq> _createProjectValidator;
     private readonly IValidator<UpdateProjectReq> _updateProjectValidator;
 
-    public ProjectServiceImpl(
+    public ProjectController(
         ProjectUseCase projectUseCase,
         IMapper mapper,
         IValidator<CreateProjectReq> createProjectValidator,
@@ -90,8 +88,7 @@ public class ProjectServiceImpl : ProjectService.ProjectServiceBase
         return new ListProjectsRes
         {
             Data = { _mapper.Map<IEnumerable<ProjectRes>>(projects) },
-            Pagination = new PaginationRes
-            {
+            Pagination = {
                 TotalItems = totalCount,
                 TotalPages = totalPages,
                 CurrentPage = request.Page,
