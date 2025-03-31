@@ -86,7 +86,6 @@ public class SprintServiceImpl : SprintService.SprintServiceBase
 
     public override async Task<ListSprintsRes> ListSprints(ListSprintsReq request, ServerCallContext context)
     {
-        // Apply default values if not provided
         int page = request.Page > 0 ? request.Page : 1;
         int limit = request.Limit > 0 ? request.Limit : 10;
 
