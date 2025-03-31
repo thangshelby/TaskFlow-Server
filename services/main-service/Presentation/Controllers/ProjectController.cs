@@ -10,17 +10,20 @@ public class ProjectController : ProjectService.ProjectServiceBase
     private readonly IMapper _mapper;
     private readonly IValidator<CreateProjectReq> _createProjectValidator;
     private readonly IValidator<UpdateProjectReq> _updateProjectValidator;
+    private readonly IValidator<ListProjectsReq> _listProjectsValidator;
 
     public ProjectController(
         ProjectUseCase projectUseCase,
         IMapper mapper,
         IValidator<CreateProjectReq> createProjectValidator,
-        IValidator<UpdateProjectReq> updateProjectValidator)
+        IValidator<UpdateProjectReq> updateProjectValidator,
+        IValidator<ListProjectsReq> listProjectsValidator)
     {
         _projectUseCase = projectUseCase;
         _mapper = mapper;
         _createProjectValidator = createProjectValidator;
         _updateProjectValidator = updateProjectValidator;
+        _listProjectsValidator = listProjectsValidator;
     }
 
     public override async Task<CreateProjectRes> CreateProject(CreateProjectReq request, ServerCallContext context)
@@ -80,18 +83,28 @@ public class ProjectController : ProjectService.ProjectServiceBase
 
     public override async Task<ListProjectsRes> ListProjects(ListProjectsReq request, ServerCallContext context)
     {
+        if (request.Page <= 0) request.Page = 1;
+        if (request.Limit <= 0) request.Limit = 10;
+
+        var validationResult = await _listProjectsValidator.ValidateAsync(request);
+        if (!validationResult.IsValid)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument,
+                string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
+        }
+
         var (projects, totalCount) = await _projectUseCase.ListProjects(request.Page, request.Limit);
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
 
-        return new ListProjectsRes
+        var response = new ListProjectsRes();
+        response.Data.AddRange(_mapper.Map<List<ProjectRes>>(projects));
+        response.Pagination = new BaseService.PaginationRes
         {
-            Data = { _mapper.Map<IEnumerable<ProjectRes>>(projects) },
-            Pagination = {
-                TotalItems = totalCount,
-                TotalPages = totalPages,
-                CurrentPage = request.Page,
-                Limit = request.Limit
-            }
+            TotalItems = totalCount,
+            TotalPages = totalPages,
+            CurrentPage = request.Page,
+            Limit = request.Limit
         };
+        return response;
     }
 }
