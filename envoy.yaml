@@ -76,8 +76,7 @@ static_resources:
                             - name: ":method"
                               string_match:
                                 exact: "POST"
-                        requires:
-                          allow_missing: {} 
+                        requires: {}
 
                       - match:
                           path: "/api/v1/users"
@@ -85,8 +84,7 @@ static_resources:
                             - name: ":method"
                               string_match:
                                 exact: "POST"
-                        requires:
-                          allow_missing: {}
+                        requires: {}
                            
                       # Private route
                       - match:
@@ -140,6 +138,10 @@ static_resources:
                     proto_descriptor: "/etc/envoy/proto.pb"
                     services: ["project_service.UserService", "project_service.SprintService" , "project_service.ProjectService","project_service.IssueService"]
                     convert_grpc_status: true
+                    print_options:
+                      always_print_primitive_fields: true
+                      preserve_proto_field_names: true
+                    
                 - name: envoy.filters.http.router
                   typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
