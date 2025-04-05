@@ -1,10 +1,9 @@
-
-
 using AutoMapper;
 using MainService.Domain.Entities;
 using MainService.Infras.Entities;
 using TaskFlow.IssueService;
 using TaskFlow.ProjectService;
+using TaskFlow.SprintService;
 using TaskFlow.UserService;
 
 namespace CamQuizzBE.Applications.Helpers;
@@ -18,16 +17,29 @@ public class AutoMapperProfiles : Profile
         CreateMap<User, UserDomain>().ReverseMap();
         CreateMap<Sprint, SprintDomain>().ReverseMap();
 
+        CreateMap<CreateSprintReq, SprintDomain>();
+        CreateMap<UpdateSprintReq, SprintDomain>();
         CreateMap<CreateProjectReq, ProjectDomain>();
         CreateMap<UpdateProjectReq, ProjectDomain>();
         CreateMap<CreateIssueReq, IssueDomain>();
 
+        CreateMap<ProjectDomain, ProjectRes>()
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("o")))
+            .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("o")));
+        
+        CreateMap<IssueDomain, IssueRes>()
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("o")))
+            .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("o")));
 
-        CreateMap<ProjectDomain, ProjectRes>();
-        CreateMap<IssueDomain, IssueRes>();
         CreateMap<UserDomain, UserRes>()
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("o")))
             .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("o")))
             .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()));
+
+        CreateMap<SprintDomain, SprintRes>()
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("o")))
+            .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("o")))
+            .ForMember(dest => dest.DateStarted, opt => opt.MapFrom(src => src.DateStarted.ToString("o")))
+            .ForMember(dest => dest.DateEnded, opt => opt.MapFrom(src => src.DateEnded.ToString("o")));
     }
 }

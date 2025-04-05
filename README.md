@@ -17,7 +17,7 @@
 ### Infrastructure & Communication:  
 - **RabbitMQ** – For asynchronous messaging between services  
 - **gRPC** – For high-performance synchronous communication  
-- **Kong** – API Gateway for routing and managing microservices  
+- **Envoy** – API Gateway for routing and managing microservices  
 - **Docker** – Containerized services  
 - **Kubernetes (Optional)** – Deployment orchestration  
 - **MySQL/PostgreSQL/MongoDB** – Database (depending on service needs)  
@@ -36,7 +36,7 @@ Ensure you have the following installed:
 - [Go](https://go.dev/) (for Go services)  
 - [RabbitMQ](https://www.rabbitmq.com/) (can be run via Docker)  
 - [ASP.NET Core](https://dotnet.microsoft.com/) (for main service)  
-- [Kong](https://konghq.com/) (API Gateway)  
+- [Envoy](https://www.envoyproxy.io/docs/envoy/latest/#) (API Gateway)  
 
 ---
 
@@ -45,7 +45,6 @@ Ensure you have the following installed:
 1. **Implement gRPC** for High-Performance Interactions  
 2. **Add Authentication using JWT**  
 3. **Improve Logging** with a Centralized System  
-4. **Implement GraphQL** for API Gateway  
 5. **Integrate Real-Time Notifications**  
 6. **Enhance Metrics and Monitoring Dashboard**  
 
