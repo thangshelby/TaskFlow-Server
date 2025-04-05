@@ -127,7 +127,7 @@ public class UserController : UserService.UserServiceBase
         new Claim(JwtRegisteredClaimNames.Sub, "1234567890"),
         new Claim(JwtRegisteredClaimNames.Name, email),
         new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-        new Claim(JwtRegisteredClaimNames.Exp, DateTimeOffset.UtcNow.AddSeconds(1).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+        new Claim(JwtRegisteredClaimNames.Exp, DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
         new Claim(JwtRegisteredClaimNames.Iss, "127.0.0.1"),
         new Claim("role", "admin_role")
     };
@@ -135,7 +135,7 @@ public class UserController : UserService.UserServiceBase
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddSeconds(1),
+            Expires = DateTime.UtcNow.AddHours(1),
             Issuer = "127.0.0.1",
             SigningCredentials = credentials
         };

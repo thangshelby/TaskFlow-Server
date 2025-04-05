@@ -11,8 +11,8 @@ const privateKey = fs.readFileSync("../../private_key.pem", "utf8"); // Save you
 const payload = {
   sub: "1234567890", // User ID or subject
   name: "John Doe",
-  iat: Math.floor(Date.now() / 1000), // Issued at
-  exp: Math.floor(Date.now() / 1000) + 60 * 60, // Expires in 1 hour
+  iat: Math.floor(Date.now() / 1000) - 3600, // Issued 1 hour ago
+  exp: Math.floor(Date.now() / 1000) - 10, // Expired 10 seconds ago
   iss: "127.0.0.1", // MUST match the issuer in your Envoy config
   role: "admin_role"
 };
