@@ -11,12 +11,14 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Cryptography;
 using AutoMapper;
+using MainService.Domain.Interfaces;
 
 public class UserController : UserService.UserServiceBase
 {
     private readonly IValidator<CreateUserReq> _createUserValidator;
     private readonly IValidator<LoginUserReq> _loginUserValidator;
     private readonly IValidator<UpdateUserReq> _updateUserValidator;
+    private readonly IValidator<RegisterUserReq> _registerUserValidator;
     private readonly IMapper _mapper;
 
     private readonly UserUseCase _userUseCase;
@@ -26,12 +28,13 @@ public class UserController : UserService.UserServiceBase
         IValidator<CreateUserReq> createUserValidator,
         IValidator<LoginUserReq> loginUserValidator,
         IValidator<UpdateUserReq> updateUserValidator,
+        IValidator<RegisterUserReq> registerUserValidator,
         UserUseCase userUseCase,
         ILogger<UserController> logger, IConfiguration configuration,
         IMapper mapper
         )
-        => (_createUserValidator, _loginUserValidator, _updateUserValidator, _userUseCase, _logger, _configuration, _mapper)
-        = (createUserValidator, loginUserValidator, updateUserValidator, userUseCase, logger, configuration, mapper);
+        => (_createUserValidator, _loginUserValidator, _updateUserValidator, _registerUserValidator, _userUseCase, _logger, _configuration, _mapper)
+        = (createUserValidator, loginUserValidator, updateUserValidator, registerUserValidator, userUseCase, logger, configuration, mapper);
 
     public override async Task<UpdateUserRes> UpdateUser(UpdateUserReq request, ServerCallContext context)
     {
@@ -83,6 +86,36 @@ public class UserController : UserService.UserServiceBase
             Data = userResponse
         };
     }
+    public override async Task<CreateUserRes> Register(RegisterUserReq request, ServerCallContext context)
+    {
+        ValidationResult validationResult = await _registerUserValidator.ValidateAsync(request);
+        if (!validationResult.IsValid)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
+        }
+       
+        var user = await _userUseCase.CreateUser(new UserDomain
+        {
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            Email = request.Email,
+            Password = request.Password,
+            Role = UserRole.User,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        });
+
+        // Set JWT token in the response headers
+        await SetJwtToken(request.Email, context);
+
+        var userResponse = _mapper.Map<UserRes>(user);
+        return new CreateUserRes
+        {
+            Status = "User created successfully",
+            Data = userResponse
+        };
+    }
+
     public override async Task<LoginUserRes> Login(LoginUserReq request, ServerCallContext context)
     {
         ValidationResult validationResult = await _loginUserValidator.ValidateAsync(request);
@@ -91,26 +124,39 @@ public class UserController : UserService.UserServiceBase
             throw new RpcException(new Status(StatusCode.InvalidArgument, string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
 
+        var user = await _userUseCase.LoginUser(new LoginReqParams
+        {
+            Email = request.Email,
+            Password = request.Password
+        });
 
+        // Set JWT token in the response headers
+        await SetJwtToken(request.Email, context);
 
+        var userResponse = _mapper.Map<UserRes>(user);
+
+        return new LoginUserRes
+        {
+            Status = "success",
+            Message = "Login successfully",
+            Data = userResponse
+        };
+    }
+    private async Task SetJwtToken(string email, ServerCallContext context)
+    {
         string? privateKeyPem = _configuration["JWT_SECRET"];
         if (string.IsNullOrEmpty(privateKeyPem))
         {
             throw new Exception("Private key not found in configuration.");
         }
 
-        string jwtToken = CreateJwtToken(request.Email, privateKeyPem);
+        string jwtToken = CreateJwtToken(email, privateKeyPem);
 
         Metadata metadata = new Metadata
         {
             { "Set-Cookie", $"token={jwtToken}; Path=/; HttpOnly; Secure; SameSite=None" }
         };
         await context.WriteResponseHeadersAsync(metadata);
-
-        return new LoginUserRes
-        {
-            Status = "Login successfully"
-        };
     }
     private static string CreateJwtToken(string email, string privateKeyPem)
     {

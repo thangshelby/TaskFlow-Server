@@ -21,6 +21,12 @@ service UserService {
       body: "*"
     };
   }
+  rpc Register (RegisterUserReq) returns (CreateUserRes) {
+    option (google.api.http) = {
+      post: "/api/v1/users/register"
+      body: "*"
+    };
+  }
   rpc UpdateUser (UpdateUserReq) returns (UpdateUserRes) {
     option (google.api.http) = {
       put: "/api/v1/users"
@@ -43,6 +49,8 @@ message LoginUserReq {
 
 message LoginUserRes {
   string status = 1;
+  string message = 2;
+  UserRes data = 3;
 }
 
 // Get one user
@@ -83,6 +91,16 @@ message CreateUserRes {
   string status = 1;
   UserRes data = 2;
 }
+
+// Register User
+message RegisterUserReq {
+  string first_name = 1;
+  string last_name = 2;
+  string email = 3;
+  string password = 4;
+  string password_confirm = 5;
+}
+
 
 // Common
 message UserRes{

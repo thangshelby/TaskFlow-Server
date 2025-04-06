@@ -49,6 +49,7 @@ public static class DependencyInjectionExtensions
         services.AddValidatorsFromAssemblyContaining<CreateUserValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginUserValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateUserValidator>();
+        services.AddValidatorsFromAssemblyContaining<RegisterUserValidator>();
 
         services.AddValidatorsFromAssemblyContaining<CreateIssueValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateIssueValidator>();
