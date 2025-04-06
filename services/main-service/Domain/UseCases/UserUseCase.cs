@@ -47,6 +47,20 @@ public class UserUseCase
 
         return user;
     }
+    public async Task<UserDomain> GetById(string userId)
+    {
+        var user = await _userRepository.FindUserAsync(new UserQueryParams
+        {
+            UserId = userId
+        });
+
+        if (user == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "User not found!"));
+        }
+
+        return user;
+    }
     public async Task<UserDomain> UpdateUser(UserDomain user)
     {
         if (string.IsNullOrEmpty(user.Id))

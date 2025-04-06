@@ -4,7 +4,7 @@ option csharp_namespace = "TaskFlow.UserService";
 
 package project_service;
 
-
+import "google/protobuf/empty.proto";
 import "google/api/annotations.proto"; // Import Google API annotations
 
 // Define the gRPC service
@@ -36,6 +36,12 @@ service UserService {
   rpc GetById (GetUserReq) returns (GetUserRes) {
     option (google.api.http) = {
       get: "/api/v1/users/{user_id}"
+      body: "*"
+    };
+  }
+  rpc GetMe (GetUserReq) returns (GetUserRes) {
+    option (google.api.http) = {
+      get: "/api/v1/users/get-me"
       body: "*"
     };
   }

@@ -33,6 +33,7 @@ public static class DependencyInjectionExtensions
     {
         services.AddGrpc(options =>
         {
+            options.Interceptors.Add<AuthenticationInterceptor>();
             options.Interceptors.Add<GrpcExceptionInterceptor>();
         });
         services.AddGrpcReflection();
@@ -45,7 +46,7 @@ public static class DependencyInjectionExtensions
         services.AddValidatorsFromAssemblyContaining<CreateProjectValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateProjectValidator>();
 
-   
+
         services.AddValidatorsFromAssemblyContaining<CreateUserValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginUserValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateUserValidator>();
