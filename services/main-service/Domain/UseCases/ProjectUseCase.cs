@@ -68,14 +68,14 @@ public class ProjectUseCase
         await _projectRepository.DeleteProject(id);
     }
 
-    public async Task<(List<ProjectDomain> Projects, int TotalCount)> ListProjects(int page, int pageSize)
+    public async Task<(List<ProjectDomain> Projects, int TotalCount)> ListProjects(ListProjectParams param)
     {
-        if (page < 1)
+        if (param.Page < 1)
             throw new ArgumentException("Page number must be greater than 0");
         
-        if (pageSize < 1)
+        if (param.Limit < 1)
             throw new ArgumentException("Page size must be greater than 0");
 
-        return await _projectRepository.ListProjects(page, pageSize);
+        return await _projectRepository.ListProjects(param);
     }
 }

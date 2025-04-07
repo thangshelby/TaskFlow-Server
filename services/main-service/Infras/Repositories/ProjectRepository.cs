@@ -50,13 +50,21 @@ public class ProjectRepository : IProjectRepository
             throw new Exception("Project not found");
     }
 
-    public async Task<(List<ProjectDomain> Projects, int TotalCount)> ListProjects(int page, int pageSize)
+    public async Task<(List<ProjectDomain> Projects, int TotalCount)> ListProjects(ListProjectParams query)
     {
-        var filter = Builders<Project>.Filter.Empty;
+        var builder = Builders<Project>.Filter;
+        var filter = builder.Empty;
+
+        if (!string.IsNullOrEmpty(query.UserId))
+        {
+            filter = builder.Eq(p => p.OwnerId, query.UserId);
+        }
+
         var totalCount = await _projects.CountDocumentsAsync(filter);
+        
         var projects = await _projects.Find(filter)
-            .Skip((page - 1) * pageSize)
-            .Limit(pageSize)
+            .Skip((query.Page - 1) * query.Limit)
+            .Limit(query.Limit)
             .ToListAsync();
 
         return (_mapper.Map<List<ProjectDomain>>(projects), (int)totalCount);

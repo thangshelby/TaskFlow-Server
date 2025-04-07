@@ -127,7 +127,7 @@ public class UserController : UserService.UserServiceBase
 
         if (user.Id == null) throw new Exception("Can't happen");
         await SetJwtToken(user.Id, user.Role, request.Email, context);
-
+        
         var userResponse = _mapper.Map<UserRes>(user);
         return new CreateUserRes
         {
@@ -153,7 +153,7 @@ public class UserController : UserService.UserServiceBase
         await SetJwtToken(user.Id, user.Role, request.Email, context);
 
         var userResponse = _mapper.Map<UserRes>(user);
-
+        
         return new LoginUserRes
         {
             Status = "success",

@@ -4,7 +4,6 @@ option csharp_namespace = "TaskFlow.UserService";
 
 package project_service;
 
-import "google/protobuf/empty.proto";
 import "google/api/annotations.proto"; // Import Google API annotations
 
 // Define the gRPC service
@@ -110,11 +109,12 @@ message RegisterUserReq {
 
 // Common
 message UserRes{
-    string first_name = 1;
-    string last_name = 2;
-    string email = 3;
-    string role = 4;
-    string created_at = 5;
-    string updated_at = 6;
+  string id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string email = 4;
+  string role = 5;
+  string created_at = 6;
+  string updated_at = 7;
 }
   
