@@ -86,6 +86,26 @@ public class UserController : UserService.UserServiceBase
             Data = userResponse
         };
     }
+    public override async Task<GetUserRes> GetMe(GetUserReq request, ServerCallContext context)
+    {
+        var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
+        // var userRole = context.UserState.ContainsKey("UserRole") ? context.UserState["UserRole"] as string : null;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User is not authenticated."));
+        }
+        var user = await _userUseCase.GetById(userId);
+
+
+        var userResponse = _mapper.Map<UserRes>(user);
+
+        return new GetUserRes
+        {
+            Status = "User fetched successfully",
+            Data = userResponse
+        };
+    }
     public override async Task<CreateUserRes> Register(RegisterUserReq request, ServerCallContext context)
     {
         ValidationResult validationResult = await _registerUserValidator.ValidateAsync(request);
@@ -93,7 +113,7 @@ public class UserController : UserService.UserServiceBase
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
-       
+
         var user = await _userUseCase.CreateUser(new UserDomain
         {
             FirstName = request.FirstName,
@@ -105,9 +125,9 @@ public class UserController : UserService.UserServiceBase
             UpdatedAt = DateTime.UtcNow
         });
 
-        // Set JWT token in the response headers
-        await SetJwtToken(request.Email, context);
-
+        if (user.Id == null) throw new Exception("Can't happen");
+        await SetJwtToken(user.Id, user.Role, request.Email, context);
+        
         var userResponse = _mapper.Map<UserRes>(user);
         return new CreateUserRes
         {
@@ -115,7 +135,6 @@ public class UserController : UserService.UserServiceBase
             Data = userResponse
         };
     }
-
     public override async Task<LoginUserRes> Login(LoginUserReq request, ServerCallContext context)
     {
         ValidationResult validationResult = await _loginUserValidator.ValidateAsync(request);
@@ -130,11 +149,11 @@ public class UserController : UserService.UserServiceBase
             Password = request.Password
         });
 
-        // Set JWT token in the response headers
-        await SetJwtToken(request.Email, context);
+        if (user.Id == null) throw new Exception("Can't happen");
+        await SetJwtToken(user.Id, user.Role, request.Email, context);
 
         var userResponse = _mapper.Map<UserRes>(user);
-
+        
         return new LoginUserRes
         {
             Status = "success",
@@ -142,7 +161,7 @@ public class UserController : UserService.UserServiceBase
             Data = userResponse
         };
     }
-    private async Task SetJwtToken(string email, ServerCallContext context)
+    private async Task SetJwtToken(string userId, UserRole role, string email, ServerCallContext context)
     {
         string? privateKeyPem = _configuration["JWT_SECRET"];
         if (string.IsNullOrEmpty(privateKeyPem))
@@ -150,7 +169,7 @@ public class UserController : UserService.UserServiceBase
             throw new Exception("Private key not found in configuration.");
         }
 
-        string jwtToken = CreateJwtToken(email, privateKeyPem);
+        string jwtToken = CreateJwtToken(userId, role, email, privateKeyPem);
 
         Metadata metadata = new Metadata
         {
@@ -158,7 +177,7 @@ public class UserController : UserService.UserServiceBase
         };
         await context.WriteResponseHeadersAsync(metadata);
     }
-    private static string CreateJwtToken(string email, string privateKeyPem)
+    private static string CreateJwtToken(string userId, UserRole role, string email, string privateKeyPem)
     {
 
 
@@ -175,7 +194,8 @@ public class UserController : UserService.UserServiceBase
         new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
         new Claim(JwtRegisteredClaimNames.Exp, DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
         new Claim(JwtRegisteredClaimNames.Iss, "127.0.0.1"),
-        new Claim("role", "admin_role")
+        new Claim("role", "admin_role"),
+        new Claim("userId", userId)
     };
 
         var tokenDescriptor = new SecurityTokenDescriptor

@@ -38,6 +38,11 @@ service ProjectService {
       get: "/api/v1/projects"
     };
   }
+  rpc GetUserProjects (UserProjectsReq) returns (ListProjectsRes) {
+    option (google.api.http) = {
+      get: "/api/v1/projects/user/{user_id}"
+    };
+  }
 }
 
 // Define request message
@@ -77,6 +82,12 @@ message DeleteProjectReq {
 message ListProjectsReq {
   int32 page = 1;
   int32 limit = 2;
+}
+
+message UserProjectsReq {
+  int32 page = 1;
+  int32 limit = 2;
+  string user_id = 3;
 }
 
 message ProjectRes {
