@@ -36,6 +36,11 @@ service SprintService {
       get: "/api/v1/sprints"
     };
   }
+  rpc ProjectSprints (ProjectSprintsReq) returns (ListSprintsRes) {
+    option (google.api.http) = {
+      get: "/api/v1/sprints/project/{project_id}"
+    };
+  }
 }
 // Sprint Messages
 message CreateSprintReq {
@@ -91,5 +96,9 @@ message ListSprintsRes {
   repeated SprintRes data = 1;
   base.PaginationRes pagination = 2;
 }
-
+message ProjectSprintsReq{
+  int32 page = 1;
+  int32 limit = 2;
+  string project_id = 3;
+}
 message Empty {}
