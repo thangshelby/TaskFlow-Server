@@ -11,18 +11,18 @@ import "Base/base.proto";
 service SprintService {
   rpc CreateSprint (CreateSprintReq) returns (CreateSprintRes) {
     option (google.api.http) = {
-      post: "/api/v1/sprints"
+      post: "/api/v1/project/{project_id}/sprints"
       body: "*"
     };
   }
   rpc GetSprint (GetSprintReq) returns (SprintRes) {
     option (google.api.http) = {
-      get: "/api/v1/sprints/{id}"
+      get: "/api/v1/project/{project_id}/sprints/{id}"
     };
   }
   rpc UpdateSprint (UpdateSprintReq) returns (SprintRes) {
     option (google.api.http) = {
-      put: "/api/v1/sprints/{id}"
+      put: "/api/v1/project/{project_id}/sprints/{id}"
       body: "*"
     };
   }
@@ -33,14 +33,10 @@ service SprintService {
   }
   rpc ListSprints (ListSprintsReq) returns (ListSprintsRes) {
     option (google.api.http) = {
-      get: "/api/v1/sprints"
+      get: "/api/v1/project/{project_id}/sprints"
     };
   }
-  rpc ProjectSprints (ProjectSprintsReq) returns (ListSprintsRes) {
-    option (google.api.http) = {
-      get: "/api/v1/sprints/project/{project_id}"
-    };
-  }
+
 }
 // Sprint Messages
 message CreateSprintReq {
@@ -54,6 +50,7 @@ message CreateSprintReq {
 
 message GetSprintReq {
   string id = 1;
+  string project_id = 2;
 }
 
 message UpdateSprintReq {
@@ -63,10 +60,12 @@ message UpdateSprintReq {
   string date_ended = 4;
   int32 duration = 5;
   string goal = 6;
+  string project_id = 7;
 }
 
 message DeleteSprintReq {
   string id = 1;
+  string project_id = 2;
 }
 
 message ListSprintsReq {
@@ -96,9 +95,5 @@ message ListSprintsRes {
   repeated SprintRes data = 1;
   base.PaginationRes pagination = 2;
 }
-message ProjectSprintsReq{
-  int32 page = 1;
-  int32 limit = 2;
-  string project_id = 3;
-}
+
 message Empty {}
