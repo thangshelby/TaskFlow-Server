@@ -50,15 +50,15 @@ public class IssueRepository : IIssueRepository
             throw new Exception("Issue not found");
     }
 
-    public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(int page, int pageSize)
+    public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(string projectId, int page, int pageSize)
     {
-        var filter = Builders<Issue>.Filter.Empty;
+        var filter = Builders<Issue>.Filter.Eq(i => i.ProjectId, projectId);
         var totalCount = await _issues.CountDocumentsAsync(filter);
         var issues = await _issues.Find(filter)
             .Skip((page - 1) * pageSize)
             .Limit(pageSize)
             .ToListAsync();
-
+        
         return (_mapper.Map<List<IssueDomain>>(issues), (int)totalCount);
     }
 }

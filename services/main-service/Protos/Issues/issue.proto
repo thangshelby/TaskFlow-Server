@@ -5,35 +5,35 @@ option csharp_namespace = "TaskFlow.IssueService";
 package project_service;
 
 import "google/protobuf/empty.proto";
-import "google/api/annotations.proto"; // Import Google API annotations
+import "google/api/annotations.proto";
 import "Base/base.proto";
-// Define the gRPC service
+
 service IssueService {
   rpc CreateIssue (CreateIssueReq) returns (CreateIssueRes) {
     option (google.api.http) = {
-      post: "/api/v1/issues"
+      post: "/api/v1/project/{project_id}/issues"
       body: "*"
     };
   }
   rpc GetIssue (GetIssueReq) returns (IssueRes) {
     option (google.api.http) = {
-      get: "/api/v1/issues/{id}"
+      get: "/api/v1/project/{project_id}/issues/{id}"
     };
   }
   rpc UpdateIssue (UpdateIssueReq) returns (IssueRes) {
     option (google.api.http) = {
-      put: "/api/v1/issues/{id}"
+      put: "/api/v1/project/{project_id}/issues/{id}"
       body: "*"
     };
   }
   rpc DeleteIssue (DeleteIssueReq) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      delete: "/api/v1/issues/{id}"
+      delete: "/api/v1/project/{project_id}/issues/{id}"
     };
   }
   rpc ListIssues (ListIssuesReq) returns (ListIssuesRes) {
     option (google.api.http) = {
-      get: "/api/v1/issues"
+      get: "/api/v1/project/{project_id}/issues"
     };
   }
 }
@@ -41,6 +41,7 @@ service IssueService {
 // Get by ID
 message GetIssueReq {
   string id = 1;
+  string project_id = 2;
 }
 
 // DElete by ID
@@ -68,9 +69,11 @@ message UpdateIssueReq {
 
 // List All
 message ListIssuesReq {
-  int32 page = 1;
-  int32 limit = 2;
+  string project_id = 1;
+  int32 page = 2;
+  int32 limit = 3;
 }
+
 message ListIssuesRes {
   repeated IssueRes data = 1;
   base.PaginationRes pagination = 2;
@@ -78,8 +81,8 @@ message ListIssuesRes {
 
 // Create
 message CreateIssueReq {
-  string title = 1;
-  string project_id = 2;
+  string project_id = 1;
+  string title = 2;
   string sprint_id = 3;
   string assignee_id = 4;
   string parent_id = 5;
@@ -92,6 +95,7 @@ message CreateIssueReq {
   int32 story_point = 12;
   repeated string attachments = 13;
 }
+
 
 message CreateIssueRes {
   string status = 1;

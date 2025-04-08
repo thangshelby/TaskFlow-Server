@@ -6,5 +6,5 @@ public interface IIssueRepository
     Task<IssueDomain> GetIssue(string id);
     Task<IssueDomain> UpdateIssue(IssueDomain issue);
     Task DeleteIssue(string id);
-    Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(int page, int pageSize);
+    Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(string projectId, int page, int pageSize);
 }
