@@ -19,8 +19,8 @@ public class CreateIssueValidator : AbstractValidator<CreateIssueReq>
         RuleFor(x => x.AssigneeId)
             .NotEmpty().WithMessage("Assignee ID is required.");
 
-        RuleFor(x => x.ParentId)
-            .NotEmpty().WithMessage("Parent ID is required.");
+        // RuleFor(x => x.ParentId)
+        //     .NotEmpty().WithMessage("Parent ID is required.");
 
         RuleFor(x => x.ReporterId)
             .NotEmpty().WithMessage("Reporter ID is required.");

@@ -67,11 +67,11 @@ public class IssueUseCase
         await _issueRepository.DeleteIssue(id);
     }
 
-    public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(int page, int pageSize)
+    public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(string projectId, int page, int pageSize)
     {
         if (page < 1 || pageSize < 1)
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Page number and size must be greater than 0"));
 
-        return await _issueRepository.ListIssues(page, pageSize);
+        return await _issueRepository.ListIssues(projectId, page, pageSize);
     }
 }
