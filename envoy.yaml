@@ -150,6 +150,7 @@ static_resources:
                           "project_service.SprintService",
                           "project_service.ProjectService",
                           "project_service.IssueService",
+                          "project_service.TeamService",
                         ]
                       convert_grpc_status: true
                       print_options:

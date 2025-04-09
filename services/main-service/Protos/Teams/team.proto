@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+option csharp_namespace = "TaskFlow.TeamService";
+
+package project_service;
+
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+import "Base/base.proto";
+
+service TeamService {
+  rpc AddTeamMember (AddTeamMemberReq) returns (TeamMemberRes) {
+    option (google.api.http) = {
+      post: "/api/v1/projects/{project_id}/members"
+      body: "*"
+    };
+  }
+  rpc RemoveTeamMember (RemoveTeamMemberReq) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/projects/{project_id}/members/{user_id}"
+    };
+  }
+  rpc UpdateTeamMemberRole (UpdateTeamMemberRoleReq) returns (TeamMemberRes) {
+    option (google.api.http) = {
+      put: "/api/v1/projects/{project_id}/members/{user_id}/role"
+      body: "*"
+    };
+  }
+  rpc ListTeamMembers (ListTeamMembersReq) returns (ListTeamMembersRes) {
+    option (google.api.http) = {
+      get: "/api/v1/projects/{project_id}/members"
+    };
+  }
+  rpc GetUserTeams (UserTeamMembersReq) returns (ListTeamMembersRes) {
+    option (google.api.http) = {
+      get: "/api/v1/users/{user_id}/teams"
+    };
+  }
+}
+
+enum TeamMemberRole {
+  MEMBER = 0;
+  ADMIN = 1;
+  OWNER = 2;
+}
+
+message AddTeamMemberReq {
+  string project_id = 1;
+  string user_id = 2;
+  TeamMemberRole role = 3;
+}
+
+message RemoveTeamMemberReq {
+  string project_id = 1;
+  string user_id = 2;
+}
+
+message UpdateTeamMemberRoleReq {
+  string project_id = 1;
+  string user_id = 2;
+  TeamMemberRole role = 3;
+}
+
+message ListTeamMembersReq {
+  string project_id = 1;
+  int32 page = 2;
+  int32 limit = 3;
+}
+
+message TeamMemberRes {
+  string id = 1;
+  string project_id = 2;
+  string user_id = 3;
+  TeamMemberRole role = 4;
+  string created_at = 5;
+  string updated_at = 6;
+  UserInfo user = 7;
+}
+
+message UserInfo {
+  string id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string email = 4;
+}
+
+message UserTeamMembersReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 limit = 3;
+}
+
+message ListTeamMembersRes {
+  repeated TeamMemberRes data = 1;
+  base.PaginationRes pagination = 2;
+}

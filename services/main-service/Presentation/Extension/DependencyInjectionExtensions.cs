@@ -1,4 +1,3 @@
-
 using FluentValidation;
 using MainService.Domain.Interfaces;
 using MainService.Domain.UseCases;
@@ -17,14 +16,14 @@ public static class DependencyInjectionExtensions
         services.AddScoped<ProjectUseCase>();
         services.AddScoped<SprintUseCase>();
         services.AddScoped<IssueUseCase>();
+        services.AddScoped<TeamMemberUseCase>();
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<ISprintRepository, SprintRepository>();
         services.AddScoped<IIssueRepository, IssueRepository>();
-
-
+        services.AddScoped<ITeamMemberRepository, TeamMemberRepository>();
 
         return services;
     }
@@ -46,7 +45,6 @@ public static class DependencyInjectionExtensions
         services.AddValidatorsFromAssemblyContaining<CreateProjectValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateProjectValidator>();
 
-
         services.AddValidatorsFromAssemblyContaining<CreateUserValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginUserValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateUserValidator>();
@@ -54,6 +52,7 @@ public static class DependencyInjectionExtensions
 
         services.AddValidatorsFromAssemblyContaining<CreateIssueValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateIssueValidator>();
+
 
         return services;
     }
