@@ -43,6 +43,7 @@ app.MapGrpcService<SprintController>();
 // app.MapGrpcService<UserServiceImpl>();
 app.MapGrpcService<UserController>();
 app.MapGrpcService<IssueController>();
+app.MapGrpcService<TeamController>();
 // app.MapGrpcService<ProjectController>();
 if (app.Environment.IsDevelopment())
 {
