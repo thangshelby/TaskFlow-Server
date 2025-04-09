@@ -11,15 +11,18 @@ using AutoMapper;
 public class TeamController : TeamService.TeamServiceBase
 {
     private readonly TeamMemberUseCase _teamMemberUseCase;
+    private readonly ProjectUseCase _projectUseCase;
     private readonly IMapper _mapper;
     private readonly ILogger<TeamController> _logger;
 
     public TeamController(
         TeamMemberUseCase teamMemberUseCase,
+        ProjectUseCase projectUseCase,
         IMapper mapper,
         ILogger<TeamController> logger)
     {
         _teamMemberUseCase = teamMemberUseCase ?? throw new ArgumentNullException(nameof(teamMemberUseCase));
+        _projectUseCase = projectUseCase ?? throw new ArgumentNullException(nameof(projectUseCase));
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -32,7 +35,7 @@ public class TeamController : TeamService.TeamServiceBase
             (DomainTeamMemberRole)request.Role
         );
 
-        return MapToResponse(member);
+        return MapToTeamMemberResponse(member);
     }
 
     public override async Task<TeamMemberRes> UpdateTeamMemberRole(UpdateTeamMemberRoleReq request, ServerCallContext context)
@@ -43,7 +46,7 @@ public class TeamController : TeamService.TeamServiceBase
             (DomainTeamMemberRole)request.Role
         );
 
-        return MapToResponse(member);
+        return MapToTeamMemberResponse(member);
     }
 
     public override async Task<Empty> RemoveTeamMember(RemoveTeamMemberReq request, ServerCallContext context)
@@ -71,11 +74,11 @@ public class TeamController : TeamService.TeamServiceBase
             }
         };
 
-        response.Data.AddRange(members.Select(MapToResponse));
+        response.Data.AddRange(members.Select(MapToTeamMemberResponse));
         return response;
     }
 
-    public override async Task<ListTeamMembersRes> GetUserTeams(UserTeamMembersReq request, ServerCallContext context)
+    public override async Task<GetUserTeamsRes> GetUserTeams(UserTeamMembersReq request, ServerCallContext context)
     {
         try
         {
@@ -93,19 +96,41 @@ public class TeamController : TeamService.TeamServiceBase
                 (int)request.Limit
             );
 
-            var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
-            var response = new ListTeamMembersRes
+            var response = new GetUserTeamsRes
             {
                 Pagination = new PaginationRes
                 {
                     TotalItems = totalCount,
-                    TotalPages = totalPages,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)request.Limit),
                     CurrentPage = request.Page,
                     Limit = request.Limit
                 }
             };
 
-            response.Data.AddRange(teams.Select(MapToResponse));
+            foreach (var team in teams)
+            {
+                var project = await _projectUseCase.GetProject(team.ProjectId);
+                var userTeam = new UserTeamRes
+                {
+                    Id = team.Id ?? string.Empty,
+                    ProjectId = team.ProjectId,
+                    UserId = team.UserId,
+                    Role = (GrpcTeamMemberRole)team.Role,
+                    CreatedAt = team.CreatedAt.ToString("O"),
+                    UpdatedAt = team.UpdatedAt.ToString("O"),
+                    Project = new ProjectInfo
+                    {
+                        Id = project.Id ?? string.Empty,
+                        Name = project.Name,
+                        Description = project.Key,
+                        Status = project.Access.ToString(),
+                        CreatedAt = project.CreatedAt.ToString("O"),
+                        UpdatedAt = project.UpdatedAt.ToString("O")
+                    }
+                };
+                response.Data.Add(userTeam);
+            }
+
             return response;
         }
         catch (Exception ex)
@@ -115,7 +140,7 @@ public class TeamController : TeamService.TeamServiceBase
         }
     }
 
-    private static TeamMemberRes MapToResponse(TeamMemberDomain member)
+    private static TeamMemberRes MapToTeamMemberResponse(TeamMemberDomain member)
     {
         return new TeamMemberRes
         {
