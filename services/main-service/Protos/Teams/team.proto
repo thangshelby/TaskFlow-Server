@@ -31,7 +31,7 @@ service TeamService {
       get: "/api/v1/projects/{project_id}/members"
     };
   }
-  rpc GetUserTeams (UserTeamMembersReq) returns (ListTeamMembersRes) {
+  rpc GetUserTeams (UserTeamMembersReq) returns (GetUserTeamsRes) {
     option (google.api.http) = {
       get: "/api/v1/users/{user_id}/teams"
     };
@@ -90,7 +90,31 @@ message UserTeamMembersReq {
   int32 limit = 3;
 }
 
+message ProjectInfo {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string status = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
+message UserTeamRes {
+  string id = 1;
+  string project_id = 2;
+  string user_id = 3;
+  TeamMemberRole role = 4;
+  string created_at = 5;
+  string updated_at = 6;
+  ProjectInfo project = 7;
+}
+
 message ListTeamMembersRes {
   repeated TeamMemberRes data = 1;
+  base.PaginationRes pagination = 2;
+}
+
+message GetUserTeamsRes {
+  repeated UserTeamRes data = 1;
   base.PaginationRes pagination = 2;
 }
