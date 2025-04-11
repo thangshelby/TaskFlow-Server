@@ -17,10 +17,10 @@ public class Issue
     public string ProjectId { get; set; } = string.Empty;
 
     [BsonElement("sprint_id")]
-    public string SprintId { get; set; } = string.Empty;
+    public string? SprintId { get; set; }
 
     [BsonElement("assignee_id")]
-    public string AssigneeId { get; set; } = string.Empty;
+    public string? AssigneeId { get; set; }
 
     [BsonElement("parent_id")]
     public string ParentId { get; set; } = string.Empty;
@@ -57,5 +57,51 @@ public class Issue
 
     [BsonElement("updated_at")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-}
 
+    public static Issue FromDomain(IssueDomain domain)
+    {
+        return new Issue
+        {
+            Id = domain.Id,
+            Title = domain.Title,
+            ProjectId = domain.ProjectId,
+            SprintId = domain.SprintId,
+            AssigneeId = domain.AssigneeId,
+            ParentId = domain.ParentId,
+            ReporterId = domain.ReporterId,
+            Type = domain.Type,
+            Status = domain.Status,
+            Priority = domain.Priority,
+            Summary = domain.Summary,
+            Description = domain.Description,
+            StoryPoint = domain.StoryPoint,
+            Attachments = domain.Attachments,
+            CreatedAt = domain.CreatedAt,
+            UpdatedAt = domain.UpdatedAt
+        };
+    }
+
+    public IssueDomain ToDomain()
+    {
+        var domain = new IssueDomain(ProjectId, ReporterId)
+        {
+            Id = Id,
+            Title = Title,
+            ParentId = ParentId,
+            Type = Type,
+            Status = Status,
+            Priority = Priority,
+            Summary = Summary,
+            Description = Description,
+            StoryPoint = StoryPoint,
+            Attachments = Attachments,
+            CreatedAt = CreatedAt,
+            UpdatedAt = UpdatedAt
+        };
+
+        domain.AssignToSprint(SprintId);
+        domain.AssignToUser(AssigneeId);
+
+        return domain;
+    }
+}

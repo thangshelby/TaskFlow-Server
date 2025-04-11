@@ -39,6 +39,9 @@ static_resources:
                           allow_methods: "GET, POST, PUT, DELETE, OPTIONS"
                           allow_headers: "content-type, authorization"
                           expose_headers: "x-custom-header"
+                          # allow_methods: "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+                          # allow_headers: "content-type, authorization, accept, origin, x-requested-with"
+                          # expose_headers: "authorization"
                           max_age: "86400"
                           allow_credentials: true
                 http_filters:

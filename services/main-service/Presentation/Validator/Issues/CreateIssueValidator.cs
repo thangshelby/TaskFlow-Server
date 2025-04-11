@@ -1,6 +1,7 @@
 using FluentValidation;
 using MainService.Domain.Entities;
 using TaskFlow.IssueService;
+using System;
 
 public class CreateIssueValidator : AbstractValidator<CreateIssueReq>
 {
@@ -13,31 +14,34 @@ public class CreateIssueValidator : AbstractValidator<CreateIssueReq>
         RuleFor(x => x.ProjectId)
             .NotEmpty().WithMessage("Project ID is required.");
 
-        RuleFor(x => x.SprintId)
-            .NotEmpty().WithMessage("Sprint ID is required.");
+        // Sprint and Assignee are optional
+        When(x => !string.IsNullOrEmpty(x.SprintId), () =>
+        {
+            RuleFor(x => x.SprintId)
+                .MaximumLength(50).WithMessage("Sprint ID must not exceed 50 characters.");
+        });
 
-        RuleFor(x => x.AssigneeId)
-            .NotEmpty().WithMessage("Assignee ID is required.");
+        When(x => !string.IsNullOrEmpty(x.AssigneeId), () =>
+        {
+            RuleFor(x => x.AssigneeId)
+                .MaximumLength(50).WithMessage("Assignee ID must not exceed 50 characters.");
+        });
 
-        // RuleFor(x => x.ParentId)
-        //     .NotEmpty().WithMessage("Parent ID is required.");
-
-        RuleFor(x => x.ReporterId)
-            .NotEmpty().WithMessage("Reporter ID is required.");
+        // Reporter ID is now set by server, so we don't validate it here
 
         RuleFor(x => x.Type)
             .NotEmpty().WithMessage("Type is required.")
-            .Must(type => Enum.TryParse<IssueType>(type, true, out _))
+            .Must(type => System.Enum.TryParse<IssueType>(type, true, out _))
             .WithMessage("Invalid issue type. Allowed values: Bug, Task, Story, Epic.");
 
         RuleFor(x => x.Status)
             .NotEmpty().WithMessage("Status is required.")
-            .Must(status => Enum.TryParse<IssueStatus>(status, true, out _))
+            .Must(status => System.Enum.TryParse<IssueStatus>(status, true, out _))
             .WithMessage("Invalid issue status. Allowed values: Open, InProgress, Resolved, Closed.");
 
         RuleFor(x => x.Priority)
             .NotEmpty().WithMessage("Priority is required.")
-            .Must(priority => Enum.TryParse<IssuePriority>(priority, true, out _))
+            .Must(priority => System.Enum.TryParse<IssuePriority>(priority, true, out _))
             .WithMessage("Invalid priority. Allowed values: Low, Medium, High, Critical.");
 
         RuleFor(x => x.Summary)
@@ -52,6 +56,7 @@ public class CreateIssueValidator : AbstractValidator<CreateIssueReq>
 
         RuleForEach(x => x.Attachments)
             .Must(uri => Uri.IsWellFormedUriString(uri, UriKind.Absolute))
-            .WithMessage("Each attachment must be a valid URL.");
+            .WithMessage("Each attachment must be a valid URL.")
+            .When(x => x.Attachments != null && x.Attachments.Count > 0);
     }
 }

@@ -47,11 +47,13 @@ message GetIssueReq {
 // DElete by ID
 message DeleteIssueReq {
   string id = 1;
+  string project_id = 2;
 }
+
 //Update
 message UpdateIssueReq {
-  optional string issue_id = 1;
-  optional string project_id = 2;
+  string id = 1;
+  string project_id = 2;    
   optional string sprint_id = 3;
   optional string assignee_id = 4;
   optional string parent_id = 5;
@@ -65,7 +67,6 @@ message UpdateIssueReq {
   optional int32 story_point = 13;
   repeated string attachments = 14;
 }
-
 
 // List All
 message ListIssuesReq {
@@ -83,10 +84,10 @@ message ListIssuesRes {
 message CreateIssueReq {
   string project_id = 1;
   string title = 2;
-  string sprint_id = 3;
-  string assignee_id = 4;
-  string parent_id = 5;
-  string reporter_id = 6;
+  optional string sprint_id = 3;
+  optional string assignee_id = 4;
+  optional string parent_id = 5;
+  optional string reporter_id = 6; // Now optional - will be set by server from authenticated user
   string type = 7;
   string status = 8;
   string priority = 9;
@@ -95,7 +96,6 @@ message CreateIssueReq {
   int32 story_point = 12;
   repeated string attachments = 13;
 }
-
 
 message CreateIssueRes {
   string status = 1;

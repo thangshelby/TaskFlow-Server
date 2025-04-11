@@ -13,8 +13,23 @@ public class IssueUseCase
         _issueRepository = issueRepository;
     }
 
-    public async Task<IssueDomain> CreateIssue(IssueDomain issue)
+    public async Task<IssueDomain> CreateIssue(string projectId, string title, string reporterId, string? sprintId = null, string? assigneeId = null)
     {
+        var issue = new IssueDomain(projectId, reporterId)
+        {
+            Title = title
+        };
+
+        if (sprintId != null)
+        {
+            issue.AssignToSprint(sprintId);
+        }
+
+        if (assigneeId != null)
+        {
+            issue.AssignToUser(assigneeId);
+        }
+
         return await _issueRepository.CreateIssue(issue);
     }
 
@@ -28,29 +43,44 @@ public class IssueUseCase
         return issue;
     }
 
-    public async Task<IssueDomain> UpdateIssue(IssueDomain issue)
+    public async Task<IssueDomain> UpdateIssue(IssueDomain updateData)
     {
-        if (string.IsNullOrEmpty(issue.Id))
+        if (string.IsNullOrEmpty(updateData.Id))
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Issue ID cannot be empty"));
 
-        if (string.IsNullOrEmpty(issue.Title))
+        if (string.IsNullOrEmpty(updateData.Title))
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Issue title cannot be empty"));
 
-
-        var existingIssue = await _issueRepository.GetIssue(issue.Id);
+        var existingIssue = await _issueRepository.GetIssue(updateData.Id);
 
         if (existingIssue == null)
-            throw new RpcException(new Status(StatusCode.NotFound, $"Issue with ID {issue.Id} not found"));
+            throw new RpcException(new Status(StatusCode.NotFound, $"Issue with ID {updateData.Id} not found"));
 
-        // Update only provided fields
-        existingIssue.Title = issue.Title;
-        existingIssue.Description = issue.Description;
-        existingIssue.Status = issue.Status;
-        existingIssue.Priority = issue.Priority;
-        existingIssue.AssigneeId = issue.AssigneeId;
-        existingIssue.UpdatedAt = DateTime.UtcNow;
+        // Update basic fields
+        existingIssue.Title = updateData.Title;
+        existingIssue.Description = updateData.Description;
+        existingIssue.Status = updateData.Status;
+        existingIssue.Priority = updateData.Priority;
+        
+        // Use domain methods for sprint and assignee updates
+        existingIssue.AssignToSprint(updateData.SprintId);
+        existingIssue.AssignToUser(updateData.AssigneeId);
 
         return await _issueRepository.UpdateIssue(existingIssue);
+    }
+
+    public async Task<IssueDomain> AssignToSprint(string issueId, string? sprintId)
+    {
+        var issue = await GetIssue(issueId);
+        issue.AssignToSprint(sprintId);
+        return await _issueRepository.UpdateIssue(issue);
+    }
+
+    public async Task<IssueDomain> AssignToUser(string issueId, string? assigneeId)
+    {
+        var issue = await GetIssue(issueId);
+        issue.AssignToUser(assigneeId);
+        return await _issueRepository.UpdateIssue(issue);
     }
 
     public async Task DeleteIssue(string id)
@@ -62,7 +92,6 @@ public class IssueUseCase
 
         if (issue == null)
             throw new RpcException(new Status(StatusCode.NotFound, $"Issue with ID {id} not found"));
-
 
         await _issueRepository.DeleteIssue(id);
     }
