@@ -16,6 +16,12 @@ public class ProjectRepository : IProjectRepository
         var database = mongoDbService.Database;
         _projects = database.GetCollection<Project>("projects");
         _mapper = mapper;
+
+        // Ensure index on Key
+        var indexKeysDefinition = Builders<Project>.IndexKeys.Ascending(p => p.Key);
+        var indexOptions = new CreateIndexOptions { Unique = true };
+        var indexModel = new CreateIndexModel<Project>(indexKeysDefinition,indexOptions);
+        _projects.Indexes.CreateOne(indexModel);
     }
 
     public async Task<ProjectDomain> CreateProject(ProjectDomain projectDomain)

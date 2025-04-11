@@ -83,7 +83,6 @@ public class ProjectController : ProjectService.ProjectServiceBase
         }
     }
 
-
     public override async Task<ListProjectsRes> ListProjects(ListProjectsReq request, ServerCallContext context)
     {
         if (request.Page <= 0) request.Page = 1;

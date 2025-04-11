@@ -47,9 +47,9 @@ service ProjectService {
 
 // Define request message
 enum ProjectAccess {
-  PUBLIC = 0;
-  PRIVATE = 1;
-  RESTRICTED = 2;
+  Public = 0;
+  Private = 1;
+  Teams = 2;
 }
 enum ProjectType {
   Scrum = 0;
