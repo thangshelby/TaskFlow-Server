@@ -12,5 +12,7 @@ public class ListProjectParams
 {
     public int Page { get; set; } = 1;
     public int Limit { get; set; } = 10;
-    public string? UserId { get; set; } // optional
+    public string? UserId { get; set; } 
+    public string? Kw { get; set; } 
+    public string? Sort { get; set; } 
 }

@@ -47,9 +47,9 @@ service ProjectService {
 
 // Define request message
 enum ProjectAccess {
-  PUBLIC = 0;
-  PRIVATE = 1;
-  RESTRICTED = 2;
+  Public = 0;
+  Private = 1;
+  Teams = 2;
 }
 enum ProjectType {
   Scrum = 0;
@@ -82,12 +82,16 @@ message DeleteProjectReq {
 message ListProjectsReq {
   int32 page = 1;
   int32 limit = 2;
+  string kw = 3;     
+  string sort = 4;
 }
 
 message UserProjectsReq {
-  int32 page = 1;
-  int32 limit = 2;
-  string user_id = 3;
+  string user_id = 1; 
+  int32 page = 2;
+  int32 limit = 3;
+  string kw = 4;     
+  string sort = 5;   
 }
 
 message ProjectRes {

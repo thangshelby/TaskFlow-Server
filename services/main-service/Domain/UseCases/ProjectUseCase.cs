@@ -70,12 +70,6 @@ public class ProjectUseCase
 
     public async Task<(List<ProjectDomain> Projects, int TotalCount)> ListProjects(ListProjectParams param)
     {
-        if (param.Page < 1)
-            throw new ArgumentException("Page number must be greater than 0");
-        
-        if (param.Limit < 1)
-            throw new ArgumentException("Page size must be greater than 0");
-
         return await _projectRepository.ListProjects(param);
     }
 }
