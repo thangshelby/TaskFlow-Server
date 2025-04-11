@@ -82,12 +82,16 @@ message DeleteProjectReq {
 message ListProjectsReq {
   int32 page = 1;
   int32 limit = 2;
+  string kw = 3;     
+  string sort = 4;
 }
 
 message UserProjectsReq {
-  int32 page = 1;
-  int32 limit = 2;
-  string user_id = 3;
+  string user_id = 1; 
+  int32 page = 2;
+  int32 limit = 3;
+  string kw = 4;     
+  string sort = 5;   
 }
 
 message ProjectRes {

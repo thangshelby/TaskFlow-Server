@@ -5,6 +5,7 @@ using MainService.Domain.UseCases;
 using MainService.Domain.Entities;
 using TaskFlow.ProjectService;
 using MainService.Domain.Interfaces;
+
 public class ProjectController : ProjectService.ProjectServiceBase
 {
     private readonly ProjectUseCase _projectUseCase;
@@ -95,9 +96,12 @@ public class ProjectController : ProjectService.ProjectServiceBase
                 string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
 
-        var (projects, totalCount) = await _projectUseCase.ListProjects(new ListProjectParams{
+        var (projects, totalCount) = await _projectUseCase.ListProjects(new ListProjectParams
+        {
             Limit = request.Limit,
-            Page = request.Page
+            Page = request.Page,
+            Kw = request.Kw,
+            Sort = request.Sort
         });
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
 
@@ -120,14 +124,16 @@ public class ProjectController : ProjectService.ProjectServiceBase
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, "UserId is required"));
         }
-        
-        var (projects, totalCount) = await _projectUseCase.ListProjects(new ListProjectParams{
+
+        var (projects, totalCount) = await _projectUseCase.ListProjects(new ListProjectParams
+        {
             Limit = request.Limit,
             Page = request.Page,
-            UserId = request.UserId
+            UserId = request.UserId,
+            Kw = request.Kw,
+            Sort = request.Sort
         });
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
-
         var response = new ListProjectsRes();
         response.Data.AddRange(_mapper.Map<List<ProjectRes>>(projects));
         response.Pagination = new BaseService.PaginationRes
