@@ -49,9 +49,9 @@ public enum IssueType
 
 public enum IssueStatus
 {
-    Open,
+    ToDo,
     InProgress,
-    Resolved,
+    Done,
     Closed
 }
 
