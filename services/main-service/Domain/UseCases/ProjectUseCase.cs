@@ -17,7 +17,7 @@ public class ProjectUseCase
         // Add any business logic/validation here
         if (string.IsNullOrEmpty(project.Name))
             throw new ArgumentException("Project name cannot be empty");
-        
+
         if (string.IsNullOrEmpty(project.Key))
             throw new ArgumentException("Project key cannot be empty");
 
@@ -72,4 +72,30 @@ public class ProjectUseCase
     {
         return await _projectRepository.ListProjects(param);
     }
+
+    public async Task<ProjectColumnDomain> CreateColumn(CreateProjectColumnParams param)
+    {
+        // TODO : FIX CORCUR
+        var existingColumns = await _projectRepository.FindColumns(param.ProjectId);
+
+        var highestOrder = existingColumns.Count != 0 ? existingColumns.Max(c => c.Order) : 0;
+
+        var newOrder = highestOrder + 1;
+
+        var projectColumnDomain = new ProjectColumnDomain
+        {
+            Name = param.Name,
+            ProjectId = param.ProjectId,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            Issues = [],
+            Order = newOrder
+        };
+        return await _projectRepository.CreateColumn(projectColumnDomain);
+    }
+    public async Task<List<ProjectColumnDomain>> GetAllColumns(string projectId)
+    {
+        return await _projectRepository.FindColumns(projectId);
+    }
+
 }

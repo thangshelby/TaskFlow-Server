@@ -10,7 +10,42 @@ services:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
       - ./proto.pb:/etc/envoy/proto.pb
     network_mode: "host"
-
+  # kafka:
+  #   image: bitnami/kafka:3.8
+  #   container_name: kafka
+  #   environment:
+  #     - KAFKA_CFG_NODE_ID=1
+  #     - KAFKA_CFG_PROCESS_ROLES=controller,broker
+  #     - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+  #     - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+  #     - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+  #     - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@localhost:9093
+  #     - KAFKA_CFG_BROKER_ID=1
+  #     - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+  #     - ALLOW_PLAINTEXT_LISTENER=yes
+  #   volumes:
+  #     - kafka-data:/bitnami/kafka
+  #   network_mode: "host"
+  # kafka-ui:
+  #   image: provectuslabs/kafka-ui:latest
+  #   container_name: kafka_ui
+  #   environment:
+  #     - KAFKA_CLUSTERS_0_NAME=local
+  #     - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=localhost:9092
+  #     - SERVER_PORT=8081
+  #   network_mode: "host"
+  # cassandra:
+  #   image: cassandra:latest
+  #   container_name: cassandra
+  #   environment:
+  #     - CASSANDRA_CLUSTER_NAME=my-cluster
+  #     - CASSANDRA_BROADCAST_ADDRESS=localhost
+  #     - CASSANDRA_LISTEN_ADDRESS=localhost
+  #   volumes:
+  #     - cassandra-data:/var/lib/cassandra
+  #   network_mode: "host"
 volumes:
   esdata: {}
   kong-data: {}
+  kafka-data: {}
+  cassandra-data: {}

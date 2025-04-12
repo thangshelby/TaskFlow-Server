@@ -7,12 +7,19 @@ public interface IProjectRepository
     Task<ProjectDomain> UpdateProject(ProjectDomain project);
     Task DeleteProject(string id);
     Task<(List<ProjectDomain> Projects, int TotalCount)> ListProjects(ListProjectParams param);
+    Task<ProjectColumnDomain> CreateColumn(ProjectColumnDomain projectColumn);
+    Task<List<ProjectColumnDomain>> FindColumns(string projectId);
 }
 public class ListProjectParams
 {
     public int Page { get; set; } = 1;
     public int Limit { get; set; } = 10;
-    public string? UserId { get; set; } 
-    public string? Kw { get; set; } 
-    public string? Sort { get; set; } 
+    public string? UserId { get; set; }
+    public string? Kw { get; set; }
+    public string? Sort { get; set; }
+}
+public class CreateProjectColumnParams
+{
+    public required string Name { get; set; }
+    public required string ProjectId { get; set; }
 }

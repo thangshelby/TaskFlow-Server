@@ -10,12 +10,14 @@ namespace MainService.Infras.Repositories;
 public class ProjectRepository : IProjectRepository
 {
     private readonly IMongoCollection<Project> _projects;
+    private readonly IMongoCollection<ProjectColumn> _projectColumns;
     private readonly IMapper _mapper;
 
     public ProjectRepository(MongoDbService mongoDbService, IMapper mapper)
     {
         var database = mongoDbService.Database;
         _projects = database.GetCollection<Project>("projects");
+        _projectColumns = database.GetCollection<ProjectColumn>("project_column");
         _mapper = mapper;
 
         // Ensure index on Key
@@ -99,5 +101,23 @@ public class ProjectRepository : IProjectRepository
             .ToListAsync();
 
         return (_mapper.Map<List<ProjectDomain>>(projects), (int)totalCount);
+    }
+
+    public async Task<ProjectColumnDomain> CreateColumn(ProjectColumnDomain projectColumn)
+    {
+        var projectColumnEntity = _mapper.Map<ProjectColumn>(projectColumn);
+        await _projectColumns.InsertOneAsync(projectColumnEntity);
+
+        projectColumn.Id = projectColumnEntity.Id;
+        return projectColumn;
+    }
+    public async Task<List<ProjectColumnDomain>> FindColumns(string projectId)
+    {
+        var projectColumns = await _projectColumns
+         .Find(column => column.ProjectId == projectId)
+         .ToListAsync();
+
+        var projectColumnsDomain = _mapper.Map<List<ProjectColumnDomain>>(projectColumns);
+        return projectColumnsDomain;
     }
 }
