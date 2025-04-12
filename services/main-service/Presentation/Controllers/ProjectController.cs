@@ -46,15 +46,8 @@ public class ProjectController : ProjectService.ProjectServiceBase
 
     public override async Task<ProjectRes> GetProject(GetProjectReq request, ServerCallContext context)
     {
-        try
-        {
-            var result = await _projectUseCase.GetProject(request.Id);
-            return _mapper.Map<ProjectRes>(result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
-        }
+        var result = await _projectUseCase.GetProject(request.Id);
+        return _mapper.Map<ProjectRes>(result);
     }
 
     public override async Task<ProjectRes> UpdateProject(UpdateProjectReq request, ServerCallContext context)
@@ -143,6 +136,29 @@ public class ProjectController : ProjectService.ProjectServiceBase
             CurrentPage = request.Page,
             Limit = request.Limit
         };
+        return response;
+    }
+    public override async Task<CreateColumnRes> CreateProjectColumn(CreateColumnReq request, ServerCallContext context)
+    {
+        var projectColumn = await _projectUseCase.CreateColumn(new CreateProjectColumnParams
+        {
+            Name = request.Name,
+            ProjectId = request.ProjectId
+        });
+        return new CreateColumnRes { Data = _mapper.Map<ColumnRes>(projectColumn) };
+    }
+    public override async Task<GetColumnsRes> GetProjectColumns(GetColumnsReq request, ServerCallContext context)
+    {
+        if (string.IsNullOrEmpty(request.ProjectId))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "ProjectId is required"));
+        }
+
+        var projectColumns = await _projectUseCase.GetAllColumns(request.ProjectId);
+
+        var response = new GetColumnsRes();
+        response.Data.AddRange(_mapper.Map<List<ColumnRes>>(projectColumns));
+
         return response;
     }
 }

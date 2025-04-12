@@ -36,7 +36,6 @@ service SprintService {
       get: "/api/v1/project/{project_id}/sprints"
     };
   }
-
 }
 // Sprint Messages
 message CreateSprintReq {

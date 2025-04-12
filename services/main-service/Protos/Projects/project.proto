@@ -43,6 +43,17 @@ service ProjectService {
       get: "/api/v1/projects/user/{user_id}"
     };
   }
+  rpc CreateProjectColumn (CreateColumnReq) returns (CreateColumnRes) {
+    option (google.api.http) = {
+      post: "/api/v1/projects/add-column"
+      body: "*"
+    };
+  }
+  rpc GetProjectColumns (GetColumnsReq) returns (GetColumnsRes) {
+    option (google.api.http) = {
+      get: "/api/v1/projects/{project_id}/columns"
+    };
+  }
 }
 
 // Define request message
@@ -115,4 +126,27 @@ message ListProjectsRes {
   base.PaginationRes pagination = 2;
 }
 
-
+message CreateColumnReq {
+  string project_id = 1;
+  string name = 2;
+}
+message CreateColumnRes {
+  ColumnRes data = 1;
+  base.PaginationRes pagination = 2;
+}
+message GetColumnsReq {
+  string project_id = 1;
+}
+message GetColumnsRes {
+  repeated ColumnRes data = 1;
+  base.PaginationRes pagination = 2;
+}
+message ColumnRes {
+  string id = 1;
+  string name = 2;
+  string created_at = 3;
+  string updated_at = 4;
+  int32 order = 5;
+  repeated string issues = 6;
+  string project_id = 8;
+}
