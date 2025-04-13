@@ -7,6 +7,8 @@ public class MongoDbService
     private readonly IConfiguration _configuration;
     private readonly ILogger<MongoDbService> _logger;
     private IMongoDatabase? _database;
+    private IMongoClient? _mongoClient;
+    public IMongoClient MongoClient => _mongoClient ?? throw new InvalidOperationException("MongoClient not initialized. Call Initiate() first.");
     public MongoDbService(IConfiguration configuration, ILogger<MongoDbService> logger)
     {
         _configuration = configuration;
@@ -22,14 +24,10 @@ public class MongoDbService
         {
             var connectionStr = _configuration.GetConnectionString("MongoDb");
             var mongoUrl = MongoUrl.Create(connectionStr);
-            var mongoClient = new MongoClient(mongoUrl);
+            _mongoClient = new MongoClient(mongoUrl);
 
             var dbName = mongoUrl.DatabaseName ?? "taskflow";
-            _database = mongoClient.GetDatabase(dbName);
-
-            var collection = _database.GetCollection<BsonDocument>("dummy_collection");
-            var dummyDocument = new BsonDocument { { "initialized", true } };
-            collection.InsertOne(dummyDocument);
+            _database = _mongoClient.GetDatabase(dbName);
 
             _logger.LogInformation("MongoDB connection successful!");
         }

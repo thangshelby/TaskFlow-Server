@@ -5,11 +5,13 @@ namespace MainService.Domain.UseCases;
 
 public class ProjectUseCase
 {
+    private readonly ITransactionRepo _transactionRepo;
     private readonly IProjectRepository _projectRepository;
 
-    public ProjectUseCase(IProjectRepository projectRepository)
+    public ProjectUseCase(IProjectRepository projectRepository, ITransactionRepo transactionRepo)
     {
         _projectRepository = projectRepository;
+        _transactionRepo = transactionRepo;
     }
 
     public async Task<ProjectDomain> CreateProject(ProjectDomain project)
@@ -73,7 +75,7 @@ public class ProjectUseCase
         return await _projectRepository.ListProjects(param);
     }
 
-    public async Task<ProjectColumnDomain> CreateColumn(CreateProjectColumnParams param)
+    public async Task<ProjectColumnDomain> CreateColumn(CreateColumnParams param)
     {
         // TODO : FIX CORCUR
         var existingColumns = await _projectRepository.FindColumns(param.ProjectId);
@@ -97,5 +99,20 @@ public class ProjectUseCase
     {
         return await _projectRepository.FindColumns(projectId);
     }
+    public async Task<List<ProjectColumnDomain>> UpdateColumnsOrder(UpdateColumnOrdersParams param)
+    {
+        // TODO: validate columns_id belong to project
 
+        var sortedColumns = param.Columns.OrderBy(c => c.Order).ToList();
+        await _transactionRepo.ExecuteAsync(async session =>
+        {
+            foreach (var column in sortedColumns)
+            {
+                await _projectRepository.UpdateColumnOrder(param.ProjectId, column.Id, column.Order);
+            }
+        });
+
+        var updatedColumns = await _projectRepository.FindColumns(param.ProjectId);
+        return updatedColumns;
+    }
 }

@@ -9,6 +9,7 @@ public interface IProjectRepository
     Task<(List<ProjectDomain> Projects, int TotalCount)> ListProjects(ListProjectParams param);
     Task<ProjectColumnDomain> CreateColumn(ProjectColumnDomain projectColumn);
     Task<List<ProjectColumnDomain>> FindColumns(string projectId);
+    Task UpdateColumnOrder(string projectId, string columnId, int order);
 }
 public class ListProjectParams
 {
@@ -18,8 +19,19 @@ public class ListProjectParams
     public string? Kw { get; set; }
     public string? Sort { get; set; }
 }
-public class CreateProjectColumnParams
+public class CreateColumnParams
 {
     public required string Name { get; set; }
     public required string ProjectId { get; set; }
+}
+
+public class UpdateColumnOrdersParams
+{
+    public required string ProjectId { get; set; }
+    public required List<ColumnOrders> Columns { get; set; }
+}
+public class ColumnOrders
+{
+    public required string Id { get; set; }
+    public required int Order { get; set; }
 }

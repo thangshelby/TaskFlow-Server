@@ -54,6 +54,12 @@ service ProjectService {
       get: "/api/v1/projects/{project_id}/columns"
     };
   }
+  rpc UpdateOrderProjectColumns (UpdateColumnProjectReq) returns (UpdateColumnProjectRes) {
+    option (google.api.http) = {
+      post: "/api/v1/projects/{project_id}/columns/order"
+      body: "*"
+    };
+  }
 }
 
 // Define request message
@@ -149,4 +155,20 @@ message ColumnRes {
   int32 order = 5;
   repeated string issues = 6;
   string project_id = 8;
+}
+
+message ColumnOrder {
+  string id = 1; 
+  int32 order = 2;
+}
+
+message UpdateColumnProjectReq {
+  string project_id = 1;              
+  repeated ColumnOrder columns = 2;   
+}
+
+message UpdateColumnProjectRes {
+  string status = 1;                  
+  string message = 2;                 
+  repeated ColumnRes data = 3;  
 }
