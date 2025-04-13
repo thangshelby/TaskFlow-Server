@@ -115,9 +115,22 @@ public class ProjectRepository : IProjectRepository
     {
         var projectColumns = await _projectColumns
          .Find(column => column.ProjectId == projectId)
+         .Sort(Builders<ProjectColumn>.Sort.Ascending(column => column.Order))
          .ToListAsync();
 
         var projectColumnsDomain = _mapper.Map<List<ProjectColumnDomain>>(projectColumns);
         return projectColumnsDomain;
+    }
+
+    public async Task UpdateColumnOrder(string projectId, string columnId, int order)
+    {
+        var filter = Builders<ProjectColumn>.Filter
+        .Where(c => c.ProjectId == projectId && c.Id == columnId);
+
+        var update = Builders<ProjectColumn>.Update
+        .Set(c => c.Order, order)
+        .Set(c => c.UpdatedAt, DateTime.UtcNow);
+
+        await _projectColumns.UpdateOneAsync(filter, update);
     }
 }

@@ -140,7 +140,7 @@ public class ProjectController : ProjectService.ProjectServiceBase
     }
     public override async Task<CreateColumnRes> CreateProjectColumn(CreateColumnReq request, ServerCallContext context)
     {
-        var projectColumn = await _projectUseCase.CreateColumn(new CreateProjectColumnParams
+        var projectColumn = await _projectUseCase.CreateColumn(new CreateColumnParams
         {
             Name = request.Name,
             ProjectId = request.ProjectId
@@ -158,6 +158,40 @@ public class ProjectController : ProjectService.ProjectServiceBase
 
         var response = new GetColumnsRes();
         response.Data.AddRange(_mapper.Map<List<ColumnRes>>(projectColumns));
+
+        return response;
+    }
+    public override async Task<UpdateColumnProjectRes> UpdateOrderProjectColumns(UpdateColumnProjectReq request, ServerCallContext context)
+    {
+        if (string.IsNullOrEmpty(request.ProjectId))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "ProjectId is required"));
+        }
+        if (request.Columns == null || request.Columns.Count == 0)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "Columns list cannot be empty"));
+        }
+        if (request.Columns.Any(c => c.Order < 1))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "Column order must be positive"));
+        }
+
+        var columnOrders = request.Columns.Select(c => new ColumnOrders
+        {
+            Id = c.Id,
+            Order = c.Order
+        }).ToList();
+
+        var projectColumns = await _projectUseCase.UpdateColumnsOrder(new UpdateColumnOrdersParams
+        {
+            Columns = columnOrders,
+            ProjectId = request.ProjectId
+        });
+
+        var response = new UpdateColumnProjectRes();
+        response.Data.AddRange(_mapper.Map<List<ColumnRes>>(projectColumns));
+        response.Status = "success";
+        response.Message = "Update column orders success.";
 
         return response;
     }

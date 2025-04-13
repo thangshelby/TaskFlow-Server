@@ -17,5 +17,9 @@ gen-protobuf:
 		--descriptor_set_out=./proto.pb $(shell find ./services/main-service/Protos -name "*.proto")
 gen-testtoken:
 	cd services/node-service && node genjwt.js
+sync:
+	docker compose down 
+	make gen-protobuf 
+	docker compose up -d
 
-.PHONY: container-up container-down node-server sync-gateway update-gateway gen-protobuf
+.PHONY: container-up container-down node-server sync-gateway update-gateway gen-protobuf sync
