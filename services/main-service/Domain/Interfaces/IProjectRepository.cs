@@ -39,5 +39,7 @@ public class ColumnOrders
 public class UpdateColumnParams
 {
     public required string ColumnId { get; set; }
+    public string? RemoveIssueId { get; set; }
+    public string? AddIssueId { get; set; }
     public string? Name { get; set; }
 }

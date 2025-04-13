@@ -135,12 +135,21 @@ public class ProjectRepository : IProjectRepository
     }
     public async Task<ProjectColumnDomain> UpdateColumn(UpdateColumnParams param)
     {
-        var filter = Builders<ProjectColumn>.Filter
-        .Where(c => c.Id == param.ColumnId);
+        var filter = Builders<ProjectColumn>.Filter.Eq(c => c.Id, param.ColumnId);
 
-        var update = Builders<ProjectColumn>.Update
-        .Set(c => c.Name, param.Name)
-        .Set(c => c.UpdatedAt, DateTime.UtcNow);
+        var updateDefs = new List<UpdateDefinition<ProjectColumn>>();
+
+        if (!string.IsNullOrEmpty(param.Name))
+            updateDefs.Add(Builders<ProjectColumn>.Update.Set(c => c.Name, param.Name));
+        if (!string.IsNullOrEmpty(param.RemoveIssueId))
+            updateDefs.Add(Builders<ProjectColumn>.Update.Pull(c => c.Issues, param.RemoveIssueId));
+        if (!string.IsNullOrEmpty(param.AddIssueId))
+            updateDefs.Add(Builders<ProjectColumn>.Update.AddToSet(c => c.Issues, param.AddIssueId));
+
+        updateDefs.Add(Builders<ProjectColumn>.Update.Set(c => c.UpdatedAt, DateTime.UtcNow));
+
+        var update = Builders<ProjectColumn>.Update.Combine(updateDefs);
+
 
         var updatedColumn = await _projectColumns.FindOneAndUpdateAsync(filter, update);
 

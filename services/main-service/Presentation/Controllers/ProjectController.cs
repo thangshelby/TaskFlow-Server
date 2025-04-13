@@ -43,13 +43,11 @@ public class ProjectController : ProjectService.ProjectServiceBase
         var result = await _projectUseCase.CreateProject(projectDomain);
         return new CreateProjectRes { Data = _mapper.Map<ProjectRes>(result), Message = "Craete project success.", Status = "success" };
     }
-
     public override async Task<ProjectRes> GetProject(GetProjectReq request, ServerCallContext context)
     {
         var result = await _projectUseCase.GetProject(request.Id);
         return _mapper.Map<ProjectRes>(result);
     }
-
     public override async Task<ProjectRes> UpdateProject(UpdateProjectReq request, ServerCallContext context)
     {
         var validationResult = await _updateProjectValidator.ValidateAsync(request);
@@ -63,7 +61,6 @@ public class ProjectController : ProjectService.ProjectServiceBase
         var result = await _projectUseCase.UpdateProject(projectDomain);
         return _mapper.Map<ProjectRes>(result);
     }
-
     public override async Task<Google.Protobuf.WellKnownTypes.Empty> DeleteProject(DeleteProjectReq request, ServerCallContext context)
     {
         try
@@ -76,7 +73,6 @@ public class ProjectController : ProjectService.ProjectServiceBase
             throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
         }
     }
-
     public override async Task<ListProjectsRes> ListProjects(ListProjectsReq request, ServerCallContext context)
     {
         if (request.Page <= 0) request.Page = 1;
