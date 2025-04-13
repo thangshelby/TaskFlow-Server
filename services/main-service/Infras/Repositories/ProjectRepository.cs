@@ -133,4 +133,17 @@ public class ProjectRepository : IProjectRepository
 
         await _projectColumns.UpdateOneAsync(filter, update);
     }
+    public async Task<ProjectColumnDomain> UpdateColumn(UpdateColumnParams param)
+    {
+        var filter = Builders<ProjectColumn>.Filter
+        .Where(c => c.Id == param.ColumnId);
+
+        var update = Builders<ProjectColumn>.Update
+        .Set(c => c.Name, param.Name)
+        .Set(c => c.UpdatedAt, DateTime.UtcNow);
+
+        var updatedColumn = await _projectColumns.FindOneAndUpdateAsync(filter, update);
+
+        return _mapper.Map<ProjectColumnDomain>(updatedColumn);
+    }
 }

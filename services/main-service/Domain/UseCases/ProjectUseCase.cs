@@ -25,7 +25,6 @@ public class ProjectUseCase
 
         return await _projectRepository.CreateProject(project);
     }
-
     public async Task<ProjectDomain> GetProject(string id)
     {
         if (string.IsNullOrEmpty(id))
@@ -34,7 +33,6 @@ public class ProjectUseCase
         var project = await _projectRepository.GetProject(id);
         return project ?? throw new KeyNotFoundException($"Project with ID {id} not found");
     }
-
     public async Task<ProjectDomain> UpdateProject(ProjectDomain project)
     {
         if (string.IsNullOrEmpty(project.Id))
@@ -57,7 +55,6 @@ public class ProjectUseCase
 
         return await _projectRepository.UpdateProject(existingProject);
     }
-
     public async Task DeleteProject(string id)
     {
         if (string.IsNullOrEmpty(id))
@@ -69,12 +66,10 @@ public class ProjectUseCase
 
         await _projectRepository.DeleteProject(id);
     }
-
     public async Task<(List<ProjectDomain> Projects, int TotalCount)> ListProjects(ListProjectParams param)
     {
         return await _projectRepository.ListProjects(param);
     }
-
     public async Task<ProjectColumnDomain> CreateColumn(CreateColumnParams param)
     {
         // TODO : FIX CORCUR
@@ -114,5 +109,9 @@ public class ProjectUseCase
 
         var updatedColumns = await _projectRepository.FindColumns(param.ProjectId);
         return updatedColumns;
+    }
+    public async Task<ProjectColumnDomain> UpdateColumn(UpdateColumnParams param)
+    {
+        return await _projectRepository.UpdateColumn(param);
     }
 }
