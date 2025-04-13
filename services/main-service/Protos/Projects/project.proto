@@ -54,9 +54,15 @@ service ProjectService {
       get: "/api/v1/projects/{project_id}/columns"
     };
   }
-  rpc UpdateOrderProjectColumns (UpdateColumnProjectReq) returns (UpdateColumnProjectRes) {
+  rpc UpdateOrderProjectColumns (UpdateColumnsOrderReq) returns (UpdateColumnsOrderRes) {
     option (google.api.http) = {
       post: "/api/v1/projects/{project_id}/columns/order"
+      body: "*"
+    };
+  }
+  rpc UpdateColumnProject (UpdateColumnReq) returns (UpdateColumnRes) {
+    option (google.api.http) = {
+      put: "/api/v1/projects/{project_id}/columns"
       body: "*"
     };
   }
@@ -123,13 +129,17 @@ message ProjectRes {
 }
 
 message CreateProjectRes {
-  ProjectRes data = 1;
-  optional base.PaginationRes pagination = 2;
+  string status = 1;                  
+  string message = 2; 
+  ProjectRes data = 3;
+  optional base.PaginationRes pagination = 4;
 }
 
 message ListProjectsRes {
-  repeated ProjectRes data = 1;
-  base.PaginationRes pagination = 2;
+  string status = 1;                  
+  string message = 2; 
+  repeated ProjectRes data = 3;
+  base.PaginationRes pagination = 4;
 }
 
 message CreateColumnReq {
@@ -137,15 +147,19 @@ message CreateColumnReq {
   string name = 2;
 }
 message CreateColumnRes {
-  ColumnRes data = 1;
-  base.PaginationRes pagination = 2;
+  string status = 1;                  
+  string message = 2;  
+  ColumnRes data = 3;
+  base.PaginationRes pagination = 4;
 }
 message GetColumnsReq {
   string project_id = 1;
 }
 message GetColumnsRes {
-  repeated ColumnRes data = 1;
-  base.PaginationRes pagination = 2;
+  string status = 1;                  
+  string message = 2;
+  repeated ColumnRes data = 3;
+  base.PaginationRes pagination = 4;
 }
 message ColumnRes {
   string id = 1;
@@ -162,13 +176,24 @@ message ColumnOrder {
   int32 order = 2;
 }
 
-message UpdateColumnProjectReq {
+message UpdateColumnsOrderReq {
   string project_id = 1;              
   repeated ColumnOrder columns = 2;   
 }
 
-message UpdateColumnProjectRes {
+message UpdateColumnsOrderRes {
   string status = 1;                  
   string message = 2;                 
   repeated ColumnRes data = 3;  
+}
+message UpdateColumnReq {
+  string name = 1;
+  string column_id = 2;
+}
+
+message UpdateColumnRes {
+  string status = 1;                  
+  string message = 2;  
+  ColumnRes data = 3;
+  base.PaginationRes pagination = 4;
 }

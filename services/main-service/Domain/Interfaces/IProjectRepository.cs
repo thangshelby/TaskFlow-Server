@@ -10,6 +10,7 @@ public interface IProjectRepository
     Task<ProjectColumnDomain> CreateColumn(ProjectColumnDomain projectColumn);
     Task<List<ProjectColumnDomain>> FindColumns(string projectId);
     Task UpdateColumnOrder(string projectId, string columnId, int order);
+    Task<ProjectColumnDomain> UpdateColumn(UpdateColumnParams param);
 }
 public class ListProjectParams
 {
@@ -34,4 +35,11 @@ public class ColumnOrders
 {
     public required string Id { get; set; }
     public required int Order { get; set; }
+}
+public class UpdateColumnParams
+{
+    public required string ColumnId { get; set; }
+    public string? RemoveIssueId { get; set; }
+    public string? AddIssueId { get; set; }
+    public string? Name { get; set; }
 }

@@ -82,7 +82,6 @@ public class IssueController : IssueService.IssueServiceBase
 
     public override async Task<IssueRes> UpdateIssue(UpdateIssueReq request, ServerCallContext context)
     {
-        // ID and ProjectId are now part of the request message from URL path
         if (string.IsNullOrEmpty(request.ProjectId))
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Project ID is required"));
@@ -100,29 +99,22 @@ public class IssueController : IssueService.IssueServiceBase
                 string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
 
-        // Get existing issue and update its properties
-        var existingIssue = await _issueUseCase.GetIssue(request.Id);
-
-        if (!string.IsNullOrEmpty(request.Title))
-            existingIssue.Title = request.Title;
-        if (!string.IsNullOrEmpty(request.Description))
-            existingIssue.Description = request.Description;
-        if (!string.IsNullOrEmpty(request.Type))
-            existingIssue.Type = System.Enum.Parse<IssueType>(request.Type, true);
-        if (!string.IsNullOrEmpty(request.Status))
-            existingIssue.Status = System.Enum.Parse<IssueStatus>(request.Status, true);
-        if (!string.IsNullOrEmpty(request.Priority))
-            existingIssue.Priority = System.Enum.Parse<IssuePriority>(request.Priority, true);
-        if (request.StoryPoint > 0)
-            existingIssue.StoryPoint = request.StoryPoint;
-
-        // Use domain methods for sprint and assignee updates
-        if (request.SprintId != null)
-            existingIssue.AssignToSprint(request.SprintId);
-        if (request.AssigneeId != null)
-            existingIssue.AssignToUser(request.AssigneeId);
-
-        var result = await _issueUseCase.UpdateIssue(existingIssue);
+        var result = await _issueUseCase.UpdateIssue(new IssueDomain
+        {
+            AssigneeId = request.AssigneeId,
+            Title = request.Title,
+            Description = request.Description,
+            Summary = request.Summary,
+            StoryPoint = request.StoryPoint,
+            ParentId = request.ParentId,
+            ReporterId = request.ReporterId,
+            Type = System.Enum.Parse<IssueType>(request.Type, true),
+            Priority = System.Enum.Parse<IssuePriority>(request.Priority, true),
+            Status = System.Enum.Parse<IssueStatus>(request.Status, true),
+            Attachments = request.Attachments.ToList(),
+            SprintId = request.SprintId,
+            ProjectId = request.ProjectId,
+        });
         return _mapper.Map<IssueRes>(result);
     }
 

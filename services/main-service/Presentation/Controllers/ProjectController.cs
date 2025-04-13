@@ -41,15 +41,13 @@ public class ProjectController : ProjectService.ProjectServiceBase
 
         var projectDomain = _mapper.Map<ProjectDomain>(request);
         var result = await _projectUseCase.CreateProject(projectDomain);
-        return new CreateProjectRes { Data = _mapper.Map<ProjectRes>(result) };
+        return new CreateProjectRes { Data = _mapper.Map<ProjectRes>(result), Message = "Craete project success.", Status = "success" };
     }
-
     public override async Task<ProjectRes> GetProject(GetProjectReq request, ServerCallContext context)
     {
         var result = await _projectUseCase.GetProject(request.Id);
         return _mapper.Map<ProjectRes>(result);
     }
-
     public override async Task<ProjectRes> UpdateProject(UpdateProjectReq request, ServerCallContext context)
     {
         var validationResult = await _updateProjectValidator.ValidateAsync(request);
@@ -63,7 +61,6 @@ public class ProjectController : ProjectService.ProjectServiceBase
         var result = await _projectUseCase.UpdateProject(projectDomain);
         return _mapper.Map<ProjectRes>(result);
     }
-
     public override async Task<Google.Protobuf.WellKnownTypes.Empty> DeleteProject(DeleteProjectReq request, ServerCallContext context)
     {
         try
@@ -76,7 +73,6 @@ public class ProjectController : ProjectService.ProjectServiceBase
             throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
         }
     }
-
     public override async Task<ListProjectsRes> ListProjects(ListProjectsReq request, ServerCallContext context)
     {
         if (request.Page <= 0) request.Page = 1;
@@ -107,6 +103,8 @@ public class ProjectController : ProjectService.ProjectServiceBase
             CurrentPage = request.Page,
             Limit = request.Limit
         };
+        response.Status = "success";
+        response.Message = "Get projects success.";
         return response;
     }
     public override async Task<ListProjectsRes> GetUserProjects(UserProjectsReq request, ServerCallContext context)
@@ -136,6 +134,8 @@ public class ProjectController : ProjectService.ProjectServiceBase
             CurrentPage = request.Page,
             Limit = request.Limit
         };
+        response.Status = "success";
+        response.Message = "Get projects success.";
         return response;
     }
     public override async Task<CreateColumnRes> CreateProjectColumn(CreateColumnReq request, ServerCallContext context)
@@ -145,7 +145,7 @@ public class ProjectController : ProjectService.ProjectServiceBase
             Name = request.Name,
             ProjectId = request.ProjectId
         });
-        return new CreateColumnRes { Data = _mapper.Map<ColumnRes>(projectColumn) };
+        return new CreateColumnRes { Data = _mapper.Map<ColumnRes>(projectColumn), Message = "Create project column success.", Status = "success" };
     }
     public override async Task<GetColumnsRes> GetProjectColumns(GetColumnsReq request, ServerCallContext context)
     {
@@ -158,10 +158,11 @@ public class ProjectController : ProjectService.ProjectServiceBase
 
         var response = new GetColumnsRes();
         response.Data.AddRange(_mapper.Map<List<ColumnRes>>(projectColumns));
-
+        response.Status = "success";
+        response.Message = "Get project columns success.";
         return response;
     }
-    public override async Task<UpdateColumnProjectRes> UpdateOrderProjectColumns(UpdateColumnProjectReq request, ServerCallContext context)
+    public override async Task<UpdateColumnsOrderRes> UpdateOrderProjectColumns(UpdateColumnsOrderReq request, ServerCallContext context)
     {
         if (string.IsNullOrEmpty(request.ProjectId))
         {
@@ -188,11 +189,21 @@ public class ProjectController : ProjectService.ProjectServiceBase
             ProjectId = request.ProjectId
         });
 
-        var response = new UpdateColumnProjectRes();
+        var response = new UpdateColumnsOrderRes();
         response.Data.AddRange(_mapper.Map<List<ColumnRes>>(projectColumns));
         response.Status = "success";
         response.Message = "Update column orders success.";
 
         return response;
+    }
+    public override async Task<UpdateColumnRes> UpdateColumnProject(UpdateColumnReq request, ServerCallContext context)
+    {
+        var columnUpdated = await _projectUseCase.UpdateColumn(new UpdateColumnParams
+        {
+            ColumnId = request.ColumnId,
+            Name = request.Name
+        });
+
+        return new UpdateColumnRes { Data = _mapper.Map<ColumnRes>(columnUpdated), Message = "Update column success.", Status = "success" };
     }
 }
