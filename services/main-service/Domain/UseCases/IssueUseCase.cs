@@ -19,10 +19,8 @@ public class IssueUseCase
 
     public async Task<IssueDomain> CreateIssue(string projectId, string title, string reporterId, string? sprintId = null, string? assigneeId = null)
     {
-        var issue = new IssueDomain
+        var issue = new IssueDomain(projectId, reporterId)
         {
-            ProjectId = projectId,
-            ReporterId = reporterId,
             Title = title
         };
 
