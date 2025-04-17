@@ -82,16 +82,7 @@ public class IssueController : IssueService.IssueServiceBase
 
     public override async Task<IssueRes> UpdateIssue(UpdateIssueReq request, ServerCallContext context)
     {
-        if (string.IsNullOrEmpty(request.ProjectId))
-        {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, "Project ID is required"));
-        }
-
-        if (string.IsNullOrEmpty(request.Id))
-        {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, "Issue ID is required"));
-        }
-
+     
         var validationResult = await _updateIssueValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
         {
@@ -99,22 +90,9 @@ public class IssueController : IssueService.IssueServiceBase
                 string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
 
-        var result = await _issueUseCase.UpdateIssue(new IssueDomain
-        {
-            AssigneeId = request.AssigneeId,
-            Title = request.Title,
-            Description = request.Description,
-            Summary = request.Summary,
-            StoryPoint = request.StoryPoint,
-            ParentId = request.ParentId,
-            ReporterId = request.ReporterId,
-            Type = System.Enum.Parse<IssueType>(request.Type, true),
-            Priority = System.Enum.Parse<IssuePriority>(request.Priority, true),
-            Status = System.Enum.Parse<IssueStatus>(request.Status, true),
-            Attachments = request.Attachments.ToList(),
-            SprintId = request.SprintId,
-            ProjectId = request.ProjectId,
-        });
+       
+        var issueDomain = _mapper.Map<IssueDomain>(request);
+        var result = await _issueUseCase.UpdateIssue(issueDomain);
         return _mapper.Map<IssueRes>(result);
     }
 

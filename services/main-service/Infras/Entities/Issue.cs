@@ -1,4 +1,5 @@
 using MainService.Domain.Entities;
+using MainService.Domain.Enums;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 

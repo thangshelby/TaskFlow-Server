@@ -1,5 +1,5 @@
 using FluentValidation;
-using MainService.Domain.Entities;
+using MainService.Domain.Enums;
 using TaskFlow.IssueService;
 using System;
 
@@ -39,7 +39,7 @@ public class UpdateIssueValidator : AbstractValidator<UpdateIssueReq>
 
         RuleFor(x => x.Status)
             .Must(status => System.Enum.TryParse<IssueStatus>(status, true, out _))
-            .WithMessage("Invalid issue status. Allowed values: Open, InProgress, Resolved, Closed.")
+            .WithMessage("Invalid issue status. Allowed values: ToDo, InProgress, Done, Closed.")
             .When(x => !string.IsNullOrEmpty(x.Status));
 
         RuleFor(x => x.Priority)

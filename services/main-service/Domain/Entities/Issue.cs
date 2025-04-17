@@ -1,7 +1,16 @@
+using MainService.Domain.Enums;
 namespace MainService.Domain.Entities;
 
 public class IssueDomain
 {
+    public IssueDomain(string projectId, string reporterId)
+    {
+        ProjectId = projectId;
+        ReporterId = reporterId;
+        CreatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public string? Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string ProjectId { get; set; } = string.Empty;
@@ -30,28 +39,4 @@ public class IssueDomain
         AssigneeId = assigneeId;
         UpdatedAt = DateTime.UtcNow;
     }
-}
-
-public enum IssueType
-{
-    Bug,
-    Task,
-    Story,
-    Epic
-}
-
-public enum IssueStatus
-{
-    ToDo,
-    InProgress,
-    Done,
-    Closed
-}
-
-public enum IssuePriority
-{
-    Low,
-    Medium,
-    High,
-    Critical
 }
