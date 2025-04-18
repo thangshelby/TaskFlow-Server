@@ -34,7 +34,6 @@ public class ProjectRepository : IProjectRepository
         projectDomain.Id = projectEntity.Id;
         return projectDomain;
     }
-
     public async Task<ProjectDomain> GetProject(string id)
     {
         var projectEntity = await _projects.Find(p => p.Id == id).FirstOrDefaultAsync();
@@ -42,7 +41,6 @@ public class ProjectRepository : IProjectRepository
             throw new Exception("Project not found");
         return _mapper.Map<ProjectDomain>(projectEntity);
     }
-
     public async Task<ProjectDomain> UpdateProject(ProjectDomain projectDomain)
     {
         var projectEntity = _mapper.Map<Project>(projectDomain);
@@ -51,14 +49,12 @@ public class ProjectRepository : IProjectRepository
             throw new Exception("Project not found");
         return projectDomain;
     }
-
     public async Task DeleteProject(string id)
     {
         var result = await _projects.DeleteOneAsync(p => p.Id == id);
         if (result.DeletedCount == 0)
             throw new Exception("Project not found");
     }
-
     public async Task<(List<ProjectDomain> Projects, int TotalCount)> ListProjects(ListProjectParams query)
     {
         var builder = Builders<Project>.Filter;
@@ -102,7 +98,6 @@ public class ProjectRepository : IProjectRepository
 
         return (_mapper.Map<List<ProjectDomain>>(projects), (int)totalCount);
     }
-
     public async Task<ProjectColumnDomain> CreateColumn(ProjectColumnDomain projectColumn)
     {
         var projectColumnEntity = _mapper.Map<ProjectColumn>(projectColumn);
@@ -111,7 +106,7 @@ public class ProjectRepository : IProjectRepository
         projectColumn.Id = projectColumnEntity.Id;
         return projectColumn;
     }
-    public async Task<List<ProjectColumnDomain>> FindColumns(string projectId)
+    public async Task<List<ProjectColumnDomain>> FindColumnsByProjectId(string projectId)
     {
         var projectColumns = await _projectColumns
          .Find(column => column.ProjectId == projectId)
@@ -121,15 +116,22 @@ public class ProjectRepository : IProjectRepository
         var projectColumnsDomain = _mapper.Map<List<ProjectColumnDomain>>(projectColumns);
         return projectColumnsDomain;
     }
-    public async Task<List<ProjectColumnDomain>> FindColumnByIssueId(string projectId)
+    public async Task<ProjectColumnDomain> FindColumn(GetColumnParams param)
     {
-        var projectColumns = await _projectColumns
-         .Find(column => column.ProjectId == projectId)
-         .Sort(Builders<ProjectColumn>.Sort.Ascending(column => column.Order))
-         .ToListAsync();
+        var filterBuilder = Builders<ProjectColumn>.Filter;
+        FilterDefinition<ProjectColumn> filter = FilterDefinition<ProjectColumn>.Empty;
 
-        var projectColumnsDomain = _mapper.Map<List<ProjectColumnDomain>>(projectColumns);
-        return projectColumnsDomain;
+        if (!string.IsNullOrEmpty(param.ColumnId))
+        {
+            filter = filterBuilder.Eq(c => c.Id, param.ColumnId);
+        }
+        else if (!string.IsNullOrEmpty(param.Name))
+        {
+            filter = filterBuilder.Eq(c => c.Name, param.Name);
+        }
+
+        var column = await _projectColumns.Find(filter).FirstOrDefaultAsync();
+        return _mapper.Map<ProjectColumnDomain>(column);
     }
 
     public async Task UpdateColumnOrder(string projectId, string columnId, int order)

@@ -89,7 +89,7 @@ message CreateIssueReq {
   optional string parent_id = 5;
   optional string reporter_id = 6; // Now optional - will be set by server from authenticated user
   string type = 7;
-  string status = 8;
+  string column_id = 8;
   string priority = 9;
   string summary = 10;
   string description = 11;

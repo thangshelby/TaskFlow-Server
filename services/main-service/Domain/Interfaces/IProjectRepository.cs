@@ -8,7 +8,8 @@ public interface IProjectRepository
     Task DeleteProject(string id);
     Task<(List<ProjectDomain> Projects, int TotalCount)> ListProjects(ListProjectParams param);
     Task<ProjectColumnDomain> CreateColumn(ProjectColumnDomain projectColumn);
-    Task<List<ProjectColumnDomain>> FindColumns(string projectId);
+    Task<ProjectColumnDomain> FindColumn(GetColumnParams param);
+    Task<List<ProjectColumnDomain>> FindColumnsByProjectId(string projectId);
     Task UpdateColumnOrder(string projectId, string columnId, int order);
     Task<ProjectColumnDomain> UpdateColumn(UpdateColumnParams param);
 }
@@ -41,5 +42,10 @@ public class UpdateColumnParams
     public required string ColumnId { get; set; }
     public string? RemoveIssueId { get; set; }
     public string? AddIssueId { get; set; }
+    public string? Name { get; set; }
+}
+public class GetColumnParams
+{
+    public string? ColumnId { get; set; }
     public string? Name { get; set; }
 }

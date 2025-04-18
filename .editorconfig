@@ -2,3 +2,6 @@
 
 # CA1711: Identifiers should not have incorrect suffix
 dotnet_diagnostic.CA1711.severity = none
+
+# CS8601: Possible null reference assignment.
+dotnet_diagnostic.CS8601.severity = suggestion

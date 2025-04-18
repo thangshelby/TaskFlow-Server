@@ -73,7 +73,7 @@ public class ProjectUseCase
     public async Task<ProjectColumnDomain> CreateColumn(CreateColumnParams param)
     {
         // TODO : FIX CORCUR
-        var existingColumns = await _projectRepository.FindColumns(param.ProjectId);
+        var existingColumns = await _projectRepository.FindColumnsByProjectId(param.ProjectId);
 
         var highestOrder = existingColumns.Count != 0 ? existingColumns.Max(c => c.Order) : 0;
 
@@ -92,7 +92,7 @@ public class ProjectUseCase
     }
     public async Task<List<ProjectColumnDomain>> GetAllColumns(string projectId)
     {
-        return await _projectRepository.FindColumns(projectId);
+        return await _projectRepository.FindColumnsByProjectId(projectId);
     }
     public async Task<List<ProjectColumnDomain>> UpdateColumnsOrder(UpdateColumnOrdersParams param)
     {
@@ -107,7 +107,7 @@ public class ProjectUseCase
             }
         });
 
-        var updatedColumns = await _projectRepository.FindColumns(param.ProjectId);
+        var updatedColumns = await _projectRepository.FindColumnsByProjectId(param.ProjectId);
         return updatedColumns;
     }
     public async Task<ProjectColumnDomain> UpdateColumn(UpdateColumnParams param)
