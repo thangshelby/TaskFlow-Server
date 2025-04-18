@@ -37,11 +37,6 @@ public class UpdateIssueValidator : AbstractValidator<UpdateIssueReq>
             .WithMessage("Invalid issue type. Allowed values: Bug, Task, Story, Epic.")
             .When(x => !string.IsNullOrEmpty(x.Type));
 
-        RuleFor(x => x.Status)
-            .Must(status => System.Enum.TryParse<IssueStatus>(status, true, out _))
-            .WithMessage("Invalid issue status. Allowed values: ToDo, InProgress, Done, Closed.")
-            .When(x => !string.IsNullOrEmpty(x.Status));
-
         RuleFor(x => x.Priority)
             .Must(priority => System.Enum.TryParse<IssuePriority>(priority, true, out _))
             .WithMessage("Invalid priority. Allowed values: Low, Medium, High, Critical.")

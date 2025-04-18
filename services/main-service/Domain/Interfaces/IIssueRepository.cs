@@ -8,3 +8,13 @@ public interface IIssueRepository
     Task DeleteIssue(string id);
     Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(string projectId, int page, int pageSize);
 }
+
+public class CreateProjectParams
+{
+    public required string ProjectId;
+    public required string Title;
+    public required string ReporterId;
+    public required string ColumnId;
+    public string? SprintId;
+    public string? AssigneeId;
+}

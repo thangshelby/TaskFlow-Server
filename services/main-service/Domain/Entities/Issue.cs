@@ -11,7 +11,7 @@ public class IssueDomain
     public string ParentId { get; set; } = string.Empty;
     public string ReporterId { get; set; } = string.Empty;
     public IssueType Type { get; set; }
-    public IssueStatus Status { get; set; }
+    public string Status { get; set; } = string.Empty;
     public IssuePriority Priority { get; set; } = IssuePriority.Medium;
 
     public string Summary { get; set; } = string.Empty;

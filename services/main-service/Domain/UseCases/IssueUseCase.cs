@@ -17,26 +17,44 @@ public class IssueUseCase
         _projectRepository = projectRepository;
     }
 
-    public async Task<IssueDomain> CreateIssue(string projectId, string title, string reporterId, string? sprintId = null, string? assigneeId = null)
+    public async Task<IssueDomain> CreateIssue(CreateProjectParams param)
     {
+        var column = await _projectRepository.FindColumn(new GetColumnParams
+        {
+            ColumnId = param.ColumnId
+        });
+
+        if (column == null)
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "ColumnId is invalid or does not exist."));
+
         var issue = new IssueDomain()
         {
-            ProjectId = projectId,
-            ReporterId = reporterId,
-            Title = title
+            ProjectId = param.ProjectId,
+            ReporterId = param.ReporterId,
+            Status = column.Name,
+            Title = param.Title
         };
 
-        if (sprintId != null)
+        if (param.SprintId != null)
         {
-            issue.AssignToSprint(sprintId);
+            issue.AssignToSprint(param.SprintId);
         }
-
-        if (assigneeId != null)
+        if (param.AssigneeId != null)
         {
-            issue.AssignToUser(assigneeId);
+            issue.AssignToUser(param.AssigneeId);
         }
+        return await _transactionRepo.ExecuteAsync(async session =>
+        {
+            var newIssue = await _issueRepository.CreateIssue(issue);
 
-        return await _issueRepository.CreateIssue(issue);
+            await _projectRepository.UpdateColumn(new UpdateColumnParams
+            {
+                AddIssueId = newIssue.Id,
+                ColumnId = column.Id,
+            });
+
+            return newIssue;
+        });
     }
 
     public async Task<IssueDomain> GetIssue(string id)
@@ -62,16 +80,32 @@ public class IssueUseCase
             if (updateData.Status != existingIssue.Status)
             {
                 // Remove and add issue_id -> columns project
-                // await _projectRepository.UpdateColumn(new UpdateColumnParams
-                // {
-                //     AddIssueId = updateData.Id,
-                //     ColumnId = "sad",
-                // });
-                // await _projectRepository.UpdateColumn(new UpdateColumnParams
-                // {
-                //     RemoveIssueId = existingIssue.Id,
-                //     ColumnId = "sad",
-                // });
+                var newColumn = await _projectRepository.FindColumn(new GetColumnParams
+                {
+                    Name = updateData.Status
+                });
+
+                if (newColumn == null)
+                    throw new RpcException(new Status(StatusCode.InvalidArgument, $"Column with name '{updateData.Status}' not found"));
+
+                var oldColumn = await _projectRepository.FindColumn(new GetColumnParams
+                {
+                    Name = existingIssue.Status
+                });
+
+                if (oldColumn == null)
+                    throw new RpcException(new Status(StatusCode.InvalidArgument, $"Original column with name '{existingIssue.Status}' not found"));
+
+                await _projectRepository.UpdateColumn(new UpdateColumnParams
+                {
+                    AddIssueId = updateData.Id,
+                    ColumnId = newColumn.Id,
+                });
+                await _projectRepository.UpdateColumn(new UpdateColumnParams
+                {
+                    RemoveIssueId = existingIssue.Id,
+                    ColumnId = oldColumn.Id,
+                });
             }
 
             return await _issueRepository.UpdateIssue(updatedIssueBody);

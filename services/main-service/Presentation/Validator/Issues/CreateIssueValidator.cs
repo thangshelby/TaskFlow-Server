@@ -34,10 +34,8 @@ public class CreateIssueValidator : AbstractValidator<CreateIssueReq>
             .Must(type => System.Enum.TryParse<IssueType>(type, true, out _))
             .WithMessage("Invalid issue type. Allowed values: Bug, Task, Story, Epic.");
 
-        RuleFor(x => x.Status)
-            .NotEmpty().WithMessage("Status is required.")
-            .Must(status => System.Enum.TryParse<IssueStatus>(status, true, out _))
-            .WithMessage("Invalid issue status. Allowed values: ToDo, InProgress, Done, Closed.");
+        RuleFor(x => x.ColumnId)
+            .NotEmpty().WithMessage("Column status is required.");
 
         RuleFor(x => x.Priority)
             .NotEmpty().WithMessage("Priority is required.")

@@ -35,7 +35,7 @@ public class Issue
 
     [BsonElement("status")]
     [BsonRepresentation(BsonType.String)]
-    public IssueStatus Status { get; set; }
+    public string Status { get; set; } = string.Empty;
 
     [BsonElement("priority")]
     [BsonRepresentation(BsonType.String)]

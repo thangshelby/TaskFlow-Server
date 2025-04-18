@@ -6,30 +6,22 @@ public enum UserRole
     User,
 }
 public enum ProjectAccess
-    {
-        Public,
-        Private,
-        Restricted
-    }
+{
+    Public,
+    Private,
+    Restricted
+}
 public enum ProjectType
-    {
-        Scrum,
-        Kanban
-    }
+{
+    Scrum,
+    Kanban
+}
 public enum IssueType
 {
     Bug,
     Task,
     Story,
     Epic
-}
-
-public enum IssueStatus
-{
-    ToDo,
-    InProgress,
-    Done,
-    Closed
 }
 
 public enum IssuePriority
