@@ -84,7 +84,7 @@ public class Issue
 
     public IssueDomain ToDomain()
     {
-        var domain = new IssueDomain(ProjectId, ReporterId)
+        var domain = new IssueDomain()
         {
             Id = Id,
             Title = Title,
@@ -96,6 +96,8 @@ public class Issue
             Description = Description,
             StoryPoint = StoryPoint,
             Attachments = Attachments,
+            ProjectId = ProjectId,
+            ReporterId = ReporterId,
             CreatedAt = CreatedAt,
             UpdatedAt = UpdatedAt
         };

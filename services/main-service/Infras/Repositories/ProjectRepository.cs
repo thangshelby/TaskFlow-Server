@@ -121,6 +121,16 @@ public class ProjectRepository : IProjectRepository
         var projectColumnsDomain = _mapper.Map<List<ProjectColumnDomain>>(projectColumns);
         return projectColumnsDomain;
     }
+    public async Task<List<ProjectColumnDomain>> FindColumnByIssueId(string projectId)
+    {
+        var projectColumns = await _projectColumns
+         .Find(column => column.ProjectId == projectId)
+         .Sort(Builders<ProjectColumn>.Sort.Ascending(column => column.Order))
+         .ToListAsync();
+
+        var projectColumnsDomain = _mapper.Map<List<ProjectColumnDomain>>(projectColumns);
+        return projectColumnsDomain;
+    }
 
     public async Task UpdateColumnOrder(string projectId, string columnId, int order)
     {
