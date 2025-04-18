@@ -3,14 +3,6 @@ namespace MainService.Domain.Entities;
 
 public class IssueDomain
 {
-    public IssueDomain(string projectId, string reporterId)
-    {
-        ProjectId = projectId;
-        ReporterId = reporterId;
-        CreatedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
-    }
-
     public string? Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string ProjectId { get; set; } = string.Empty;
