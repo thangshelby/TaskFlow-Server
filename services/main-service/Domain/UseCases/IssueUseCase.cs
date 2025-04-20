@@ -9,12 +9,15 @@ public class IssueUseCase
     private readonly ITransactionRepo _transactionRepo;
     private readonly IProjectRepository _projectRepository;
     private readonly IIssueRepository _issueRepository;
+    private readonly ILogger<IssueUseCase> _logger;
 
-    public IssueUseCase(IIssueRepository issueRepository, IProjectRepository projectRepository, ITransactionRepo transactionRepo)
+    public IssueUseCase(IIssueRepository issueRepository, IProjectRepository projectRepository, ITransactionRepo transactionRepo, ILogger<IssueUseCase> logger
+)
     {
         _issueRepository = issueRepository;
         _transactionRepo = transactionRepo;
         _projectRepository = projectRepository;
+        _logger = logger;
     }
 
     public async Task<IssueDomain> CreateIssue(CreateProjectParams param)
@@ -171,13 +174,23 @@ public class IssueUseCase
         if (issue == null)
             throw new RpcException(new Status(StatusCode.NotFound, $"Issue with ID {id} not found"));
 
+
+        var column = await _projectRepository.FindColumn(new GetColumnParams
+        {
+            Name = issue.Status
+        });
+        await _projectRepository.UpdateColumn(new UpdateColumnParams
+        {
+            RemoveIssueId = issue.Id,
+            ColumnId = column.Id,
+        });
         await _issueRepository.DeleteIssue(id);
     }
-    public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(string projectId, int page, int pageSize)
+    public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(GetIssuesParams param)
     {
-        if (page < 1 || pageSize < 1)
-            throw new RpcException(new Status(StatusCode.InvalidArgument, "Page number and size must be greater than 0"));
+        if (param.Page <= 0) param.Page = 1;
+        if (param.Limit <= 0) param.Limit = 10;
 
-        return await _issueRepository.ListIssues(projectId, page, pageSize);
+        return await _issueRepository.ListIssues(param);
     }
 }

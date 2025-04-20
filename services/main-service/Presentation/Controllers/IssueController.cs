@@ -12,6 +12,8 @@ public class IssueController : IssueService.IssueServiceBase
 {
     private readonly IssueUseCase _issueUseCase;
     private readonly UserUseCase _userUseCase;
+    private readonly ILogger<IssueController> _logger;
+
     private readonly IMapper _mapper;
     private readonly IValidator<CreateIssueReq> _createIssueValidator;
     private readonly IValidator<UpdateIssueReq> _updateIssueValidator;
@@ -21,6 +23,7 @@ public class IssueController : IssueService.IssueServiceBase
         IssueUseCase issueUseCase,
         UserUseCase userUseCase,
         IMapper mapper,
+        ILogger<IssueController> logger,
         IValidator<CreateIssueReq> createIssueValidator,
         IValidator<UpdateIssueReq> updateIssueValidator,
         IValidator<ListIssuesReq> listIssuesValidator)
@@ -31,6 +34,7 @@ public class IssueController : IssueService.IssueServiceBase
         _createIssueValidator = createIssueValidator ?? throw new ArgumentNullException(nameof(createIssueValidator));
         _updateIssueValidator = updateIssueValidator ?? throw new ArgumentNullException(nameof(updateIssueValidator));
         _listIssuesValidator = listIssuesValidator ?? throw new ArgumentNullException(nameof(listIssuesValidator));
+        _logger = logger;
     }
 
     public override async Task<CreateIssueRes> CreateIssue(CreateIssueReq request, ServerCallContext context)
@@ -116,9 +120,6 @@ public class IssueController : IssueService.IssueServiceBase
 
     public override async Task<ListIssuesRes> ListIssues(ListIssuesReq request, ServerCallContext context)
     {
-        if (request.Page <= 0) request.Page = 1;
-        if (request.Limit <= 0) request.Limit = 10;
-
         var validationResult = await _listIssuesValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
         {
@@ -126,7 +127,13 @@ public class IssueController : IssueService.IssueServiceBase
                 string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
 
-        var (issues, totalCount) = await _issueUseCase.ListIssues(request.ProjectId, request.Page, request.Limit);
+        var (issues, totalCount) = await _issueUseCase.ListIssues(new GetIssuesParams
+        {
+            Limit = request.Limit,
+            Page = request.Page,
+            ProjectId = request.ProjectId,
+            Status = request.Status
+        });
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
 
         var response = new ListIssuesRes();
