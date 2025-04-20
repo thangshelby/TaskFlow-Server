@@ -71,8 +71,9 @@ message UpdateIssueReq {
 // List All
 message ListIssuesReq {
   string project_id = 1;
-  int32 page = 2;
-  int32 limit = 3;
+  optional string status = 2;
+  int32 page = 3;
+  int32 limit = 4;
 }
 
 message ListIssuesRes {
@@ -87,7 +88,7 @@ message CreateIssueReq {
   optional string sprint_id = 3;
   optional string assignee_id = 4;
   optional string parent_id = 5;
-  optional string reporter_id = 6; // Now optional - will be set by server from authenticated user
+  optional string reporter_id = 6;
   string type = 7;
   string column_id = 8;
   string priority = 9;

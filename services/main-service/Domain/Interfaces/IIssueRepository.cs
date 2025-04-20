@@ -6,7 +6,7 @@ public interface IIssueRepository
     Task<IssueDomain> GetIssue(string id);
     Task<IssueDomain> UpdateIssue(IssueDomain issue);
     Task DeleteIssue(string id);
-    Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(string projectId, int page, int pageSize);
+    Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(GetIssuesParams param);
 }
 
 public class CreateProjectParams
@@ -17,4 +17,11 @@ public class CreateProjectParams
     public required string ColumnId;
     public string? SprintId;
     public string? AssigneeId;
+}
+public class GetIssuesParams
+{
+    public string? ProjectId;
+    public string? Status;
+    public int Page;
+    public int Limit;
 }

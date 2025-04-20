@@ -9,13 +9,16 @@ namespace MainService.Infras.Repositories;
 public class IssueRepository : IIssueRepository
 {
     private readonly IMongoCollection<Issue> _issues;
+    private readonly IProjectRepository _projectRepository;
+
     private readonly IMapper _mapper;
 
-    public IssueRepository(MongoDbService mongoDbService, IMapper mapper)
+    public IssueRepository(MongoDbService mongoDbService, IMapper mapper, IProjectRepository projectRepository)
     {
         var database = mongoDbService.Database;
         _issues = database.GetCollection<Issue>("issues");
         _mapper = mapper;
+        _projectRepository = projectRepository;
     }
 
     public async Task<IssueDomain> CreateIssue(IssueDomain issueDomain)
@@ -50,15 +53,22 @@ public class IssueRepository : IIssueRepository
             throw new Exception("Issue not found");
     }
 
-    public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(string projectId, int page, int pageSize)
+    public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(GetIssuesParams param)
     {
-        var filter = Builders<Issue>.Filter.Eq(i => i.ProjectId, projectId);
+        var filterBuilder = Builders<Issue>.Filter;
+        var filter = filterBuilder.Eq(i => i.ProjectId, param.ProjectId);
+
+        if (!string.IsNullOrEmpty(param.Status))
+        {
+            filter &= filterBuilder.Eq(i => i.Status, param.Status);
+        }
+
         var totalCount = await _issues.CountDocumentsAsync(filter);
         var issues = await _issues.Find(filter)
-            .Skip((page - 1) * pageSize)
-            .Limit(pageSize)
+            .Skip((param.Page - 1) * param.Limit)
+            .Limit(param.Limit)
             .ToListAsync();
-        
+
         return (_mapper.Map<List<IssueDomain>>(issues), (int)totalCount);
     }
 }
