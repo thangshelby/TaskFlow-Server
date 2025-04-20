@@ -21,5 +21,7 @@ sync:
 	docker compose down 
 	make gen-protobuf 
 	docker compose up -d
+cqlsh:
+	docker exec -it cassandra cqlsh
 
-.PHONY: container-up container-down node-server sync-gateway update-gateway gen-protobuf sync
+.PHONY: container-up container-down node-server sync-gateway update-gateway gen-protobuf sync cqlsh

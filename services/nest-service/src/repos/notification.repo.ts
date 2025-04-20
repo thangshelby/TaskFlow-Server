@@ -1,20 +1,13 @@
 import { Service } from 'typedi';
-import { Client } from 'cassandra-driver';
 import { INotification } from 'src/models/notification';
+import { CassandraBaseRepo } from 'src/repos/cassandra.repo';
 
 @Service()
-export class NotificationRepo {
-  private client: Client;
-
+export class NotificationRepo extends CassandraBaseRepo {
   constructor() {
-    this.client = new Client({
-      contactPoints: ['localhost'],
-      localDataCenter: 'datacenter1',
-      keyspace: 'notifications',
-    });
+    super('taskflow');
   }
 
-  // Method to create a notification
   async createNotification(notification: INotification): Promise<void> {
     const query = 'INSERT INTO notifications (id, user_id, event_type, message, created_at) VALUES (?, ?, ?, ?, ?)';
     const params = [

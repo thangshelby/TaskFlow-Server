@@ -39,10 +39,36 @@ services:
   #   container_name: cassandra
   #   environment:
   #     - CASSANDRA_CLUSTER_NAME=my-cluster
-  #     - CASSANDRA_BROADCAST_ADDRESS=localhost
-  #     - CASSANDRA_LISTEN_ADDRESS=localhost
+  #     - CASSANDRA_BROADCAST_ADDRESS=127.0.0.1
+  #     - CASSANDRA_LISTEN_ADDRESS=127.0.0.1
   #   volumes:
   #     - cassandra-data:/var/lib/cassandra
+  #   network_mode: "host"
+  # cassandra-init:
+  #   image: cassandra:latest
+  #   depends_on:
+  #     - cassandra
+  #   entrypoint: ["/bin/sh", "-c"]
+  #   command: >
+  #     "
+  #     echo '⏳ Waiting for Cassandra to be available...' &&
+  #     while ! cqlsh 127.0.0.1 -e 'describe keyspaces'; do sleep 2; done &&
+  #     echo '✅ Cassandra is up!' &&
+  #     cqlsh 127.0.0.1 -e \"
+  #       CREATE KEYSPACE IF NOT EXISTS taskflow
+  #       WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+
+  #       USE taskflow;
+
+  #       CREATE TABLE IF NOT EXISTS notifications (
+  #         id TEXT PRIMARY KEY,
+  #         user_id TEXT,
+  #         event_type TEXT,
+  #         message TEXT,
+  #         created_at TIMESTAMP
+  #       );
+  #     \"
+  #     "
   #   network_mode: "host"
 volumes:
   esdata: {}
