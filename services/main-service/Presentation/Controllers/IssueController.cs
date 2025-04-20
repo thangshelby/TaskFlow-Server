@@ -59,12 +59,12 @@ public class IssueController : IssueService.IssueServiceBase
         }
 
         var result = await _issueUseCase.CreateIssue(
-            new CreateProjectParams
+            new CreateIssueParams
             {
                 ProjectId = request.ProjectId,
                 Title = request.Title,
                 ReporterId = userId,
-                ColumnId = request.ColumnId,
+                Status = request.Status,
                 SprintId = string.IsNullOrEmpty(request.SprintId) ? null : request.SprintId,
                 AssigneeId = string.IsNullOrEmpty(request.AssigneeId) ? null : request.AssigneeId
             }
