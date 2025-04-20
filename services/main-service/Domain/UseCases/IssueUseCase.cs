@@ -20,11 +20,11 @@ public class IssueUseCase
         _logger = logger;
     }
 
-    public async Task<IssueDomain> CreateIssue(CreateProjectParams param)
+    public async Task<IssueDomain> CreateIssue(CreateIssueParams param)
     {
         var column = await _projectRepository.FindColumn(new GetColumnParams
         {
-            ColumnId = param.ColumnId
+            Name = param.Status
         });
 
         if (column == null)
