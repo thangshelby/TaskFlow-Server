@@ -3,6 +3,7 @@ using MainService.Domain.Enums;
 using TaskFlow.IssueService;
 using System;
 
+
 public class CreateIssueValidator : AbstractValidator<CreateIssueReq>
 {
     public CreateIssueValidator()
@@ -34,8 +35,8 @@ public class CreateIssueValidator : AbstractValidator<CreateIssueReq>
             .Must(type => System.Enum.TryParse<IssueType>(type, true, out _))
             .WithMessage("Invalid issue type. Allowed values: Bug, Task, Story, Epic.");
 
-        RuleFor(x => x.ColumnId)
-            .NotEmpty().WithMessage("Column status is required.");
+        RuleFor(x => x.Status)
+            .NotEmpty().WithMessage("Status is required.");
 
         RuleFor(x => x.Priority)
             .NotEmpty().WithMessage("Priority is required.")

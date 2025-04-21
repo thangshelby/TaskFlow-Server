@@ -10,10 +10,14 @@ public class ListIssuesRequestValidator : AbstractValidator<ListIssuesReq>
         RuleFor(x => x.ProjectId)
             .NotEmpty().WithMessage("Project ID is required");
 
-        RuleFor(x => x.Page)
-            .GreaterThan(0).WithMessage("Page number must be greater than 0");
+        When(x => x.Page != 0, () => {
+            RuleFor(x => x.Page)
+                .GreaterThan(0).WithMessage("Page number must be greater than 0");
+        });
 
-        RuleFor(x => x.Limit)
-            .GreaterThan(0).WithMessage("Page size must be greater than 0");
+        When(x => x.Limit != 0, () => {
+            RuleFor(x => x.Limit)
+                .GreaterThan(0).WithMessage("Page size must be greater than 0");
+        });
     }
 }
