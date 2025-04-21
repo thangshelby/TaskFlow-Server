@@ -129,8 +129,8 @@ public class IssueController : IssueService.IssueServiceBase
 
         var (issues, totalCount) = await _issueUseCase.ListIssues(new GetIssuesParams
         {
-            Limit = request.Limit,
-            Page = request.Page,
+            Limit = request.Limit == 0 ? 10 : request.Limit,
+            Page = request.Page == 0 ? 1 : request.Page,
             ProjectId = request.ProjectId,
             Status = request.Status
         });
