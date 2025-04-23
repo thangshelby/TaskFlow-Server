@@ -12,8 +12,6 @@ public class IssueController : IssueService.IssueServiceBase
 {
     private readonly IssueUseCase _issueUseCase;
     private readonly UserUseCase _userUseCase;
-    private readonly ILogger<IssueController> _logger;
-
     private readonly IMapper _mapper;
     private readonly IValidator<CreateIssueReq> _createIssueValidator;
     private readonly IValidator<UpdateIssueReq> _updateIssueValidator;
@@ -23,7 +21,6 @@ public class IssueController : IssueService.IssueServiceBase
         IssueUseCase issueUseCase,
         UserUseCase userUseCase,
         IMapper mapper,
-        ILogger<IssueController> logger,
         IValidator<CreateIssueReq> createIssueValidator,
         IValidator<UpdateIssueReq> updateIssueValidator,
         IValidator<ListIssuesReq> listIssuesValidator)
@@ -34,7 +31,6 @@ public class IssueController : IssueService.IssueServiceBase
         _createIssueValidator = createIssueValidator ?? throw new ArgumentNullException(nameof(createIssueValidator));
         _updateIssueValidator = updateIssueValidator ?? throw new ArgumentNullException(nameof(updateIssueValidator));
         _listIssuesValidator = listIssuesValidator ?? throw new ArgumentNullException(nameof(listIssuesValidator));
-        _logger = logger;
     }
 
     public override async Task<CreateIssueRes> CreateIssue(CreateIssueReq request, ServerCallContext context)
@@ -58,22 +54,40 @@ public class IssueController : IssueService.IssueServiceBase
                 string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
 
-        var result = await _issueUseCase.CreateIssue(
-            new CreateIssueParams
+        try 
+        {
+            var issueRequest = new CreateIssueReq 
             {
                 ProjectId = request.ProjectId,
                 Title = request.Title,
-                ReporterId = userId,
+                Summary = request.Summary,
+                Description = request.Description,
                 Status = request.Status,
-                SprintId = string.IsNullOrEmpty(request.SprintId) ? null : request.SprintId,
-                AssigneeId = string.IsNullOrEmpty(request.AssigneeId) ? null : request.AssigneeId
+                Priority = request.Priority,
+                Type = request.Type,
+                SprintId = request.SprintId,
+                AssigneeId = request.AssigneeId,
+                ParentId = request.ParentId,
+                ReporterId = userId,
+                StoryPoint = request.StoryPoint
+            };
+            
+            if (request.Attachments != null)
+            {
+                issueRequest.Attachments.AddRange(request.Attachments);
             }
-        );
 
-        return new CreateIssueRes
+            var result = await _issueUseCase.CreateIssue(issueRequest);
+
+            return new CreateIssueRes
+            {
+                Data = _mapper.Map<IssueRes>(result)
+            };
+        }
+        catch (Exception)
         {
-            Data = _mapper.Map<IssueRes>(result)
-        };
+            throw new RpcException(new Status(StatusCode.Internal, "Failed to create issue"));
+        }
     }
 
     public override async Task<IssueRes> GetIssue(GetIssueReq request, ServerCallContext context)
@@ -91,14 +105,12 @@ public class IssueController : IssueService.IssueServiceBase
 
     public override async Task<IssueRes> UpdateIssue(UpdateIssueReq request, ServerCallContext context)
     {
-
         var validationResult = await _updateIssueValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument,
                 string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
-
 
         var issueDomain = _mapper.Map<IssueDomain>(request);
         var result = await _issueUseCase.UpdateIssue(issueDomain);
