@@ -1,6 +1,8 @@
 using Grpc.Core;
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
+using MainService.Domain.Enums;
+using TaskFlow.IssueService;
 
 namespace MainService.Domain.UseCases;
 
@@ -9,18 +11,15 @@ public class IssueUseCase
     private readonly ITransactionRepo _transactionRepo;
     private readonly IProjectRepository _projectRepository;
     private readonly IIssueRepository _issueRepository;
-    private readonly ILogger<IssueUseCase> _logger;
 
-    public IssueUseCase(IIssueRepository issueRepository, IProjectRepository projectRepository, ITransactionRepo transactionRepo, ILogger<IssueUseCase> logger
-)
+    public IssueUseCase(IIssueRepository issueRepository, IProjectRepository projectRepository, ITransactionRepo transactionRepo, ILogger<IssueUseCase> logger)
     {
         _issueRepository = issueRepository;
         _transactionRepo = transactionRepo;
         _projectRepository = projectRepository;
-        _logger = logger;
     }
 
-    public async Task<IssueDomain> CreateIssue(CreateIssueParams param)
+    public async Task<IssueDomain> CreateIssue(CreateIssueReq param)
     {
         var column = await _projectRepository.FindColumn(new GetColumnParams
         {
@@ -33,9 +32,15 @@ public class IssueUseCase
         var issue = new IssueDomain()
         {
             ProjectId = param.ProjectId,
-            ReporterId = param.ReporterId,
+            ReporterId = param.ReporterId ?? string.Empty,
             Status = column.Name,
-            Title = param.Title
+            Title = param.Title,
+            Summary = param.Summary ?? string.Empty,
+            Description = param.Description ?? string.Empty,
+            Type = Enum.TryParse<IssueType>(param.Type, true, out var type) ? type : IssueType.Task,
+            Priority = Enum.TryParse<IssuePriority>(param.Priority, true, out var priority) ? priority : IssuePriority.Medium,
+            StoryPoint = param.StoryPoint,
+            ParentId = param.ParentId ?? string.Empty
         };
 
         if (param.SprintId != null)
@@ -46,7 +51,8 @@ public class IssueUseCase
         {
             issue.AssignToUser(param.AssigneeId);
         }
-        return await _transactionRepo.ExecuteAsync(async session =>
+
+        var result = await _transactionRepo.ExecuteAsync(async session =>
         {
             var newIssue = await _issueRepository.CreateIssue(issue);
 
@@ -58,6 +64,8 @@ public class IssueUseCase
 
             return newIssue;
         });
+
+        return result;
     }
 
     public async Task<IssueDomain> GetIssue(string id)
@@ -82,7 +90,6 @@ public class IssueUseCase
 
             if (updateData.Status != existingIssue.Status)
             {
-                // Remove and add issue_id -> columns project
                 var newColumn = await _projectRepository.FindColumn(new GetColumnParams
                 {
                     Name = updateData.Status
@@ -116,6 +123,7 @@ public class IssueUseCase
 
         return updatedIssue;
     }
+
     private IssueDomain GetUpdatedIssueBody(IssueDomain newIssue, IssueDomain existingIssue)
     {
         if (existingIssue == null)
@@ -164,6 +172,7 @@ public class IssueUseCase
 
         return existingIssue;
     }
+
     public async Task DeleteIssue(string id)
     {
         if (string.IsNullOrEmpty(id))
@@ -173,7 +182,6 @@ public class IssueUseCase
 
         if (issue == null)
             throw new RpcException(new Status(StatusCode.NotFound, $"Issue with ID {id} not found"));
-
 
         var column = await _projectRepository.FindColumn(new GetColumnParams
         {
@@ -186,6 +194,7 @@ public class IssueUseCase
         });
         await _issueRepository.DeleteIssue(id);
     }
+
     public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(GetIssuesParams param)
     {
         if (param.Page <= 0) param.Page = 1;
