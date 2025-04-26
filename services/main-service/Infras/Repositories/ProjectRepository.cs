@@ -4,22 +4,27 @@ using MainService.Domain.Interfaces;
 using MainService.Infras.Entities;
 using MongoDB.Driver;
 using MongoDB.Bson;
+using System.Text.Json;
+using MongoDB.Bson.Serialization;
 
 namespace MainService.Infras.Repositories;
 
 public class ProjectRepository : IProjectRepository
 {
+    private readonly ILogger<ProjectRepository> _logger;
     private readonly IMongoCollection<Project> _projects;
     private readonly IMongoCollection<ProjectColumn> _projectColumns;
+    private readonly IMongoCollection<Issue> _issues;
     private readonly IMapper _mapper;
 
-    public ProjectRepository(MongoDbService mongoDbService, IMapper mapper)
+    public ProjectRepository(MongoDbService mongoDbService, IMapper mapper, ILogger<ProjectRepository> logger)
     {
         var database = mongoDbService.Database;
         _projects = database.GetCollection<Project>("projects");
+        _issues = database.GetCollection<Issue>("issues");
         _projectColumns = database.GetCollection<ProjectColumn>("project_column");
         _mapper = mapper;
-
+        _logger = logger;
         // Ensure index on Key
         var indexKeysDefinition = Builders<Project>.IndexKeys.Ascending(p => p.Key);
         var indexOptions = new CreateIndexOptions { Unique = true };
@@ -108,13 +113,44 @@ public class ProjectRepository : IProjectRepository
     }
     public async Task<List<ProjectColumnDomain>> FindColumnsByProjectId(string projectId)
     {
-        var projectColumns = await _projectColumns
-         .Find(column => column.ProjectId == projectId)
-         .Sort(Builders<ProjectColumn>.Sort.Ascending(column => column.Order))
-         .ToListAsync();
+        var pipeline = new[]
+        {
+            new BsonDocument {
+                {
+                    "$match", new BsonDocument {
+                        { "project_id", new ObjectId(projectId) }
+                    }
+                }
+            },
+            new BsonDocument { { "$sort", new BsonDocument { { "order", 1 } } } },
+            new BsonDocument {
+                {
+                    "$lookup", new BsonDocument {
+                        { "from", "issues" },
+                        { "localField", "issue_ids" },
+                        { "foreignField", "_id" },
+                        { "as", "issues" }
+                    }
+                }
+            },
+        };
 
-        var projectColumnsDomain = _mapper.Map<List<ProjectColumnDomain>>(projectColumns);
-        return projectColumnsDomain;
+        var rawResult = await _projectColumns.Aggregate<BsonDocument>(pipeline).ToListAsync();
+        MongoDocumentLogUtil.LogBsonDocuments(_logger, rawResult);
+
+        var columnsEntity = rawResult.Select(bson => BsonSerializer.Deserialize<ProjectColumn>(bson)).ToList();
+
+        var columnsDomain = _mapper.Map<List<ProjectColumnDomain>>(columnsEntity);
+
+        foreach (var column in columnsDomain)
+        {
+            var columnEntity = columnsEntity.First(c => c.Id == column.Id);
+            if (columnEntity.Issues != null)
+            {
+                column.Issues = _mapper.Map<List<IssueDomain>>(columnEntity.Issues);
+            }
+        }
+        return columnsDomain;
     }
     public async Task<ProjectColumnDomain> FindColumn(GetColumnParams param)
     {
@@ -153,10 +189,12 @@ public class ProjectRepository : IProjectRepository
 
         if (!string.IsNullOrEmpty(param.Name))
             updateDefs.Add(Builders<ProjectColumn>.Update.Set(c => c.Name, param.Name));
+
         if (!string.IsNullOrEmpty(param.RemoveIssueId))
-            updateDefs.Add(Builders<ProjectColumn>.Update.Pull(c => c.Issues, param.RemoveIssueId));
+            updateDefs.Add(Builders<ProjectColumn>.Update.Pull(c => c.IssueIds, new ObjectId(param.RemoveIssueId)));
+
         if (!string.IsNullOrEmpty(param.AddIssueId))
-            updateDefs.Add(Builders<ProjectColumn>.Update.AddToSet(c => c.Issues, param.AddIssueId));
+            updateDefs.Add(Builders<ProjectColumn>.Update.AddToSet(c => c.IssueIds, new ObjectId(param.AddIssueId)));
 
         updateDefs.Add(Builders<ProjectColumn>.Update.Set(c => c.UpdatedAt, DateTime.UtcNow));
 

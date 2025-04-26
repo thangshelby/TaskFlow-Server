@@ -20,6 +20,7 @@ public class ProjectColumnDomain
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public string ProjectId { get; set; } = string.Empty;
-    public List<string> Issues { get; set; } = new List<string>();
+    public List<string> IssueIds { get; set; } = new List<string>();
+    public List<IssueDomain>? Issues { get; set; } = new List<IssueDomain>();
     public int Order { get; set; } = 0;
 }
