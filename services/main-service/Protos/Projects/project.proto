@@ -7,6 +7,7 @@ package project_service;
 import "google/protobuf/empty.proto";
 import "google/api/annotations.proto"; // Import Google API annotations
 import "Base/base.proto";
+import "Issues/issue.proto";
 
 
 // Define the gRPC service
@@ -167,7 +168,7 @@ message ColumnRes {
   string created_at = 3;
   string updated_at = 4;
   int32 order = 5;
-  repeated string issues = 6;
+  repeated IssueRes issues = 6;
   string project_id = 8;
 }
 

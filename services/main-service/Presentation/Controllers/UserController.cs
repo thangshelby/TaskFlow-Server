@@ -127,7 +127,7 @@ public class UserController : UserService.UserServiceBase
 
         if (user.Id == null) throw new Exception("Can't happen");
         await SetJwtToken(user.Id, user.Role, request.Email, context);
-        
+
         var userResponse = _mapper.Map<UserRes>(user);
         return new CreateUserRes
         {
@@ -153,7 +153,7 @@ public class UserController : UserService.UserServiceBase
         await SetJwtToken(user.Id, user.Role, request.Email, context);
 
         var userResponse = _mapper.Map<UserRes>(user);
-        
+
         return new LoginUserRes
         {
             Status = "success",
@@ -192,7 +192,7 @@ public class UserController : UserService.UserServiceBase
         new Claim(JwtRegisteredClaimNames.Sub, "1234567890"),
         new Claim(JwtRegisteredClaimNames.Name, email),
         new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-        new Claim(JwtRegisteredClaimNames.Exp, DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+        new Claim(JwtRegisteredClaimNames.Exp, DateTimeOffset.UtcNow.AddHours(24).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
         new Claim(JwtRegisteredClaimNames.Iss, "127.0.0.1"),
         new Claim("role", "admin_role"),
         new Claim("userId", userId)
@@ -201,7 +201,7 @@ public class UserController : UserService.UserServiceBase
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddHours(1),
+            Expires = DateTime.UtcNow.AddHours(24),
             Issuer = "127.0.0.1",
             SigningCredentials = credentials
         };

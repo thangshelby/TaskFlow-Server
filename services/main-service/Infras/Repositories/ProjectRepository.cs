@@ -136,20 +136,8 @@ public class ProjectRepository : IProjectRepository
         };
 
         var rawResult = await _projectColumns.Aggregate<BsonDocument>(pipeline).ToListAsync();
-        MongoDocumentLogUtil.LogBsonDocuments(_logger, rawResult);
-
         var columnsEntity = rawResult.Select(bson => BsonSerializer.Deserialize<ProjectColumn>(bson)).ToList();
-
         var columnsDomain = _mapper.Map<List<ProjectColumnDomain>>(columnsEntity);
-
-        foreach (var column in columnsDomain)
-        {
-            var columnEntity = columnsEntity.First(c => c.Id == column.Id);
-            if (columnEntity.Issues != null)
-            {
-                column.Issues = _mapper.Map<List<IssueDomain>>(columnEntity.Issues);
-            }
-        }
         return columnsDomain;
     }
     public async Task<ProjectColumnDomain> FindColumn(GetColumnParams param)
