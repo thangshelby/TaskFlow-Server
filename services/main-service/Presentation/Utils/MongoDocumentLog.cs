@@ -2,6 +2,11 @@ using MongoDB.Bson;
 using System.Text.Json;
 public static class MongoDocumentLogUtil
 {
+    public static void LogObject(ILogger logger, dynamic data)
+    {
+        var json = JsonSerializer.Serialize((object)data, new JsonSerializerOptions { WriteIndented = true });
+        logger.LogInformation("Dynamic:\n{Json}", json);
+    }
     public static void LogBsonDocument(ILogger logger, BsonDocument document, string title = "MongoDB Document")
     {
         var cleaned = ConvertObjectIdsToStrings(document);
