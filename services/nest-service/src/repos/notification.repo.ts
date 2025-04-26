@@ -19,7 +19,7 @@ export class NotificationRepo extends CassandraBaseRepo {
     ];
 
     try {
-      await this.client.execute(query, params, { prepare: true });
+      await this.executeQuery(query, params, { prepare: true });
       console.log('Notification created successfully!');
     } catch (error) {
       console.error('Error creating notification:', error);

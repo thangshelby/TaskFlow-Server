@@ -11,12 +11,14 @@ public class IssueUseCase
     private readonly ITransactionRepo _transactionRepo;
     private readonly IProjectRepository _projectRepository;
     private readonly IIssueRepository _issueRepository;
+    private readonly ILogger<IssueUseCase> _logger;
 
     public IssueUseCase(IIssueRepository issueRepository, IProjectRepository projectRepository, ITransactionRepo transactionRepo, ILogger<IssueUseCase> logger)
     {
         _issueRepository = issueRepository;
         _transactionRepo = transactionRepo;
         _projectRepository = projectRepository;
+        _logger = logger;
     }
 
     public async Task<IssueDomain> CreateIssue(CreateIssueReq param)
@@ -86,8 +88,6 @@ public class IssueUseCase
         var updatedIssue = await _transactionRepo.ExecuteAsync(async session =>
         {
             var existingIssue = await _issueRepository.GetIssue(updateData.Id);
-            var updatedIssueBody = GetUpdatedIssueBody(updateData, existingIssue);
-
             if (updateData.Status != existingIssue.Status)
             {
                 var newColumn = await _projectRepository.FindColumn(new GetColumnParams
@@ -117,7 +117,7 @@ public class IssueUseCase
                     ColumnId = oldColumn.Id,
                 });
             }
-
+            var updatedIssueBody = GetUpdatedIssueBody(updateData, existingIssue);
             return await _issueRepository.UpdateIssue(updatedIssueBody);
         });
 

@@ -17,10 +17,13 @@ public class IssueController : IssueService.IssueServiceBase
     private readonly IValidator<UpdateIssueReq> _updateIssueValidator;
     private readonly IValidator<ListIssuesReq> _listIssuesValidator;
 
+    private readonly ILogger<IssueController> _logger;
+
     public IssueController(
         IssueUseCase issueUseCase,
         UserUseCase userUseCase,
         IMapper mapper,
+        ILogger<IssueController> logger,
         IValidator<CreateIssueReq> createIssueValidator,
         IValidator<UpdateIssueReq> updateIssueValidator,
         IValidator<ListIssuesReq> listIssuesValidator)
@@ -28,6 +31,7 @@ public class IssueController : IssueService.IssueServiceBase
         _issueUseCase = issueUseCase ?? throw new ArgumentNullException(nameof(issueUseCase));
         _userUseCase = userUseCase ?? throw new ArgumentNullException(nameof(userUseCase));
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        _logger = logger;
         _createIssueValidator = createIssueValidator ?? throw new ArgumentNullException(nameof(createIssueValidator));
         _updateIssueValidator = updateIssueValidator ?? throw new ArgumentNullException(nameof(updateIssueValidator));
         _listIssuesValidator = listIssuesValidator ?? throw new ArgumentNullException(nameof(listIssuesValidator));
@@ -54,9 +58,9 @@ public class IssueController : IssueService.IssueServiceBase
                 string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
 
-        try 
+        try
         {
-            var issueRequest = new CreateIssueReq 
+            var issueRequest = new CreateIssueReq
             {
                 ProjectId = request.ProjectId,
                 Title = request.Title,
@@ -71,7 +75,7 @@ public class IssueController : IssueService.IssueServiceBase
                 ReporterId = userId,
                 StoryPoint = request.StoryPoint
             };
-            
+
             if (request.Attachments != null)
             {
                 issueRequest.Attachments.AddRange(request.Attachments);

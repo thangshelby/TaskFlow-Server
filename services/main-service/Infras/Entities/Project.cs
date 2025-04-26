@@ -50,8 +50,11 @@ public class ProjectColumn
     [BsonRepresentation(BsonType.ObjectId)]
     public string ProjectId { get; set; } = string.Empty;
 
+    [BsonElement("issue_ids")]
+    public List<ObjectId> IssueIds { get; set; } = new List<ObjectId>();
+
     [BsonElement("issues")]
-    public List<string> Issues { get; set; } = new List<string>();
+    public List<Issue>? Issues { get; set; }
 
     [BsonElement("order")]
     public int Order { get; set; } = 0;
