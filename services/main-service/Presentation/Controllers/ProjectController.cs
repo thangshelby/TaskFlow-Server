@@ -32,6 +32,12 @@ public class ProjectController : ProjectService.ProjectServiceBase
 
     public override async Task<CreateProjectRes> CreateProject(CreateProjectReq request, ServerCallContext context)
     {
+        var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User must be authenticated"));
+        }
+
         var validationResult = await _createProjectValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
         {
@@ -39,9 +45,24 @@ public class ProjectController : ProjectService.ProjectServiceBase
                 string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
 
-        var projectDomain = _mapper.Map<ProjectDomain>(request);
-        var result = await _projectUseCase.CreateProject(projectDomain);
-        return new CreateProjectRes { Data = _mapper.Map<ProjectRes>(result), Message = "Craete project success.", Status = "success" };
+        try
+        {
+            var projectDomain = _mapper.Map<ProjectDomain>(request);
+            projectDomain.OwnerId = userId; // Set the authenticated user as owner
+
+            var result = await _projectUseCase.CreateProject(projectDomain);
+            return new CreateProjectRes
+            {
+                Data = _mapper.Map<ProjectRes>(result),
+                Message = "Create project success.",
+                Status = "success"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating project");
+            throw new RpcException(new Status(StatusCode.Internal, "Error creating project"));
+        }
     }
     public override async Task<ProjectRes> GetProject(GetProjectReq request, ServerCallContext context)
     {

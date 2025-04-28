@@ -37,9 +37,10 @@ public class CreateIssueValidator : AbstractValidator<CreateIssueReq>
                 .NotEmpty().WithMessage("Priority is required.")
                 .Must(priority => System.Enum.TryParse<IssuePriority>(priority, true, out _))
                 .WithMessage("Invalid priority. Allowed values: Low, Medium, High, Critical.");
-            RuleFor(x => x.StoryPoint)
-                .NotEmpty().WithMessage("Story point is required.")
-                .GreaterThanOrEqualTo(0).WithMessage("Story point must be a non-negative number.");
+            When(x => x.StoryPoint != 0, () => {
+                RuleFor(x => x.StoryPoint)
+                    .GreaterThan(0).WithMessage("Story point must be greater than 0");
+            });
         });
 
         // Optional fields validation
