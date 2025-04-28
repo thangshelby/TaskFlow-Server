@@ -94,7 +94,7 @@ message CreateIssueReq {
   string priority = 9;
   string summary = 10;
   string description = 11;
-  int32 story_point = 12;
+  optional int32 story_point = 12;
   repeated string attachments = 13;
 }
 

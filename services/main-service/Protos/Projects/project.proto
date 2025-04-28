@@ -8,6 +8,7 @@ import "google/protobuf/empty.proto";
 import "google/api/annotations.proto"; // Import Google API annotations
 import "Base/base.proto";
 import "Issues/issue.proto";
+import "ProjectMember/project_member.proto";
 
 
 // Define the gRPC service
@@ -127,6 +128,7 @@ message ProjectRes {
   string owner_id = 6;
   string created_at = 7;
   string updated_at = 8;
+  repeated project_service.ProjectMemberRes project_members = 9;
 }
 
 message CreateProjectRes {

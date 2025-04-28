@@ -11,6 +11,8 @@ public class ProjectDomain
     public string OwnerId { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    public List<ProjectMemberDomain>? ProjectMembers { get; set; } = new List<ProjectMemberDomain>();
 }
 
 public class ProjectColumnDomain

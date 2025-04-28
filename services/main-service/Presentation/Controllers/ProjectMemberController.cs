@@ -1,0 +1,282 @@
+using Grpc.Core;
+using MainService.Domain.UseCases;
+using MainService.Domain.Entities;
+using TaskFlow.ProjectMemberService;
+using Google.Protobuf.WellKnownTypes;
+using BaseService;
+using DomainProjectMemberRole = MainService.Domain.Enums.TeamMemberRole;
+using GrpcProjectMemberRole = TaskFlow.ProjectMemberService.ProjectMemberRole;
+using AutoMapper;
+
+public class ProjectMemberController : ProjectMemberService.ProjectMemberServiceBase
+{
+    private readonly ProjectMemberUseCase _projectMemberUseCase;
+    private readonly ProjectUseCase _projectUseCase;
+    private readonly IMapper _mapper;
+    private readonly ILogger<ProjectMemberController> _logger;
+
+    public ProjectMemberController(
+        ProjectMemberUseCase projectMemberUseCase,
+        ProjectUseCase projectUseCase,
+        IMapper mapper,
+        ILogger<ProjectMemberController> logger)
+    {
+        _projectMemberUseCase = projectMemberUseCase ?? throw new ArgumentNullException(nameof(projectMemberUseCase));
+        _projectUseCase = projectUseCase ?? throw new ArgumentNullException(nameof(projectUseCase));
+        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
+
+    public override async Task<ProjectMemberRes> AddProjectMember(AddProjectMemberReq request, ServerCallContext context)
+    {
+        var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User must be authenticated"));
+        }
+
+        try
+        {
+            var member = await _projectMemberUseCase.AddProjectMemberAsync(
+                request.ProjectId,
+                userId,
+                request.UserId,
+                (DomainProjectMemberRole)request.Role
+            );
+
+            return MapToProjectMemberResponse(member);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding member to project {ProjectId}", request.ProjectId);
+            throw new RpcException(new Status(StatusCode.Internal, "Error adding member to project"));
+        }
+    }
+
+    public override async Task<ProjectMemberRes> UpdateProjectMemberRole(UpdateProjectMemberRoleReq request, ServerCallContext context)
+    {
+        var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User must be authenticated"));
+        }
+
+        try
+        {
+            var member = await _projectMemberUseCase.UpdateProjectMemberRoleAsync(
+                request.ProjectId,
+                request.UserId,
+                (DomainProjectMemberRole)request.Role
+            );
+
+            return MapToProjectMemberResponse(member);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating member role for project {ProjectId}", request.ProjectId);
+            throw new RpcException(new Status(StatusCode.Internal, "Error updating member role"));
+        }
+    }
+
+    public override async Task<Empty> RemoveProjectMember(RemoveProjectMemberReq request, ServerCallContext context)
+    {
+        var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User must be authenticated"));
+        }
+
+        try
+        {
+            await _projectMemberUseCase.RemoveProjectMemberAsync(request.ProjectId, request.UserId);
+            return new Empty();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing member from project {ProjectId}", request.ProjectId);
+            throw new RpcException(new Status(StatusCode.Internal, "Error removing member"));
+        }
+    }
+
+    public override async Task<ListProjectMembersRes> ListProjectMembers(ListProjectMembersReq request, ServerCallContext context)
+    {
+        try
+        {
+            var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new RpcException(new Status(StatusCode.Unauthenticated, "User must be authenticated"));
+            }
+
+            if (request.Page <= 0) request.Page = 1;
+            if (request.Limit <= 0) request.Limit = 10;
+
+            var (members, totalCount) = await _projectMemberUseCase.GetProjectMembersAsync(
+                request.ProjectId,
+                (int)request.Page,
+                (int)request.Limit
+            );
+
+            var response = new ListProjectMembersRes
+            {
+                Pagination = new PaginationRes
+                {
+                    TotalItems = totalCount,
+                    CurrentPage = request.Page,
+                    Limit = request.Limit,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)request.Limit)
+                }
+            };
+
+            response.Data.AddRange(members.Select(MapToProjectMemberResponse));
+            return response;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error listing project members for project {ProjectId}", request.ProjectId);
+            throw new RpcException(new Status(StatusCode.Internal, "Error listing project members"));
+        }
+    }
+
+    public override async Task<GetUserMembershipsRes> GetUserMemberships(UserMembershipsReq request, ServerCallContext context)
+    {
+        try
+        {
+            if (request.Page <= 0) request.Page = 1;
+            if (request.Limit <= 0) request.Limit = 10;
+            if (string.IsNullOrEmpty(request.UserId))
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "UserId is required"));
+            }
+
+            _logger.LogInformation("Getting projects for user {UserId}", request.UserId);
+            var (projects, totalCount) = await _projectMemberUseCase.GetUserProjectsAsync(
+                request.UserId,
+                (int)request.Page,
+                (int)request.Limit
+            );
+
+            var response = new GetUserMembershipsRes
+            {
+                Pagination = new PaginationRes
+                {
+                    TotalItems = totalCount,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)request.Limit),
+                    CurrentPage = request.Page,
+                    Limit = request.Limit
+                }
+            };
+
+            foreach (var member in projects)
+            {
+                var project = await _projectUseCase.GetProject(member.ProjectId);
+                var userMembership = new UserMembershipRes
+                {
+                    Id = member.Id ?? string.Empty,
+                    ProjectId = member.ProjectId,
+                    UserId = member.UserId,
+                    Role = (GrpcProjectMemberRole)member.Role,
+                    CreatedAt = member.CreatedAt.ToString("O"),
+                    UpdatedAt = member.UpdatedAt.ToString("O"),
+                    Project = new ProjectInfo
+                    {
+                        Id = project.Id ?? string.Empty,
+                        Name = project.Name,
+                        Description = project.Key,
+                        Status = project.Access.ToString(),
+                        CreatedAt = project.CreatedAt.ToString("O"),
+                        UpdatedAt = project.UpdatedAt.ToString("O"),
+                    }
+                };
+                response.Data.Add(userMembership);
+            }
+
+            return response;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting memberships for user {UserId}", request.UserId);
+            throw new RpcException(new Status(StatusCode.Internal, "Error getting user memberships"));
+        }
+    }
+
+    public override async Task<ProjectMemberRes> ApproveMember(ApproveMemberReq request, ServerCallContext context)
+    {
+        var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User must be authenticated"));
+        }
+
+        try
+        {
+            var member = await _projectMemberUseCase.ApproveProjectMemberAsync(
+                request.ProjectId,
+                userId,
+                request.UserId
+            );
+
+            return MapToProjectMemberResponse(member);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            throw new RpcException(new Status(StatusCode.PermissionDenied, "Only project owner can approve members"));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error approving member for project {ProjectId}", request.ProjectId);
+            throw new RpcException(new Status(StatusCode.Internal, "Error approving member"));
+        }
+    }
+
+    public override async Task<Empty> RejectMember(RejectMemberReq request, ServerCallContext context)
+    {
+        var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User must be authenticated"));
+        }
+
+        try
+        {
+            await _projectMemberUseCase.RejectProjectMemberAsync(
+                request.ProjectId,
+                userId,
+                request.UserId
+            );
+
+            return new Empty();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            throw new RpcException(new Status(StatusCode.PermissionDenied, "Only project owner can reject members"));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error rejecting member for project {ProjectId}", request.ProjectId);
+            throw new RpcException(new Status(StatusCode.Internal, "Error rejecting member"));
+        }
+    }
+
+    private static ProjectMemberRes MapToProjectMemberResponse(ProjectMemberDomain member)
+    {
+        return new ProjectMemberRes
+        {
+            Id = member.Id ?? string.Empty,
+            ProjectId = member.ProjectId,
+            UserId = member.UserId,
+            Role = (GrpcProjectMemberRole)member.Role,
+            IsPending = member.IsPending,
+            CreatedAt = member.CreatedAt.ToString("O"),
+            UpdatedAt = member.UpdatedAt.ToString("O")
+        };
+    }
+}
