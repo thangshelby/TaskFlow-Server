@@ -15,6 +15,8 @@ public class ProjectRepository : IProjectRepository
     private readonly IMongoCollection<Project> _projects;
     private readonly IMongoCollection<ProjectColumn> _projectColumns;
     private readonly IMongoCollection<Issue> _issues;
+    private readonly IMongoCollection<ProjectMember> _teamMembers;  // Changed to match DB collection name
+    private readonly IMongoCollection<User> _users;
     private readonly IMapper _mapper;
 
     public ProjectRepository(MongoDbService mongoDbService, IMapper mapper, ILogger<ProjectRepository> logger)
@@ -23,6 +25,8 @@ public class ProjectRepository : IProjectRepository
         _projects = database.GetCollection<Project>("projects");
         _issues = database.GetCollection<Issue>("issues");
         _projectColumns = database.GetCollection<ProjectColumn>("project_column");
+        _teamMembers = database.GetCollection<ProjectMember>("team_members");  // Changed to match DB collection name
+        _users = database.GetCollection<User>("users");
         _mapper = mapper;
         _logger = logger;
         // Ensure index on Key
@@ -39,13 +43,16 @@ public class ProjectRepository : IProjectRepository
         projectDomain.Id = projectEntity.Id;
         return projectDomain;
     }
+
     public async Task<ProjectDomain> GetProject(string id)
     {
-        var projectEntity = await _projects.Find(p => p.Id == id).FirstOrDefaultAsync();
-        if (projectEntity == null)
+        var project = await _projects.Find(p => p.Id == id).FirstOrDefaultAsync();
+        if (project == null)
             throw new Exception("Project not found");
-        return _mapper.Map<ProjectDomain>(projectEntity);
+
+        return _mapper.Map<ProjectDomain>(project);
     }
+
     public async Task<ProjectDomain> UpdateProject(ProjectDomain projectDomain)
     {
         var projectEntity = _mapper.Map<Project>(projectDomain);
@@ -54,55 +61,61 @@ public class ProjectRepository : IProjectRepository
             throw new Exception("Project not found");
         return projectDomain;
     }
+
     public async Task DeleteProject(string id)
     {
         var result = await _projects.DeleteOneAsync(p => p.Id == id);
         if (result.DeletedCount == 0)
             throw new Exception("Project not found");
     }
+
     public async Task<(List<ProjectDomain> Projects, int TotalCount)> ListProjects(ListProjectParams query)
     {
-        var builder = Builders<Project>.Filter;
-        var filter = builder.Empty;
-        // Query builder
+        // Build match filter
+        var matchFilter = new BsonDocument();
         if (!string.IsNullOrEmpty(query.UserId))
         {
-            filter = builder.Eq(p => p.OwnerId, query.UserId);
+            matchFilter.Add("owner_id", query.UserId);
         }
         if (!string.IsNullOrEmpty(query.Kw))
         {
-            var keywordFilter = builder.Regex(p => p.Name, new BsonRegularExpression(query.Kw, "i"));
-            filter = builder.And(filter, keywordFilter);
+            matchFilter.Add("name", new BsonDocument("$regex", query.Kw).Add("$options", "i"));
         }
 
-        // Sort builder
-        var sortBuilder = Builders<Project>.Sort;
-        SortDefinition<Project> sort = sortBuilder.Descending("createdAt");
+        // Create sort document
+        var sortDoc = new BsonDocument();
         if (!string.IsNullOrEmpty(query.Sort))
         {
             var sortField = query.Sort.TrimStart('-');
             var descending = query.Sort.StartsWith("-");
-
-            sort = sortField.ToLower() switch
+            
+            sortField = sortField.ToLower() switch
             {
-                "name" => descending ? sortBuilder.Descending(p => p.Name) : sortBuilder.Ascending(p => p.Name),
-                "key" => descending ? sortBuilder.Descending(p => p.Key) : sortBuilder.Ascending(p => p.Key),
-                "created_at" => descending ? sortBuilder.Descending(p => p.CreatedAt) : sortBuilder.Ascending(p => p.CreatedAt),
-                "updated_at" => descending ? sortBuilder.Descending(p => p.UpdatedAt) : sortBuilder.Ascending(p => p.UpdatedAt),
-                _ => sortBuilder.Descending(p => p.CreatedAt)
+                "name" => "name",
+                "key" => "key",
+                "created_at" => "created_at",
+                "updated_at" => "updated_at",
+                _ => "created_at"
             };
+
+            sortDoc.Add(sortField, descending ? -1 : 1);
+        }
+        else
+        {
+            sortDoc.Add("created_at", -1);
         }
 
-        var totalCount = await _projects.CountDocumentsAsync(filter);
-
-        var projects = await _projects.Find(filter)
-            .Sort(sort)
+        var totalCount = await _projects.CountDocumentsAsync(matchFilter);
+        var projects = await _projects
+            .Find(matchFilter)
+            .Sort(sortDoc)
             .Skip((query.Page - 1) * query.Limit)
             .Limit(query.Limit)
             .ToListAsync();
 
         return (_mapper.Map<List<ProjectDomain>>(projects), (int)totalCount);
     }
+
     public async Task<ProjectColumnDomain> CreateColumn(ProjectColumnDomain projectColumn)
     {
         var projectColumnEntity = _mapper.Map<ProjectColumn>(projectColumn);
@@ -111,6 +124,7 @@ public class ProjectRepository : IProjectRepository
         projectColumn.Id = projectColumnEntity.Id;
         return projectColumn;
     }
+
     public async Task<List<ProjectColumnDomain>> FindColumnsByProjectId(string projectId)
     {
         var pipeline = new[]
@@ -140,6 +154,7 @@ public class ProjectRepository : IProjectRepository
         var columnsDomain = _mapper.Map<List<ProjectColumnDomain>>(columnsEntity);
         return columnsDomain;
     }
+
     public async Task<ProjectColumnDomain> FindColumn(GetColumnParams param)
     {
         var filterBuilder = Builders<ProjectColumn>.Filter;
@@ -169,6 +184,7 @@ public class ProjectRepository : IProjectRepository
 
         await _projectColumns.UpdateOneAsync(filter, update);
     }
+
     public async Task<ProjectColumnDomain> UpdateColumn(UpdateColumnParams param)
     {
         var filter = Builders<ProjectColumn>.Filter.Eq(c => c.Id, param.ColumnId);
@@ -187,7 +203,6 @@ public class ProjectRepository : IProjectRepository
         updateDefs.Add(Builders<ProjectColumn>.Update.Set(c => c.UpdatedAt, DateTime.UtcNow));
 
         var update = Builders<ProjectColumn>.Update.Combine(updateDefs);
-
 
         var updatedColumn = await _projectColumns.FindOneAndUpdateAsync(filter, update);
 

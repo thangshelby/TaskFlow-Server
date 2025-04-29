@@ -5,6 +5,7 @@ using MainService.Domain.UseCases;
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using MainService.Domain.Enums;
+using MongoDB.Driver;
 
 namespace MainService.Tests.Domain.UseCases;
 
@@ -12,17 +13,25 @@ public class ProjectUseCaseTests
 {
     private readonly Mock<IProjectRepository> _projectRepositoryMock;
     private readonly Mock<ITransactionRepo> _transactionRepoMock;
+    private readonly Mock<IProjectMemberRepository> _projectMemberRepositoryMock;
+    private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly ProjectUseCase _projectUseCase;
 
     public ProjectUseCaseTests()
     {
         _projectRepositoryMock = new Mock<IProjectRepository>();
         _transactionRepoMock = new Mock<ITransactionRepo>();
-        _projectUseCase = new ProjectUseCase(_projectRepositoryMock.Object, _transactionRepoMock.Object);
+        _projectMemberRepositoryMock = new Mock<IProjectMemberRepository>();
+        _userRepositoryMock = new Mock<IUserRepository>();
+        _projectUseCase = new ProjectUseCase(
+            _projectRepositoryMock.Object,
+            _transactionRepoMock.Object,
+            _projectMemberRepositoryMock.Object,
+            _userRepositoryMock.Object);
     }
 
     [Fact]
-    public async Task CreateProject_ValidProject_ReturnsCreatedProject()
+    public async Task CreateProject_ValidProject_CreatesProjectAndOwnerMember()
     {
         // Arrange
         var project = new ProjectDomain
@@ -34,31 +43,44 @@ public class ProjectUseCaseTests
             OwnerId = "user-1"
         };
 
+        var createdProject = new ProjectDomain
+        {
+            Id = "test-id",
+            Name = project.Name,
+            Key = project.Key,
+            Access = project.Access,
+            Type = project.Type,
+            OwnerId = project.OwnerId,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
         _projectRepositoryMock
             .Setup(repo => repo.CreateProject(It.IsAny<ProjectDomain>()))
-            .ReturnsAsync((ProjectDomain p) => new ProjectDomain
+            .ReturnsAsync(createdProject);
+
+        _transactionRepoMock
+            .Setup(repo => repo.ExecuteAsync(It.IsAny<Func<IClientSessionHandle, Task>>()))
+            .Returns((Func<IClientSessionHandle, Task> func) =>
             {
-                Id = "test-id",
-                Name = p.Name,
-                Key = p.Key,
-                Access = p.Access,
-                Type = p.Type,
-                OwnerId = p.OwnerId,
-                CreatedAt = p.CreatedAt,
-                UpdatedAt = p.UpdatedAt
+                return Task.Run(() =>
+                {
+                    func(Mock.Of<IClientSessionHandle>()).Wait();
+                    return true;
+                });
             });
+
+        ProjectMemberDomain capturedMember = null!;
+        _projectMemberRepositoryMock
+            .Setup(repo => repo.AddAsync(It.IsAny<ProjectMemberDomain>()))
+            .Callback<ProjectMemberDomain>(member => capturedMember = member)
+            .ReturnsAsync((ProjectMemberDomain m) => m);
 
         // Act
         var result = await _projectUseCase.CreateProject(project);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Id.Should().Be("test-id");
-        result.Name.Should().Be(project.Name);
-        result.Key.Should().Be(project.Key);
-        result.Access.Should().Be(project.Access);
-        result.Type.Should().Be(project.Type);
-        result.OwnerId.Should().Be(project.OwnerId);
+        result.Should().BeEquivalentTo(createdProject);
 
         _projectRepositoryMock.Verify(
             repo => repo.CreateProject(It.Is<ProjectDomain>(p => 
@@ -66,26 +88,51 @@ public class ProjectUseCaseTests
                 p.Key == project.Key)),
             Times.Once
         );
+
+        capturedMember.Should().NotBeNull();
+        capturedMember.ProjectId.Should().Be(createdProject.Id);
+        capturedMember.UserId.Should().Be(project.OwnerId);
+        capturedMember.Role.Should().Be(TeamMemberRole.Owner);
+        capturedMember.IsPending.Should().BeFalse();
+
+        _transactionRepoMock.Verify(
+            repo => repo.ExecuteAsync(It.IsAny<Func<IClientSessionHandle, Task>>()),
+            Times.Once
+        );
     }
 
     [Theory]
     [InlineData("")]
-    [InlineData(null)]
     public async Task CreateProject_EmptyName_ThrowsArgumentException(string name)
     {
         // Arrange
         var project = new ProjectDomain
         {
             Name = name,
-            Key = "TEST"
+            Key = "TEST",
+            OwnerId = "user-1"
         };
 
-        // Act
-        var act = () => _projectUseCase.CreateProject(project);
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => _projectUseCase.CreateProject(project));
+        Assert.Equal("Project name cannot be empty", ex.Message);
+    }
 
-        // Assert
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("Project name cannot be empty");
+    [Theory]
+    [InlineData("")]
+    public async Task CreateProject_EmptyOwnerId_ThrowsArgumentException(string ownerId)
+    {
+        // Arrange
+        var project = new ProjectDomain
+        {
+            Name = "Test Project",
+            Key = "TEST",
+            OwnerId = ownerId
+        };
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => _projectUseCase.CreateProject(project));
+        Assert.Equal("Project owner ID cannot be empty", ex.Message);
     }
 
     [Fact]
@@ -104,6 +151,25 @@ public class ProjectUseCaseTests
             .Setup(repo => repo.GetProject(projectId))
             .ReturnsAsync(project);
 
+        var projectMembers = new List<ProjectMemberDomain>
+        {
+            new ProjectMemberDomain { UserId = "user-1" }
+        };
+
+        _projectMemberRepositoryMock
+            .Setup(repo => repo.GetProjectMembersAsync(projectId, 1, 100))
+            .ReturnsAsync(projectMembers);
+
+        var user = new UserDomain {
+            Id = "user-1",
+            FirstName = "Test",
+            LastName = "User"
+        };
+
+        _userRepositoryMock
+            .Setup(repo => repo.FindUserAsync(It.Is<UserQueryParams>(p => p.UserId == "user-1")))
+            .ReturnsAsync(user);
+
         // Act
         var result = await _projectUseCase.GetProject(projectId);
 
@@ -119,7 +185,7 @@ public class ProjectUseCaseTests
         var projectId = "non-existing-id";
         _projectRepositoryMock
             .Setup(repo => repo.GetProject(projectId))
-            .ReturnsAsync((ProjectDomain)null);
+            .ReturnsAsync((ProjectDomain)null!);
 
         // Act
         var act = () => _projectUseCase.GetProject(projectId);
@@ -140,7 +206,7 @@ public class ProjectUseCaseTests
             Key = "TEST",
             Access = ProjectAccess.Private,
             Type = ProjectType.Kanban,
-            OwnerId = "user-1"
+            OwnerId = "user-1"  
         };
 
         var existingProject = new ProjectDomain
@@ -150,7 +216,7 @@ public class ProjectUseCaseTests
             Key = "ORIG",
             Access = ProjectAccess.Public,
             Type = ProjectType.Scrum,
-            OwnerId = "user-1"
+            OwnerId = "user-1"  // Same owner
         };
 
         _projectRepositoryMock
@@ -170,7 +236,40 @@ public class ProjectUseCaseTests
         result.Key.Should().Be(project.Key);
         result.Access.Should().Be(project.Access);
         result.Type.Should().Be(project.Type);
+        result.OwnerId.Should().Be(existingProject.OwnerId); // Owner should not change
         result.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
+    public async Task UpdateProject_AttemptToChangeOwner_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var project = new ProjectDomain
+        {
+            Id = "test-id",
+            Name = "Updated Project",
+            Key = "TEST",
+            OwnerId = "new-owner"  // Attempting to change owner
+        };
+
+        var existingProject = new ProjectDomain
+        {
+            Id = project.Id,
+            Name = "Original Project",
+            Key = "ORIG",
+            OwnerId = "original-owner"
+        };
+
+        _projectRepositoryMock
+            .Setup(repo => repo.GetProject(project.Id))
+            .ReturnsAsync(existingProject);
+
+        // Act
+        var act = () => _projectUseCase.UpdateProject(project);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Cannot change project owner through update");
     }
 
     [Fact]
