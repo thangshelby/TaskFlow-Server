@@ -12,6 +12,7 @@ using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Grpc.Core;
 using Google.Protobuf.WellKnownTypes;
+using MongoDB.Driver;
 using ProtoProjectAccess = TaskFlow.ProjectService.ProjectAccess;
 using ProtoProjectType = TaskFlow.ProjectService.ProjectType;
 using DomainProjectAccess = MainService.Domain.Enums.ProjectAccess;
@@ -19,12 +20,48 @@ using DomainProjectType = MainService.Domain.Enums.ProjectType;
 
 namespace MainService.Tests.Presentation.Controllers;
 
+public class TestServerCallContext : ServerCallContext
+{
+    private readonly IDictionary<object, object> _userState;
+
+    public TestServerCallContext(IDictionary<object, object> userState)
+    {
+        _userState = userState;
+    }
+
+    protected override IDictionary<object, object> UserStateCore => _userState;
+
+    protected override string MethodCore => "";
+    protected override string HostCore => "";
+    protected override string PeerCore => "";
+    protected override DateTime DeadlineCore => DateTime.MaxValue;
+    protected override Metadata RequestHeadersCore => new Metadata();
+    protected override CancellationToken CancellationTokenCore => CancellationToken.None;
+    protected override Metadata ResponseTrailersCore => new Metadata();
+    protected override Status StatusCore { get; set; } = Status.DefaultSuccess;
+    protected override WriteOptions WriteOptionsCore { get; set; } = new WriteOptions();
+
+    protected override AuthContext AuthContextCore => throw new NotImplementedException();
+
+    protected override ContextPropagationToken CreatePropagationTokenCore(ContextPropagationOptions options)
+    {
+        throw new NotImplementedException();
+    }
+
+    protected override Task WriteResponseHeadersAsyncCore(Metadata responseHeaders)
+    {
+        return Task.CompletedTask;
+    }
+}
+
 [Collection("Project Tests")]
 public class ProjectControllerTests : IDisposable
 {
     private readonly ProjectUseCase _projectUseCase;
     private readonly Mock<IProjectRepository> _projectRepositoryMock;
     private readonly Mock<ITransactionRepo> _transactionRepoMock;
+    private readonly Mock<IProjectMemberRepository> _projectMemberRepositoryMock;
+    private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IMapper> _mapperMock;
     private readonly Mock<ILogger<ProjectController>> _loggerMock;
     private readonly Mock<IValidator<CreateProjectReq>> _createProjectValidatorMock;
@@ -37,7 +74,29 @@ public class ProjectControllerTests : IDisposable
     {
         _projectRepositoryMock = new Mock<IProjectRepository>();
         _transactionRepoMock = new Mock<ITransactionRepo>();
-        _projectUseCase = new ProjectUseCase(_projectRepositoryMock.Object, _transactionRepoMock.Object);
+        _projectMemberRepositoryMock = new Mock<IProjectMemberRepository>();
+        _userRepositoryMock = new Mock<IUserRepository>();
+
+        // Setup transaction handling
+        _transactionRepoMock
+            .Setup(repo => repo.ExecuteAsync(It.IsAny<Func<IClientSessionHandle, Task>>()))
+            .Returns<Func<IClientSessionHandle, Task>>(async func =>
+            {
+                await func(Mock.Of<IClientSessionHandle>());
+                return true;
+            });
+
+        // Setup project member repository for owner member creation
+        _projectMemberRepositoryMock
+            .Setup(repo => repo.AddAsync(It.IsAny<ProjectMemberDomain>()))
+            .ReturnsAsync((ProjectMemberDomain member) => member);
+
+        _projectUseCase = new ProjectUseCase(
+            _projectRepositoryMock.Object,
+            _transactionRepoMock.Object,
+            _projectMemberRepositoryMock.Object,
+            _userRepositoryMock.Object
+        );
         _mapperMock = new Mock<IMapper>();
         _loggerMock = new Mock<ILogger<ProjectController>>();
         _createProjectValidatorMock = new Mock<IValidator<CreateProjectReq>>();
@@ -53,15 +112,19 @@ public class ProjectControllerTests : IDisposable
             _listProjectsValidatorMock.Object
         );
         
-        // Create mock ServerCallContext
-        var contextMock = new Mock<ServerCallContext>();
-        _context = contextMock.Object;
+        // Create TestServerCallContext with user state
+        var userState = new Dictionary<object, object>
+        {
+            { "UserId", "owner-1" }
+        };
+        _context = new TestServerCallContext(userState);
     }
 
     public void Dispose()
     {
         _projectRepositoryMock.VerifyAll();
         _transactionRepoMock.VerifyAll();
+        _projectMemberRepositoryMock.VerifyAll();
     }
 
     [Fact]
@@ -130,8 +193,7 @@ public class ProjectControllerTests : IDisposable
             Name = "New Project",
             Key = "NEW",
             Access = ProtoProjectAccess.Public,
-            Type = ProtoProjectType.Scrum,
-            OwnerId = "owner-1"
+            Type = ProtoProjectType.Scrum
         };
 
         var projectDomain = new ProjectDomain
@@ -141,7 +203,7 @@ public class ProjectControllerTests : IDisposable
             Key = request.Key,
             Access = (DomainProjectAccess)request.Access,
             Type = (DomainProjectType)request.Type,
-            OwnerId = request.OwnerId,
+            OwnerId = "owner-1", // This should match what we get from the context
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -158,18 +220,36 @@ public class ProjectControllerTests : IDisposable
             UpdatedAt = projectDomain.UpdatedAt.ToString()
         };
 
+        // Setup validator to indicate success
+        var validationResult = new FluentValidation.Results.ValidationResult();
         _createProjectValidatorMock
-            .Setup(v => v.ValidateAsync(request, default))
-            .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+            .Setup(v => v.ValidateAsync(request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(validationResult);
 
+        // Setup mapper to return our domain project with owner ID from context
+        var mappedProject = new ProjectDomain
+        {
+            Name = request.Name,
+            Key = request.Key,
+            Access = (DomainProjectAccess)request.Access,
+            Type = (DomainProjectType)request.Type,
+            OwnerId = "owner-1"  // This should come from the context
+        };
         _mapperMock
             .Setup(m => m.Map<ProjectDomain>(request))
-            .Returns(projectDomain);
+            .Returns(mappedProject);
 
+        // Setup repository to accept the project and return it with an ID
         _projectRepositoryMock
-            .Setup(repo => repo.CreateProject(It.IsAny<ProjectDomain>()))
+            .Setup(repo => repo.CreateProject(It.Is<ProjectDomain>(p =>
+                p.Name == request.Name &&
+                p.Key == request.Key &&
+                p.OwnerId == "owner-1" &&
+                p.Access == (DomainProjectAccess)request.Access &&
+                p.Type == (DomainProjectType)request.Type)))
             .ReturnsAsync(projectDomain);
-            
+
+        // Setup mapper to convert domain project back to response
         _mapperMock
             .Setup(m => m.Map<ProjectRes>(It.IsAny<ProjectDomain>()))
             .Returns(expectedResponse);
@@ -185,15 +265,16 @@ public class ProjectControllerTests : IDisposable
         response.Data.Key.Should().Be(request.Key);
         response.Data.Access.Should().Be(request.Access);
         response.Data.Type.Should().Be(request.Type);
-        response.Data.OwnerId.Should().Be(request.OwnerId);
+        response.Data.OwnerId.Should().Be("owner-1");  // Should match the owner ID from the context
         response.Status.Should().Be("success");
-        response.Message.Should().Be("Craete project success.");
+        response.Message.Should().Be("Create project success.");
 
+        // Verify that the project was created with the correct owner ID from the context
         _projectRepositoryMock.Verify(
             repo => repo.CreateProject(It.Is<ProjectDomain>(p =>
                 p.Name == request.Name &&
                 p.Key == request.Key &&
-                p.OwnerId == request.OwnerId &&
+                p.OwnerId == "owner-1" && // This should match what we get from the context
                 p.Access == (DomainProjectAccess)request.Access &&
                 p.Type == (DomainProjectType)request.Type)),
             Times.Once
