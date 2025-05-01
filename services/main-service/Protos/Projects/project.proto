@@ -192,6 +192,7 @@ message UpdateColumnsOrderRes {
 message UpdateColumnReq {
   string name = 1;
   string column_id = 2;
+  string project_id = 3;
 }
 
 message UpdateColumnRes {
