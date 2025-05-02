@@ -208,4 +208,11 @@ public class ProjectRepository : IProjectRepository
 
         return _mapper.Map<ProjectColumnDomain>(updatedColumn);
     }
+    public async Task DeleteColumn(DeleteColumnParams param)
+    {
+        var filter = Builders<ProjectColumn>.Filter
+            .Where(c => c.Id == param.ColumnId);
+
+        await _projectColumns.FindOneAndDeleteAsync(filter);
+    }
 }

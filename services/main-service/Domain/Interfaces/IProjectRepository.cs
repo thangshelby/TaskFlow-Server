@@ -12,6 +12,7 @@ public interface IProjectRepository
     Task<List<ProjectColumnDomain>> FindColumnsByProjectId(string projectId);
     Task UpdateColumnOrder(string projectId, string columnId, int order);
     Task<ProjectColumnDomain> UpdateColumn(UpdateColumnParams param);
+    Task DeleteColumn(DeleteColumnParams param);
 }
 public class ListProjectParams
 {
@@ -48,4 +49,8 @@ public class GetColumnParams
 {
     public string? ColumnId { get; set; }
     public string? Name { get; set; }
+}
+public class DeleteColumnParams
+{
+    public required string ColumnId { get; set; }
 }

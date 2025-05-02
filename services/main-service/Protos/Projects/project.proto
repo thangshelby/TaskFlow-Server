@@ -68,6 +68,11 @@ service ProjectService {
       body: "*"
     };
   }
+  rpc DeleteColumn (DeleteColumnReq) returns (DeleteColumnRes) {
+    option (google.api.http) = {
+      delete: "/api/v1/projects/columns/{column_id}"
+    };
+  }
 }
 
 // Define request message
@@ -200,4 +205,11 @@ message UpdateColumnRes {
   string message = 2;  
   ColumnRes data = 3;
   base.PaginationRes pagination = 4;
+}
+message DeleteColumnReq {
+  string column_id = 1;
+}
+message DeleteColumnRes {
+  string message = 1;
+  string status = 2;
 }

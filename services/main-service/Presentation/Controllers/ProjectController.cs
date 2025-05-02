@@ -5,6 +5,7 @@ using MainService.Domain.UseCases;
 using MainService.Domain.Entities;
 using TaskFlow.ProjectService;
 using MainService.Domain.Interfaces;
+using Google.Protobuf.WellKnownTypes;
 
 public class ProjectController : ProjectService.ProjectServiceBase
 {
@@ -226,5 +227,16 @@ public class ProjectController : ProjectService.ProjectServiceBase
         });
 
         return new UpdateColumnRes { Data = _mapper.Map<ColumnRes>(columnUpdated), Message = "Update column success.", Status = "success" };
+    }
+     public override async Task<DeleteColumnRes> DeleteColumn(DeleteColumnReq request, ServerCallContext context)
+    {
+        await _projectUseCase.DeleteColumn(new DeleteColumnParams{
+            ColumnId = request.ColumnId
+        });
+
+        return new DeleteColumnRes{
+            Message = "Delete column success",
+            Status = "success"
+        };
     }
 }
