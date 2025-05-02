@@ -8,7 +8,7 @@ RUN dotnet restore
 
 # Copy the rest of the project files
 COPY . ./
-RUN dotnet publish -c Release -o out
+RUN dotnet publish NetService.csproj -c Release -o out
 RUN ls out/*.dll  # Print DLL files
 
 # Use the .NET runtime image for the final image
