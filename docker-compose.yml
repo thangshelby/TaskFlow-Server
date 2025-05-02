@@ -3,13 +3,33 @@ services:
   envoy:
     image: envoyproxy/envoy:v1.33.0
     container_name: envoy_proxy
-    # ports:
-    #   - "8080:8080"  # HTTP (REST to gRPC)
-    #   - "9901:9901"  # Admin Panel
+    ports:
+      - "8081:8081" # HTTP (REST to gRPC)
+      - "9901:9901" # Admin Panel
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
       - ./proto.pb:/etc/envoy/proto.pb
-    network_mode: "host"
+    networks:
+      - taskflow-network
+    depends_on:
+      - grpc-server
+  grpc-server:
+    build:
+      context: ./services/main-service  # Path to your .NET project
+      dockerfile: Dockerfile
+    container_name: grpc_server
+    ports:
+      - "5001:5001"  # Map host port 5001 to container port 5001
+    networks:
+      - taskflow-network
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://0.0.0.0:5001
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
   # kafka:
   #   image: bitnami/kafka:3.8
   #   container_name: kafka
@@ -70,6 +90,9 @@ services:
   #     \"
   #     "
   #   network_mode: "host"
+networks:
+  taskflow-network:
+    driver: bridge
 volumes:
   esdata: {}
   kong-data: {}
