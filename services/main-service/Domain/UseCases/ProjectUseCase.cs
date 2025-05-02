@@ -1,6 +1,7 @@
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using MainService.Domain.Enums;
+using Grpc.Core;
 
 namespace MainService.Domain.UseCases;
 
@@ -199,5 +200,21 @@ public class ProjectUseCase
     public async Task<ProjectColumnDomain> UpdateColumn(UpdateColumnParams param)
     {
         return await _projectRepository.UpdateColumn(param);
+    }
+
+    public async Task DeleteColumn(DeleteColumnParams param)
+    {
+        var col = await _projectRepository.FindColumn(new GetColumnParams{
+            ColumnId = param.ColumnId
+        });
+        if (col == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "Column not found"));
+        }
+        if (col.IssueIds != null && col.IssueIds.Count > 0)
+        {
+            throw new RpcException(new Status(StatusCode.FailedPrecondition, "Cannot delete column that contains issues"));
+        }
+        await _projectRepository.DeleteColumn(param);
     }
 }
