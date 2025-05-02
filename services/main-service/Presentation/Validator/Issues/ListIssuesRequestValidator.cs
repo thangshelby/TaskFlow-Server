@@ -7,8 +7,6 @@ public class ListIssuesRequestValidator : AbstractValidator<ListIssuesReq>
 {
     public ListIssuesRequestValidator()
     {
-        RuleFor(x => x.ProjectId)
-            .NotEmpty().WithMessage("Project ID is required");
 
         When(x => x.Page != 0, () => {
             RuleFor(x => x.Page)

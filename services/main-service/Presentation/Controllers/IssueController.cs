@@ -148,6 +148,9 @@ public class IssueController : IssueService.IssueServiceBase
             Limit = request.Limit == 0 ? 10 : request.Limit,
             Page = request.Page == 0 ? 1 : request.Page,
             ProjectId = request.ProjectId,
+            AssigneeId = request.AssingeeId,
+            Keyword = request.Keyword,
+            SprintId = request.SprintId,
             Status = request.Status
         });
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);

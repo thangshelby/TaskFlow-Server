@@ -22,6 +22,9 @@ public class GetIssuesParams
 {
     public string? ProjectId;
     public string? Status;
+    public string? AssigneeId;
+    public string? SprintId;
+    public string? Keyword;
     public int Page;
     public int Limit;
 }
