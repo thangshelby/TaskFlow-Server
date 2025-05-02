@@ -33,7 +33,7 @@ service IssueService {
   }
   rpc ListIssues (ListIssuesReq) returns (ListIssuesRes) {
     option (google.api.http) = {
-      get: "/api/v1/project/{project_id}/issues"
+      get: "/api/v1/issues"
     };
   }
 }
@@ -72,8 +72,11 @@ message UpdateIssueReq {
 message ListIssuesReq {
   string project_id = 1;
   optional string status = 2;
-  int32 page = 3;
-  int32 limit = 4;
+  optional string assingee_id = 3;
+  optional string sprint_id = 4;
+  optional string keyword = 5;
+  int32 page = 6;
+  int32 limit = 7;
 }
 
 message ListIssuesRes {
