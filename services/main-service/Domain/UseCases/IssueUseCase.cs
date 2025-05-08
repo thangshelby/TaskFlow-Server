@@ -138,7 +138,7 @@ public class IssueUseCase
         if (!string.IsNullOrEmpty(newIssue.Summary))
             existingIssue.Summary = newIssue.Summary;
 
-        if (newIssue.StoryPoint != null && newIssue.StoryPoint != existingIssue.StoryPoint)
+        if (newIssue.StoryPoint != existingIssue.StoryPoint)
             existingIssue.StoryPoint = newIssue.StoryPoint;
 
         if (!string.IsNullOrEmpty(newIssue.AssigneeId))
