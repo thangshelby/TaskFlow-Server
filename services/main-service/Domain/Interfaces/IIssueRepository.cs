@@ -22,7 +22,7 @@ public class CreateIssueParams
 public class GetIssuesParams
 {
     public string? ProjectId;
-    public string? Status;
+    public List<string>? Status;
     public string? AssigneeId;
     public string? SprintId;
     public string? Keyword;

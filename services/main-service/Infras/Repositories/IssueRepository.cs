@@ -43,13 +43,10 @@ public class IssueRepository : IIssueRepository
     public async Task<IssueDomain> UpdateIssue(UpdateIssueParams body)
     {
         var existingIssue = await _issues.Find(i => i.Id == body.IssueId).FirstOrDefaultAsync();
-        _logger.LogInformation(">>>>>>");
-        _logger.LogInformation(existingIssue.StoryPoint.ToString());
         _logger.LogInformation(body.StoryPoint.ToString());
         if (existingIssue == null)
             throw new Exception("Issue not found");
-
-        // Update only if the field is not null
+            
         if (!string.IsNullOrEmpty(body.Title)) existingIssue.Title = body.Title;
         if (!string.IsNullOrEmpty(body.ProjectId)) existingIssue.ProjectId = body.ProjectId;
         if (!string.IsNullOrEmpty(body.SprintId)) existingIssue.SprintId = body.SprintId;
@@ -65,9 +62,6 @@ public class IssueRepository : IIssueRepository
         if (body.Attachments != null && body.Attachments.Count > 0) existingIssue.Attachments = body.Attachments;
 
         existingIssue.UpdatedAt = DateTime.UtcNow;
-        
-        _logger.LogInformation(">>>>>>2");
-        _logger.LogInformation(existingIssue.StoryPoint.ToString());
         await _issues.ReplaceOneAsync(i => i.Id == body.IssueId, existingIssue);
 
         return _mapper.Map<IssueDomain>(existingIssue);
@@ -90,9 +84,9 @@ public class IssueRepository : IIssueRepository
             filter &= filterBuilder.Eq(i => i.ProjectId, param.ProjectId);
         }
 
-        if (!string.IsNullOrEmpty(param.Status))
-        {
-            filter &= filterBuilder.Eq(i => i.Status, param.Status);
+        if (param.Status != null && param.Status.Any())
+        {   
+            filter &= filterBuilder.In(i => i.Status, param.Status);
         }
 
         if (!string.IsNullOrEmpty(param.AssigneeId))
@@ -122,6 +116,8 @@ public class IssueRepository : IIssueRepository
             .Skip((param.Page - 1) * param.Limit)
             .Limit(param.Limit)
             .ToListAsync();
+
+        MongoDocumentLogUtil.LogObject(_logger, issues);
         return (_mapper.Map<List<IssueDomain>>(issues), (int)totalCount);
     }
 }
