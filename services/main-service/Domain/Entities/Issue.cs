@@ -10,9 +10,9 @@ public class IssueDomain
     public string? AssigneeId { get; set; }
     public string ParentId { get; set; } = string.Empty;
     public string ReporterId { get; set; } = string.Empty;
-    public IssueType Type { get; set; }
+    public IssueType? Type { get; set; }
     public string Status { get; set; } = string.Empty;
-    public IssuePriority Priority { get; set; } = IssuePriority.Medium;
+    public IssuePriority? Priority { get; set; } 
 
     public string Summary { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
