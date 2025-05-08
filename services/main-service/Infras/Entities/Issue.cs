@@ -31,7 +31,7 @@ public class Issue
 
     [BsonElement("type")]
     [BsonRepresentation(BsonType.String)]
-    public IssueType Type { get; set; }
+    public IssueType? Type { get; set; }
 
     [BsonElement("status")]
     [BsonRepresentation(BsonType.String)]
@@ -39,7 +39,7 @@ public class Issue
 
     [BsonElement("priority")]
     [BsonRepresentation(BsonType.String)]
-    public IssuePriority Priority { get; set; } = IssuePriority.Medium;
+    public IssuePriority? Priority { get; set; }
 
     [BsonElement("summary")]
     public string Summary { get; set; } = string.Empty;
