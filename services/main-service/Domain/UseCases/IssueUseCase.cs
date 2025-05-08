@@ -80,14 +80,14 @@ public class IssueUseCase
         return issue;
     }
 
-    public async Task<IssueDomain> UpdateIssue(IssueDomain updateData)
+    public async Task<IssueDomain> UpdateIssue(UpdateIssueParams updateData)
     {
-        if (string.IsNullOrEmpty(updateData.Id))
+        if (string.IsNullOrEmpty(updateData.IssueId))
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Issue ID cannot be empty"));
 
         var updatedIssue = await _transactionRepo.ExecuteAsync(async session =>
         {
-            var existingIssue = await _issueRepository.GetIssue(updateData.Id);
+            var existingIssue = await _issueRepository.GetIssue(updateData.IssueId);
             if (!string.IsNullOrEmpty(updateData.Status) && updateData.Status != existingIssue.Status)
             {
                 var newColumn = await _projectRepository.FindColumn(new GetColumnParams
@@ -108,7 +108,7 @@ public class IssueUseCase
 
                 await _projectRepository.UpdateColumn(new UpdateColumnParams
                 {
-                    AddIssueId = updateData.Id,
+                    AddIssueId = updateData.IssueId,
                     ColumnId = newColumn.Id,
                 });
                 await _projectRepository.UpdateColumn(new UpdateColumnParams
@@ -117,60 +117,11 @@ public class IssueUseCase
                     ColumnId = oldColumn.Id,
                 });
             }
-            var updatedIssueBody = GetUpdatedIssueBody(updateData, existingIssue);
-            return await _issueRepository.UpdateIssue(updatedIssueBody);
+            
+            return await _issueRepository.UpdateIssue(updateData);
         });
 
         return updatedIssue;
-    }
-
-    private IssueDomain GetUpdatedIssueBody(IssueDomain newIssue, IssueDomain existingIssue)
-    {
-        if (existingIssue == null)
-            throw new RpcException(new Status(StatusCode.NotFound, "Issue not found"));
-
-        if (!string.IsNullOrEmpty(newIssue.Title))
-            existingIssue.Title = newIssue.Title;
-
-        if (!string.IsNullOrEmpty(newIssue.Description))
-            existingIssue.Description = newIssue.Description;
-
-        if (!string.IsNullOrEmpty(newIssue.Summary))
-            existingIssue.Summary = newIssue.Summary;
-
-        if (newIssue.StoryPoint != existingIssue.StoryPoint)
-            existingIssue.StoryPoint = newIssue.StoryPoint;
-
-        if (!string.IsNullOrEmpty(newIssue.AssigneeId))
-            existingIssue.AssigneeId = newIssue.AssigneeId;
-
-        if (!string.IsNullOrEmpty(newIssue.ParentId))
-            existingIssue.ParentId = newIssue.ParentId;
-
-        if (!string.IsNullOrEmpty(newIssue.ReporterId))
-            existingIssue.ReporterId = newIssue.ReporterId;
-
-        if (newIssue.Type.HasValue && newIssue.Type.Value != existingIssue.Type)
-            existingIssue.Type = newIssue.Type;
-
-        if (newIssue.Priority.HasValue && newIssue.Priority.Value != existingIssue.Priority)
-            existingIssue.Priority = newIssue.Priority;
-
-        if (!string.IsNullOrEmpty(newIssue.Status) && newIssue.Status != existingIssue.Status)
-            existingIssue.Status = newIssue.Status;
-
-        if (newIssue.Attachments != null && newIssue.Attachments.Any())
-            existingIssue.Attachments = newIssue.Attachments;
-
-        if (!string.IsNullOrEmpty(newIssue.SprintId))
-            existingIssue.SprintId = newIssue.SprintId;
-
-        if (!string.IsNullOrEmpty(newIssue.ProjectId))
-            existingIssue.ProjectId = newIssue.ProjectId;
-
-        existingIssue.UpdatedAt = DateTime.UtcNow;
-
-        return existingIssue;
     }
 
     public async Task DeleteIssue(string id)

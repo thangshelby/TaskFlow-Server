@@ -40,13 +40,37 @@ public class IssueRepository : IIssueRepository
         return _mapper.Map<IssueDomain>(issueEntity);
     }
 
-    public async Task<IssueDomain> UpdateIssue(IssueDomain issueDomain)
+    public async Task<IssueDomain> UpdateIssue(UpdateIssueParams body)
     {
-        var issueEntity = _mapper.Map<Issue>(issueDomain);
-        var result = await _issues.ReplaceOneAsync(i => i.Id == issueDomain.Id, issueEntity);
-        if (result.MatchedCount == 0)
+        var existingIssue = await _issues.Find(i => i.Id == body.IssueId).FirstOrDefaultAsync();
+        _logger.LogInformation(">>>>>>");
+        _logger.LogInformation(existingIssue.StoryPoint.ToString());
+        _logger.LogInformation(body.StoryPoint.ToString());
+        if (existingIssue == null)
             throw new Exception("Issue not found");
-        return issueDomain;
+
+        // Update only if the field is not null
+        if (!string.IsNullOrEmpty(body.Title)) existingIssue.Title = body.Title;
+        if (!string.IsNullOrEmpty(body.ProjectId)) existingIssue.ProjectId = body.ProjectId;
+        if (!string.IsNullOrEmpty(body.SprintId)) existingIssue.SprintId = body.SprintId;
+        if (!string.IsNullOrEmpty(body.AssigneeId)) existingIssue.AssigneeId = body.AssigneeId;
+        if (!string.IsNullOrEmpty(body.Description)) existingIssue.Description = body.Description;
+        if (!string.IsNullOrEmpty(body.Summary)) existingIssue.Summary = body.Summary;
+        if (body.StoryPoint.HasValue) existingIssue.StoryPoint = body.StoryPoint.Value;
+        if (!string.IsNullOrEmpty(body.ReporterId)) existingIssue.ReporterId = body.ReporterId;
+        if (!string.IsNullOrEmpty(body.Status)) existingIssue.Status = body.Status;
+        if (!string.IsNullOrEmpty(body.ParentId)) existingIssue.ParentId = body.ParentId;
+        if (body.Type.HasValue) existingIssue.Type = body.Type;
+        if (body.Priority.HasValue) existingIssue.Priority = body.Priority;
+        if (body.Attachments != null && body.Attachments.Count > 0) existingIssue.Attachments = body.Attachments;
+
+        existingIssue.UpdatedAt = DateTime.UtcNow;
+        
+        _logger.LogInformation(">>>>>>2");
+        _logger.LogInformation(existingIssue.StoryPoint.ToString());
+        await _issues.ReplaceOneAsync(i => i.Id == body.IssueId, existingIssue);
+
+        return _mapper.Map<IssueDomain>(existingIssue);
     }
 
     public async Task DeleteIssue(string id)

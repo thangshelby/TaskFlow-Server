@@ -7,6 +7,7 @@ using TaskFlow.IssueService;
 using Google.Protobuf.WellKnownTypes;
 using System;
 using MainService.Domain.Interfaces;
+using MainService.Domain.Enums;
 
 public class IssueController : IssueService.IssueServiceBase
 {
@@ -115,9 +116,21 @@ public class IssueController : IssueService.IssueServiceBase
             throw new RpcException(new Status(StatusCode.InvalidArgument,
                 string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
-
-        var issueDomain = _mapper.Map<IssueDomain>(request);
-        var result = await _issueUseCase.UpdateIssue(issueDomain);
+        var result = await _issueUseCase.UpdateIssue(new UpdateIssueParams {
+            IssueId = request.Id,
+            AssigneeId = request.AssigneeId,
+            Description= request.Description,
+            ProjectId = request.ProjectId,
+            ReporterId = request.ReporterId,
+            SprintId = request.SprintId,
+            Status = request.Status,
+            StoryPoint = request.StoryPoint,
+            Summary = request.Summary,
+            Title = request.Title,
+            ParentId = request.ParentId,
+            Priority = System.Enum.TryParse<IssuePriority>(request.Priority, true, out var priorityEnum) ? priorityEnum : null,
+            Type = System.Enum.TryParse<IssueType>(request.Type, true, out var typeEnum) ? typeEnum : null
+        });
         return _mapper.Map<IssueRes>(result);
     }
 
