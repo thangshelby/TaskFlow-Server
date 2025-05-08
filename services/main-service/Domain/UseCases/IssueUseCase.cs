@@ -88,7 +88,7 @@ public class IssueUseCase
         var updatedIssue = await _transactionRepo.ExecuteAsync(async session =>
         {
             var existingIssue = await _issueRepository.GetIssue(updateData.Id);
-            if (updateData.Status != existingIssue.Status)
+            if (!string.IsNullOrEmpty(updateData.Status) && updateData.Status != existingIssue.Status)
             {
                 var newColumn = await _projectRepository.FindColumn(new GetColumnParams
                 {
@@ -138,7 +138,7 @@ public class IssueUseCase
         if (!string.IsNullOrEmpty(newIssue.Summary))
             existingIssue.Summary = newIssue.Summary;
 
-        if (newIssue.StoryPoint != existingIssue.StoryPoint)
+        if (newIssue.StoryPoint != null && newIssue.StoryPoint != existingIssue.StoryPoint)
             existingIssue.StoryPoint = newIssue.StoryPoint;
 
         if (!string.IsNullOrEmpty(newIssue.AssigneeId))
@@ -150,13 +150,13 @@ public class IssueUseCase
         if (!string.IsNullOrEmpty(newIssue.ReporterId))
             existingIssue.ReporterId = newIssue.ReporterId;
 
-        if (newIssue.Type != existingIssue.Type)
+        if (newIssue.Type.HasValue && newIssue.Type.Value != existingIssue.Type)
             existingIssue.Type = newIssue.Type;
 
-        if (newIssue.Priority != existingIssue.Priority)
+        if (newIssue.Priority.HasValue && newIssue.Priority.Value != existingIssue.Priority)
             existingIssue.Priority = newIssue.Priority;
 
-        if (newIssue.Status != existingIssue.Status)
+        if (!string.IsNullOrEmpty(newIssue.Status) && newIssue.Status != existingIssue.Status)
             existingIssue.Status = newIssue.Status;
 
         if (newIssue.Attachments != null && newIssue.Attachments.Any())
