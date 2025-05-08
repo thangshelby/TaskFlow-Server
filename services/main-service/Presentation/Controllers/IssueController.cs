@@ -155,7 +155,7 @@ public class IssueController : IssueService.IssueServiceBase
             throw new RpcException(new Status(StatusCode.InvalidArgument,
                 string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
-        var Status = request.Status?.Replace('+', ' ');
+        var statusList = request.Status?.Select(s => s.Replace('+', ' ')).ToList();
         var (issues, totalCount) = await _issueUseCase.ListIssues(new GetIssuesParams
         {
             Limit = request.Limit == 0 ? 10 : request.Limit,
@@ -164,7 +164,7 @@ public class IssueController : IssueService.IssueServiceBase
             AssigneeId = request.AssingeeId,
             Keyword = request.Keyword,
             SprintId = request.SprintId,
-            Status = Status
+            Status = statusList
         });
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
 
