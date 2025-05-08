@@ -5,6 +5,7 @@ option csharp_namespace = "TaskFlow.IssueService";
 package project_service;
 
 import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
 import "Base/base.proto";
 
@@ -64,7 +65,7 @@ message UpdateIssueReq {
   optional string type = 10;
   optional string status = 11;
   optional string priority = 12;
-  optional int32 story_point = 13;
+  google.protobuf.Int32Value story_point = 13;
   repeated string attachments = 14;
 }
 
