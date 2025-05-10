@@ -1,8 +1,11 @@
+using System.Text.Json;
 using AutoMapper;
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using MainService.Infras.Entities;
 using MongoDB.Bson;
+using MongoDB.Bson.IO;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 
 namespace MainService.Infras.Repositories;
@@ -46,7 +49,7 @@ public class IssueRepository : IIssueRepository
         _logger.LogInformation(body.StoryPoint.ToString());
         if (existingIssue == null)
             throw new Exception("Issue not found");
-            
+
         if (!string.IsNullOrEmpty(body.Title)) existingIssue.Title = body.Title;
         if (!string.IsNullOrEmpty(body.ProjectId)) existingIssue.ProjectId = body.ProjectId;
         if (!string.IsNullOrEmpty(body.SprintId)) existingIssue.SprintId = body.SprintId;
@@ -55,7 +58,7 @@ public class IssueRepository : IIssueRepository
         if (!string.IsNullOrEmpty(body.Summary)) existingIssue.Summary = body.Summary;
         if (body.StoryPoint.HasValue) existingIssue.StoryPoint = body.StoryPoint.Value;
         if (!string.IsNullOrEmpty(body.ReporterId)) existingIssue.ReporterId = body.ReporterId;
-        if (!string.IsNullOrEmpty(body.Status)) existingIssue.Status = body.Status;
+        if (!string.IsNullOrEmpty(body.ColumnId)) existingIssue.ColumnId = body.ColumnId;
         if (!string.IsNullOrEmpty(body.ParentId)) existingIssue.ParentId = body.ParentId;
         if (body.Type.HasValue) existingIssue.Type = body.Type;
         if (body.Priority.HasValue) existingIssue.Priority = body.Priority;
@@ -84,9 +87,9 @@ public class IssueRepository : IIssueRepository
             filter &= filterBuilder.Eq(i => i.ProjectId, param.ProjectId);
         }
 
-        if (param.Status != null && param.Status.Any())
-        {   
-            filter &= filterBuilder.In(i => i.Status, param.Status);
+        if (param.ColumnIds != null && param.ColumnIds.Any())
+        {
+            filter &= filterBuilder.In(i => i.ColumnId, param.ColumnIds);
         }
 
         if (!string.IsNullOrEmpty(param.AssigneeId))
@@ -111,13 +114,43 @@ public class IssueRepository : IIssueRepository
         }
 
         var totalCount = await _issues.CountDocumentsAsync(filter);
+        var renderedFilter = filter.Render(new RenderArgs<Issue>(
+            BsonSerializer.SerializerRegistry.GetSerializer<Issue>(),
+            BsonSerializer.SerializerRegistry
+        ));
+        var pipeline = new[]
+        {
+            new BsonDocument("$match", renderedFilter),
+            new BsonDocument("$lookup", new BsonDocument
+            {
+                { "from", "project_column" },
+                { "let", new BsonDocument { { "colId", "$column_id" } } },
+                { "pipeline", new BsonArray
+                    {
+                        new BsonDocument("$match", new BsonDocument
+                        {
+                            { "$expr", new BsonDocument
+                                {
+                                    { "$eq", new BsonArray { "$_id", new BsonDocument("$toObjectId", "$$colId") } }
+                                }
+                            }
+                        })
+                    }
+                },
+                { "as", "column" }
+            }),
+            new BsonDocument("$unwind", new BsonDocument
+            {
+                { "path", "$column" },
+                { "preserveNullAndEmptyArrays", true }
+            }),
+            new BsonDocument("$skip", (param.Page - 1) * param.Limit),
+            new BsonDocument("$limit", param.Limit)
+        };
 
-        var issues = await _issues.Find(filter)
-            .Skip((param.Page - 1) * param.Limit)
-            .Limit(param.Limit)
-            .ToListAsync();
+        var rawResults = await _issues.Aggregate<BsonDocument>(pipeline).ToListAsync();
+        var issues = rawResults.Select(bson => BsonSerializer.Deserialize<Issue>(bson)).ToList();
 
-        MongoDocumentLogUtil.LogObject(_logger, issues);
         return (_mapper.Map<List<IssueDomain>>(issues), (int)totalCount);
     }
 }

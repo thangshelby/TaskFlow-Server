@@ -22,7 +22,7 @@ public class CreateIssueParams
 public class GetIssuesParams
 {
     public string? ProjectId;
-    public List<string>? Status;
+    public List<string>? ColumnIds;
     public string? AssigneeId;
     public string? SprintId;
     public string? Keyword;
@@ -40,7 +40,7 @@ public class UpdateIssueParams
     public string? Summary;
     public int? StoryPoint;
     public string? ReporterId;
-    public string? Status;
+    public string? ColumnId;
     public string? ParentId;
     public IssueType? Type;
     public IssuePriority? Priority;
