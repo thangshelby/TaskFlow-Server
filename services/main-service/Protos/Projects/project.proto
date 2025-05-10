@@ -7,7 +7,6 @@ package project_service;
 import "google/protobuf/empty.proto";
 import "google/api/annotations.proto"; // Import Google API annotations
 import "Base/base.proto";
-import "Issues/issue.proto";
 import "ProjectMember/project_member.proto";
 
 
@@ -157,7 +156,7 @@ message CreateColumnReq {
 message CreateColumnRes {
   string status = 1;                  
   string message = 2;  
-  ColumnRes data = 3;
+  base.ColumnRes data = 3;
   base.PaginationRes pagination = 4;
 }
 message GetColumnsReq {
@@ -166,17 +165,8 @@ message GetColumnsReq {
 message GetColumnsRes {
   string status = 1;                  
   string message = 2;
-  repeated ColumnRes data = 3;
+  repeated base.ColumnRes data = 3;
   base.PaginationRes pagination = 4;
-}
-message ColumnRes {
-  string id = 1;
-  string name = 2;
-  string created_at = 3;
-  string updated_at = 4;
-  int32 order = 5;
-  repeated IssueRes issues = 6;
-  string project_id = 8;
 }
 
 message ColumnOrder {
@@ -192,7 +182,7 @@ message UpdateColumnsOrderReq {
 message UpdateColumnsOrderRes {
   string status = 1;                  
   string message = 2;                 
-  repeated ColumnRes data = 3;  
+  repeated base.ColumnRes data = 3;  
 }
 message UpdateColumnReq {
   string name = 1;
@@ -203,7 +193,7 @@ message UpdateColumnReq {
 message UpdateColumnRes {
   string status = 1;                  
   string message = 2;  
-  ColumnRes data = 3;
+  base.ColumnRes data = 3;
   base.PaginationRes pagination = 4;
 }
 message DeleteColumnReq {

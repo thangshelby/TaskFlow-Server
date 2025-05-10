@@ -25,7 +25,7 @@ public class IssueUseCase
     {
         var column = await _projectRepository.FindColumn(new GetColumnParams
         {
-            Name = param.Status
+            ColumnId = param.ColumnId
         });
 
         if (column == null)
@@ -35,7 +35,7 @@ public class IssueUseCase
         {
             ProjectId = param.ProjectId,
             ReporterId = param.ReporterId ?? string.Empty,
-            Status = column.Name,
+            ColumnId = param.ColumnId,
             Title = param.Title,
             Summary = param.Summary ?? string.Empty,
             Description = param.Description ?? string.Empty,
@@ -88,23 +88,23 @@ public class IssueUseCase
         var updatedIssue = await _transactionRepo.ExecuteAsync(async session =>
         {
             var existingIssue = await _issueRepository.GetIssue(updateData.IssueId);
-            if (!string.IsNullOrEmpty(updateData.Status) && updateData.Status != existingIssue.Status)
+            if (!string.IsNullOrEmpty(updateData.ColumnId) && updateData.ColumnId != existingIssue.ColumnId)
             {
                 var newColumn = await _projectRepository.FindColumn(new GetColumnParams
                 {
-                    Name = updateData.Status
+                    ColumnId = updateData.ColumnId
                 });
 
                 if (newColumn == null)
-                    throw new RpcException(new Status(StatusCode.InvalidArgument, $"Column with name '{updateData.Status}' not found"));
+                    throw new RpcException(new Status(StatusCode.InvalidArgument, $"Column with id '{updateData.ColumnId}' not found"));
 
                 var oldColumn = await _projectRepository.FindColumn(new GetColumnParams
                 {
-                    Name = existingIssue.Status
+                    ColumnId = existingIssue.ColumnId
                 });
 
                 if (oldColumn == null)
-                    throw new RpcException(new Status(StatusCode.InvalidArgument, $"Original column with name '{existingIssue.Status}' not found"));
+                    throw new RpcException(new Status(StatusCode.InvalidArgument, $"Original column with id '{existingIssue.ColumnId}' not found"));
 
                 await _projectRepository.UpdateColumn(new UpdateColumnParams
                 {
@@ -136,7 +136,7 @@ public class IssueUseCase
 
         var column = await _projectRepository.FindColumn(new GetColumnParams
         {
-            Name = issue.Status
+            ColumnId = issue.ColumnId
         });
         await _projectRepository.UpdateColumn(new UpdateColumnParams
         {

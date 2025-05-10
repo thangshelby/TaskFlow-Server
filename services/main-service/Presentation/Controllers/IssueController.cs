@@ -2,10 +2,9 @@ using AutoMapper;
 using FluentValidation;
 using Grpc.Core;
 using MainService.Domain.UseCases;
-using MainService.Domain.Entities;
 using TaskFlow.IssueService;
 using Google.Protobuf.WellKnownTypes;
-using System;
+using BaseService;
 using MainService.Domain.Interfaces;
 using MainService.Domain.Enums;
 
@@ -67,7 +66,7 @@ public class IssueController : IssueService.IssueServiceBase
                 Title = request.Title,
                 Summary = request.Summary,
                 Description = request.Description,
-                Status = request.Status,
+                ColumnId = request.ColumnId,
                 Priority = request.Priority,
                 Type = request.Type,
                 SprintId = request.SprintId,
@@ -116,14 +115,15 @@ public class IssueController : IssueService.IssueServiceBase
             throw new RpcException(new Status(StatusCode.InvalidArgument,
                 string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
-        var result = await _issueUseCase.UpdateIssue(new UpdateIssueParams {
+        var result = await _issueUseCase.UpdateIssue(new UpdateIssueParams
+        {
             IssueId = request.Id,
             AssigneeId = request.AssigneeId,
-            Description= request.Description,
+            Description = request.Description,
             ProjectId = request.ProjectId,
             ReporterId = request.ReporterId,
             SprintId = request.SprintId,
-            Status = request.Status,
+            ColumnId = request.ColumnId,
             StoryPoint = request.StoryPoint,
             Summary = request.Summary,
             Title = request.Title,
@@ -155,7 +155,7 @@ public class IssueController : IssueService.IssueServiceBase
             throw new RpcException(new Status(StatusCode.InvalidArgument,
                 string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
-        var statusList = request.Status?.Select(s => s.Replace('+', ' ')).ToList();
+        var columnIds = request.ColumnIds.ToList();
         var (issues, totalCount) = await _issueUseCase.ListIssues(new GetIssuesParams
         {
             Limit = request.Limit == 0 ? 10 : request.Limit,
@@ -164,13 +164,13 @@ public class IssueController : IssueService.IssueServiceBase
             AssigneeId = request.AssingeeId,
             Keyword = request.Keyword,
             SprintId = request.SprintId,
-            Status = statusList
+            ColumnIds = columnIds
         });
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
-
+        MongoDocumentLogUtil.LogObject(_logger, issues);
         var response = new ListIssuesRes();
         response.Data.AddRange(_mapper.Map<List<IssueRes>>(issues));
-        response.Pagination = new BaseService.PaginationRes
+        response.Pagination = new PaginationRes
         {
             TotalItems = totalCount,
             TotalPages = totalPages,

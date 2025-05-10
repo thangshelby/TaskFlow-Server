@@ -12,3 +12,33 @@ message PaginationRes {
     int32 current_page = 3;
     int32 limit = 4;
 }
+message ColumnRes {
+    string id = 1;
+    string name = 2;
+    string created_at = 3;
+    string updated_at = 4;
+    int32 order = 5;
+    repeated IssueRes issues = 6;
+    string project_id = 7;
+}
+
+// Common
+message IssueRes {
+    string id = 1;
+    string title = 2;
+    string project_id = 3;
+    string sprint_id = 4;
+    string assignee_id = 5;
+    string parent_id = 6;
+    string reporter_id = 7;
+    string type = 8;
+    ColumnRes column = 9;
+    string priority = 10;
+    string summary = 11;
+    string description = 12;
+    int32 story_point = 13;
+    repeated string attachments = 14;
+    string created_at = 15;
+    string updated_at = 16;
+}
+  

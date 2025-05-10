@@ -33,9 +33,12 @@ public class Issue
     [BsonRepresentation(BsonType.String)]
     public IssueType? Type { get; set; }
 
-    [BsonElement("status")]
+    [BsonElement("column_id")]
     [BsonRepresentation(BsonType.String)]
-    public string Status { get; set; } = string.Empty;
+    public string ColumnId { get; set; } = string.Empty;
+
+    [BsonElement("column")]
+    public ProjectColumn? Column { get; set; }
 
     [BsonElement("priority")]
     [BsonRepresentation(BsonType.String)]
@@ -71,7 +74,7 @@ public class Issue
             ParentId = domain.ParentId,
             ReporterId = domain.ReporterId,
             Type = domain.Type,
-            Status = domain.Status,
+            ColumnId = domain.ColumnId,
             Priority = domain.Priority,
             Summary = domain.Summary,
             Description = domain.Description,
@@ -90,7 +93,7 @@ public class Issue
             Title = Title,
             ParentId = ParentId,
             Type = Type,
-            Status = Status,
+            ColumnId = ColumnId,
             Priority = Priority,
             Summary = Summary,
             Description = Description,
