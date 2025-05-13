@@ -42,6 +42,12 @@ service UserService {
       get: "/api/v1/users/get-me"
     };
   }
+
+  rpc GetByEmail (GetUserByEmailReq) returns (GetUserRes) {
+    option (google.api.http) = {
+      get: "/api/v1/users/by-email/{email}"
+    };
+  }
   rpc ListUsers(ListUsersReq) returns (ListUsersRes){
     option (google.api.http) = {
       get: "/api/v1/users/list-users"
@@ -76,6 +82,11 @@ message LoginUserRes {
   UserRes data = 3;
 }
 
+// Get user by email
+message GetUserByEmailReq {
+  string email = 1;
+}
+
 // Get one user
 message GetUserReq {
   string user_id = 1;
@@ -86,10 +97,11 @@ message GetUserRes {
   UserRes data = 2;
 }
 // List User
-message ListUsersReq{
-  string keyword = 1;
-  int32 page = 2;
-  int32 limit = 3;
+message ListUsersReq {
+  optional string name = 1;
+  optional string email = 2;
+  int32 page = 3;
+  int32 limit = 4;
 }
 
 message ListUsersRes{
