@@ -4,6 +4,9 @@ using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using MainService.Infras.Entities;
 using MongoDB.Driver;
+using MongoDB.Bson;
+
+
 
 namespace MainService.Infras.Repositories;
 
@@ -64,5 +67,25 @@ public class UserRepository : IUserRepository
         if (result.MatchedCount == 0)
             throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
         return userDomain;
+    }
+
+    public async Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(string keyword, int page, int limit)
+    {
+        var decodedKeyword = Uri.UnescapeDataString(keyword.Replace("+", " "));
+        var filterBuilder = Builders<User>.Filter;
+
+        var filter = filterBuilder.Or(
+            filterBuilder.Regex(x => x.FirstName, new BsonRegularExpression(decodedKeyword, "i")),
+            filterBuilder.Regex(x => x.LastName, new BsonRegularExpression(decodedKeyword, "i")),
+            filterBuilder.Regex(x => x.Email, new BsonRegularExpression(decodedKeyword, "i"))
+        );
+
+        var totalCount = await _users.CountDocumentsAsync(filter);
+        var users = await _users.Find(filter)
+            .Skip((page - 1) * limit)
+            .Limit(limit)
+            .ToListAsync();
+
+        return (users.Select(u => _mapper.Map<UserDomain>(u)), (int)totalCount);
     }
 }

@@ -90,6 +90,14 @@ static_resources:
                           requires: {}
 
                         - match:
+                            path: "/api/v1/users/logout"
+                            headers:
+                              - name: ":method"
+                                string_match:
+                                  exact: "POST"
+                          requires: {}
+
+                        - match:
                             path: "/api/v1/users"
                             headers:
                               - name: ":method"

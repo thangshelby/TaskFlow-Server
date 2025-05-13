@@ -39,27 +39,29 @@ public class IssueController : IssueService.IssueServiceBase
 
     public override async Task<CreateIssueRes> CreateIssue(CreateIssueReq request, ServerCallContext context)
     {
+        _logger.LogInformation("Creating new issue. Request: {@Request}", request);
+        
         var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
         if (string.IsNullOrEmpty(userId))
         {
             throw new RpcException(new Status(StatusCode.Unauthenticated, "User must be authenticated to create issues"));
         }
 
-        var currentUser = await _userUseCase.GetById(userId);
-        if (currentUser == null)
-        {
-            throw new RpcException(new Status(StatusCode.NotFound, "Current user not found"));
-        }
-
-        var validationResult = await _createIssueValidator.ValidateAsync(request);
-        if (!validationResult.IsValid)
-        {
-            throw new RpcException(new Status(StatusCode.InvalidArgument,
-                string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
-        }
-
         try
         {
+            var currentUser = await _userUseCase.GetById(userId);
+            if (currentUser == null)
+            {
+                throw new RpcException(new Status(StatusCode.NotFound, "Current user not found"));
+            }
+
+            var validationResult = await _createIssueValidator.ValidateAsync(request);
+            if (!validationResult.IsValid)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument,
+                    string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
+            }
+
             var issueRequest = new CreateIssueReq
             {
                 ProjectId = request.ProjectId,
@@ -82,14 +84,23 @@ public class IssueController : IssueService.IssueServiceBase
             }
 
             var result = await _issueUseCase.CreateIssue(issueRequest);
-
-            return new CreateIssueRes
+            var response = new CreateIssueRes
             {
                 Data = _mapper.Map<IssueRes>(result)
             };
+            
+            _logger.LogInformation("Successfully created issue with ID: {IssueId}", result.Id);
+            MongoDocumentLogUtil.LogObject(_logger, result);
+            
+            return response;
         }
-        catch (Exception)
+        catch (RpcException)
         {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create issue for user {UserId}", userId);
             throw new RpcException(new Status(StatusCode.Internal, "Failed to create issue"));
         }
     }

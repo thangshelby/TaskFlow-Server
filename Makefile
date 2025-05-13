@@ -2,6 +2,11 @@ container-up:
 	docker compose up -d
 container-down:
 	docker compose down
+build:
+	docker compose down
+	docker compose up --build -d
+logs:
+	docker compose logs -f
 node-server:
 	cd services/node-service && npm run dev
 mysql:
@@ -23,6 +28,10 @@ sync:
 	docker compose down 
 	make gen-protobuf 
 	docker compose up -d
+sync-wd:
+	docker compose down 
+	make gen-protobuf-wd
+	make build
 cqlsh:
 	docker exec -it cassandra cqlsh
 

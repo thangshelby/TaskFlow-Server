@@ -15,7 +15,8 @@ public class CreateIssueParams
     public required string ProjectId;
     public required string Title;
     public required string ReporterId;
-    public required string Status;
+    public string? ColumnId;
+    // public required string Status;
     public string? SprintId;
     public string? AssigneeId;
 }

@@ -6,6 +6,7 @@ public interface IUserRepository
     Task<UserDomain?> FindUserAsync(UserQueryParams query);
 
     Task<UserDomain> UpdateUser(UserDomain user);
+    Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(string keyword, int page, int limit);
 }
 
 public class LoginReqParams
