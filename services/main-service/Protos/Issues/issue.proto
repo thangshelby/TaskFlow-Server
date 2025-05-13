@@ -104,6 +104,6 @@ message CreateIssueReq {
 }
 
 message CreateIssueRes {
-  string status = 1;
-  base.IssueRes data = 2;
+  base.IssueRes data = 1;
 }
+
