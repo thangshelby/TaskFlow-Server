@@ -45,21 +45,21 @@ public class IssueController : IssueService.IssueServiceBase
             throw new RpcException(new Status(StatusCode.Unauthenticated, "User must be authenticated to create issues"));
         }
 
-        var currentUser = await _userUseCase.GetById(userId);
-        if (currentUser == null)
-        {
-            throw new RpcException(new Status(StatusCode.NotFound, "Current user not found"));
-        }
-
-        var validationResult = await _createIssueValidator.ValidateAsync(request);
-        if (!validationResult.IsValid)
-        {
-            throw new RpcException(new Status(StatusCode.InvalidArgument,
-                string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
-        }
-
         try
         {
+            var currentUser = await _userUseCase.GetById(userId);
+            if (currentUser == null)
+            {
+                throw new RpcException(new Status(StatusCode.NotFound, "Current user not found"));
+            }
+
+            var validationResult = await _createIssueValidator.ValidateAsync(request);
+            if (!validationResult.IsValid)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument,
+                    string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
+            }
+
             var issueRequest = new CreateIssueReq
             {
                 ProjectId = request.ProjectId,
@@ -88,8 +88,13 @@ public class IssueController : IssueService.IssueServiceBase
                 Data = _mapper.Map<IssueRes>(result)
             };
         }
-        catch (Exception)
+        catch (RpcException)
         {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create issue for user {UserId}", userId);
             throw new RpcException(new Status(StatusCode.Internal, "Failed to create issue"));
         }
     }

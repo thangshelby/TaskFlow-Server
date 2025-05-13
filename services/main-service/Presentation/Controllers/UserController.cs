@@ -12,6 +12,7 @@ using System.Text;
 using System.Security.Cryptography;
 using AutoMapper;
 using MainService.Domain.Interfaces;
+using Google.Protobuf.WellKnownTypes;
 
 public class UserController : UserService.UserServiceBase
 {
@@ -75,7 +76,7 @@ public class UserController : UserService.UserServiceBase
             LastName = request.LastName,
             Email = request.Email,
             Password = request.Password,
-            Role = Enum.TryParse(request.Role, out UserRole parsedRole) ? parsedRole : UserRole.User,
+            Role = System.Enum.TryParse(request.Role, out UserRole parsedRole) ? parsedRole : UserRole.User,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         });
@@ -106,6 +107,29 @@ public class UserController : UserService.UserServiceBase
             Data = userResponse
         };
     }
+
+    public override async Task<GetUserRes> GetById(GetUserReq request, ServerCallContext context)
+    {
+        if (string.IsNullOrEmpty(request.UserId))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "User ID is required."));
+        }
+
+        var user = await _userUseCase.GetById(request.UserId);
+        if (user == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "User not found."));
+        }
+
+        var userResponse = _mapper.Map<UserRes>(user);
+
+        return new GetUserRes
+        {
+            Status = "User fetched successfully",
+            Data = userResponse
+        };
+    }
+
     public override async Task<CreateUserRes> Register(RegisterUserReq request, ServerCallContext context)
     {
         ValidationResult validationResult = await _registerUserValidator.ValidateAsync(request);
@@ -138,7 +162,7 @@ public class UserController : UserService.UserServiceBase
     public override async Task<LoginUserRes> Login(LoginUserReq request, ServerCallContext context)
     {
         ValidationResult validationResult = await _loginUserValidator.ValidateAsync(request);
-        if (!validationResult.IsValid)
+        if (!validationResult.IsValid)  
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
@@ -161,6 +185,41 @@ public class UserController : UserService.UserServiceBase
             Data = userResponse
         };
     }
+
+    public override async Task<ListUsersRes> ListUsers(ListUsersReq request, ServerCallContext context)
+    {
+        _logger.LogInformation("Listing users with keyword: {Keyword}, page: {Page}, limit: {Limit}", request.Keyword, request.Page, request.Limit);
+        try
+        {
+            if (request.Page <= 0) request.Page = 1;
+            if (request.Limit <= 0) request.Limit = 10;
+
+            var result = await _userUseCase.SearchUsersAsync(request.Keyword, (int)request.Page, (int)request.Limit);
+            var users = result.Users;
+            var totalCount = result.TotalCount;
+
+            var response = new ListUsersRes
+            {
+                Status = "success",
+                Pagination = new PaginationRes
+                {
+                    TotalItems = totalCount,
+                    CurrentPage = request.Page,
+                    Limit = request.Limit,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)request.Limit)
+                }
+            };
+
+            response.Data.AddRange(users.Select(u => _mapper.Map<UserRes>(u)));
+            return response;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching users with keyword {Keyword}", request.Keyword);
+            throw new RpcException(new Status(StatusCode.Internal, "Error searching users"));
+        }
+    }
+
     private async Task SetJwtToken(string userId, UserRole role, string email, ServerCallContext context)
     {
         string? privateKeyPem = _configuration["JWT_SECRET"];

@@ -35,15 +35,37 @@ service UserService {
   rpc GetById (GetUserReq) returns (GetUserRes) {
     option (google.api.http) = {
       get: "/api/v1/users/{user_id}"
-      body: "*"
     };
   }
   rpc GetMe (GetUserReq) returns (GetUserRes) {
     option (google.api.http) = {
       get: "/api/v1/users/get-me"
-      body: "*"
     };
   }
+  rpc ListUsers(ListUsersReq) returns (ListUsersRes){
+    option (google.api.http) = {
+      get: "/api/v1/users/list-users"
+    };
+  }
+}
+
+message ListUsersReq{
+  string keyword = 1;
+  int32 page = 2;
+  int32 limit = 3;
+}
+
+message ListUsersRes{
+  string status = 1;
+  repeated UserRes data = 2;
+  PaginationRes pagination = 3;
+}
+
+message PaginationRes {
+  int32 total_items = 1;
+  int32 current_page = 2;
+  int32 limit = 3;
+  int32 total_pages = 4;
 }
 
 // LOGIN

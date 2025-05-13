@@ -94,4 +94,16 @@ public class UserUseCase
         return await _userRepository.UpdateUser(existingUser);
     }
 
+    public async Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(string keyword, int page, int limit)
+    {
+        if (string.IsNullOrEmpty(keyword))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "Keyword is required"));
+        }
+
+        if (page <= 0) page = 1;
+        if (limit <= 0) limit = 10;
+
+        return await _userRepository.SearchUsersAsync(keyword, page, limit);
+    }
 }
