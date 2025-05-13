@@ -2,16 +2,19 @@ using Grpc.Core;
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using MainService.Domain.Packages;
+using Microsoft.Extensions.Logging;
 
 namespace MainService.Domain.UseCases;
 
 public class UserUseCase
 {
     private readonly IUserRepository _userRepository;
+    private readonly ILogger<UserUseCase> _logger;
 
-    public UserUseCase(IUserRepository userRepository)
+    public UserUseCase(IUserRepository userRepository, ILogger<UserUseCase> logger)
     {
         _userRepository = userRepository;
+        _logger = logger;
     }
 
     public async Task<UserDomain> CreateUser(UserDomain userBody)
@@ -28,6 +31,12 @@ public class UserUseCase
 
         userBody.Password = PasswordHasher.HashPassword(userBody.Password);
         return await _userRepository.CreateUserAsync(userBody);
+    }
+
+    public async Task<UserDomain?> FindUserAsync(UserQueryParams queryParams)
+    {
+        var user = await _userRepository.FindUserAsync(queryParams);
+        return user;
     }
 
     public async Task<UserDomain> LoginUser(LoginReqParams param)
@@ -94,16 +103,20 @@ public class UserUseCase
         return await _userRepository.UpdateUser(existingUser);
     }
 
-    public async Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(string keyword, int page, int limit)
+    public async Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(string? name, string? email, int page, int limit)
     {
-        if (string.IsNullOrEmpty(keyword))
+        try
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, "Keyword is required"));
+            // Normalize inputs with defaults
+            page = Math.Max(1, page);
+            limit = limit <= 0 ? 10 : limit;
+
+            return await _userRepository.SearchUsersAsync(name, email, page, limit);
         }
-
-        if (page <= 0) page = 1;
-        if (limit <= 0) limit = 10;
-
-        return await _userRepository.SearchUsersAsync(keyword, page, limit);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching users with name: {Name}, email: {Email}", name, email);
+            throw;
+        }
     }
 }

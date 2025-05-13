@@ -53,12 +53,7 @@ public class ProjectController : ProjectService.ProjectServiceBase
             projectDomain.OwnerId = userId; // Set the authenticated user as owner
 
             var result = await _projectUseCase.CreateProject(projectDomain);
-            return new CreateProjectRes
-            {
-                Data = _mapper.Map<ProjectRes>(result),
-                Message = "Create project success.",
-                Status = "success"
-            };
+            return new CreateProjectRes { Data = _mapper.Map<ProjectRes>(result) };
         }
         catch (Exception ex)
         {
@@ -126,8 +121,6 @@ public class ProjectController : ProjectService.ProjectServiceBase
             CurrentPage = request.Page,
             Limit = request.Limit
         };
-        response.Status = "success";
-        response.Message = "Get projects success.";
         return response;
     }
     public override async Task<ListProjectsRes> GetUserProjects(UserProjectsReq request, ServerCallContext context)
@@ -157,8 +150,6 @@ public class ProjectController : ProjectService.ProjectServiceBase
             CurrentPage = request.Page,
             Limit = request.Limit
         };
-        response.Status = "success";
-        response.Message = "Get projects success.";
         return response;
     }
     public override async Task<CreateColumnRes> CreateProjectColumn(CreateColumnReq request, ServerCallContext context)
@@ -168,7 +159,7 @@ public class ProjectController : ProjectService.ProjectServiceBase
             Name = request.Name,
             ProjectId = request.ProjectId
         });
-        return new CreateColumnRes { Data = _mapper.Map<ColumnRes>(projectColumn), Message = "Create project column success.", Status = "success" };
+        return new CreateColumnRes { Data = _mapper.Map<ColumnRes>(projectColumn) };
     }
     public override async Task<GetColumnsRes> GetProjectColumns(GetColumnsReq request, ServerCallContext context)
     {
@@ -181,8 +172,6 @@ public class ProjectController : ProjectService.ProjectServiceBase
 
         var response = new GetColumnsRes();
         response.Data.AddRange(_mapper.Map<List<ColumnRes>>(projectColumns));
-        response.Status = "success";
-        response.Message = "Get project columns success.";
         return response;
     }
     public override async Task<UpdateColumnsOrderRes> UpdateOrderProjectColumns(UpdateColumnsOrderReq request, ServerCallContext context)
@@ -214,8 +203,6 @@ public class ProjectController : ProjectService.ProjectServiceBase
 
         var response = new UpdateColumnsOrderRes();
         response.Data.AddRange(_mapper.Map<List<ColumnRes>>(projectColumns));
-        response.Status = "success";
-        response.Message = "Update column orders success.";
 
         return response;
     }
@@ -227,7 +214,7 @@ public class ProjectController : ProjectService.ProjectServiceBase
             Name = request.Name
         });
 
-        return new UpdateColumnRes { Data = _mapper.Map<ColumnRes>(columnUpdated), Message = "Update column success.", Status = "success" };
+        return new UpdateColumnRes { Data = _mapper.Map<ColumnRes>(columnUpdated) };
     }
     public override async Task<DeleteColumnRes> DeleteColumn(DeleteColumnReq request, ServerCallContext context)
     {
@@ -236,10 +223,6 @@ public class ProjectController : ProjectService.ProjectServiceBase
             ColumnId = request.ColumnId
         });
 
-        return new DeleteColumnRes
-        {
-            Message = "Delete column success",
-            Status = "success"
-        };
+        return new DeleteColumnRes();
     }
 }

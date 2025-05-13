@@ -198,13 +198,18 @@ public class UserController : UserService.UserServiceBase
 
     public override async Task<ListUsersRes> ListUsers(ListUsersReq request, ServerCallContext context)
     {
-        _logger.LogInformation("Listing users with keyword: {Keyword}, page: {Page}, limit: {Limit}", request.Keyword, request.Page, request.Limit);
         try
         {
-            if (request.Page <= 0) request.Page = 1;
-            if (request.Limit <= 0) request.Limit = 10;
+            // Ensure valid pagination values
+            var page = request.Page <= 0 ? 1 : request.Page;
+            var limit = request.Limit <= 0 ? 10 : request.Limit;
 
-            var result = await _userUseCase.SearchUsersAsync(request.Keyword, (int)request.Page, (int)request.Limit);
+            var result = await _userUseCase.SearchUsersAsync(
+                request.Name,
+                request.Email,
+                (int)page,
+                (int)limit
+            );
             var users = result.Users;
             var totalCount = result.TotalCount;
 
@@ -214,8 +219,8 @@ public class UserController : UserService.UserServiceBase
                 Pagination = new PaginationRes
                 {
                     TotalItems = totalCount,
-                    CurrentPage = request.Page,
-                    Limit = request.Limit,
+                    CurrentPage = page,
+                    Limit = limit,
                     TotalPages = (int)Math.Ceiling(totalCount / (double)request.Limit)
                 }
             };
@@ -225,12 +230,43 @@ public class UserController : UserService.UserServiceBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error searching users with keyword {Keyword}", request.Keyword);
             throw new RpcException(new Status(StatusCode.Internal, "Error searching users"));
         }
     }
-
-
+    
+        public override async Task<GetUserRes> GetByEmail(GetUserByEmailReq request, ServerCallContext context)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(request.Email))
+                {
+                    throw new RpcException(new Status(StatusCode.InvalidArgument, "Email is required"));
+                }
+    
+                _logger.LogInformation("Getting user by email: {Email}", request.Email);
+                var user = await _userUseCase.FindUserAsync(new UserQueryParams { Email = request.Email });
+                
+                if (user == null)
+                {
+                    throw new RpcException(new Status(StatusCode.NotFound, $"User with email {request.Email} not found"));
+                }
+    
+                return new GetUserRes
+                {
+                    Status = "success",
+                    Data = _mapper.Map<UserRes>(user)
+                };
+            }
+            catch (RpcException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user by email {Email}", request.Email);
+                throw new RpcException(new Status(StatusCode.Internal, "Error retrieving user"));
+            }
+        }
     public override async Task<LogoutUserRes> Logout(LogoutUserReq request, ServerCallContext context)
     {
         var metadata = new Metadata

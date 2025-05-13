@@ -39,7 +39,7 @@ public class IssueController : IssueService.IssueServiceBase
 
     public override async Task<CreateIssueRes> CreateIssue(CreateIssueReq request, ServerCallContext context)
     {
-        _logger.LogInformation("Creating new issue. Request: {@Request}", request);
+        // _logger.LogInformation("Creating new issue. Request: {@Request}", request);
         
         var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
         if (string.IsNullOrEmpty(userId))
@@ -88,10 +88,6 @@ public class IssueController : IssueService.IssueServiceBase
             {
                 Data = _mapper.Map<IssueRes>(result)
             };
-            
-            _logger.LogInformation("Successfully created issue with ID: {IssueId}", result.Id);
-            MongoDocumentLogUtil.LogObject(_logger, result);
-            
             return response;
         }
         catch (RpcException)
@@ -178,7 +174,6 @@ public class IssueController : IssueService.IssueServiceBase
             ColumnIds = columnIds
         });
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
-        MongoDocumentLogUtil.LogObject(_logger, issues);
         var response = new ListIssuesRes();
         response.Data.AddRange(_mapper.Map<List<IssueRes>>(issues));
         response.Pagination = new PaginationRes

@@ -5,10 +5,57 @@ using MainService.Domain.Interfaces;
 using MainService.Infras.Entities;
 using MongoDB.Driver;
 using MongoDB.Bson;
-
-
+using System.Text.RegularExpressions;
+using System.Text;
+using System.Globalization;
 
 namespace MainService.Infras.Repositories;
+
+public static class StringExtensions
+{
+    public static string NormalizeVietnamese(this string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        
+        var normalized = text.Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder();
+
+        foreach (char c in normalized)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                sb.Append(c);
+        }
+
+        return sb.ToString();
+    }
+}
+
+public static class RegexHelper
+{
+    private static readonly Dictionary<char, string> AccentPatterns = new Dictionary<char, string>
+    {
+        {'a', "[aáàảãạăắằẳẵặâấầẩẫậ]"},
+        {'e', "[eéèẻẽẹêếềểễệ]"},
+        {'i', "[iíìỉĩị]"},
+        {'o', "[oóòỏõọôốồổỗộơớờởỡợ]"},
+        {'u', "[uúùủũụưứừửữự]"},
+        {'y', "[yýỳỷỹỵ]"},
+        {'d', "[dđ]"}
+    };
+
+    public static string BuildAccentInsensitivePattern(string input)
+    {
+        var result = new StringBuilder();
+        foreach (var c in input.ToLower())
+        {
+            if (AccentPatterns.ContainsKey(c))
+                result.Append(AccentPatterns[c]);
+            else
+                result.Append(Regex.Escape(c.ToString()));
+        }
+        return result.ToString();
+    }
+}
 
 public class UserRepository : IUserRepository
 {
@@ -69,18 +116,41 @@ public class UserRepository : IUserRepository
         return userDomain;
     }
 
-    public async Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(string keyword, int page, int limit)
+    public async Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(string? name, string? email, int page, int limit)
     {
-        var decodedKeyword = Uri.UnescapeDataString(keyword.Replace("+", " "));
         var filterBuilder = Builders<User>.Filter;
+        var filters = new List<FilterDefinition<User>>();
+        var hasValidSearch = false;
 
-        var filter = filterBuilder.Or(
-            filterBuilder.Regex(x => x.FirstName, new BsonRegularExpression(decodedKeyword, "i")),
-            filterBuilder.Regex(x => x.LastName, new BsonRegularExpression(decodedKeyword, "i")),
-            filterBuilder.Regex(x => x.Email, new BsonRegularExpression(decodedKeyword, "i"))
-        );
+        if (!string.IsNullOrEmpty(name))
+        {
+            hasValidSearch = true;
+            var decodedName = Uri.UnescapeDataString(name.Replace("+", " "));
+            var normalizedName = decodedName.NormalizeVietnamese();
+            
+            var pattern = RegexHelper.BuildAccentInsensitivePattern(normalizedName);
+            filters.Add(filterBuilder.Or(
+                filterBuilder.Regex(x => x.FirstName, new BsonRegularExpression(pattern, "i")),
+                filterBuilder.Regex(x => x.LastName, new BsonRegularExpression(pattern, "i"))
+            ));
+        }
 
-        var totalCount = await _users.CountDocumentsAsync(filter);
+        if (!string.IsNullOrEmpty(email))
+        {
+            hasValidSearch = true;
+            var decodedEmail = Uri.UnescapeDataString(email.Replace("+", " ")).Trim();
+            filters.Add(filterBuilder.Regex(x => x.Email, new BsonRegularExpression(decodedEmail, "i")));
+        }
+
+        var filter = !hasValidSearch ?
+            filterBuilder.Eq("_id", "no_results") :
+            filters.Any() ? filterBuilder.And(filters) : filterBuilder.Empty;
+
+        var options = new FindOptions<User, User>
+        {
+            Collation = new Collation("en", strength: CollationStrength.Secondary)
+        };
+        var totalCount = await _users.CountDocumentsAsync(filter, new CountOptions { Collation = options.Collation });
         var users = await _users.Find(filter)
             .Skip((page - 1) * limit)
             .Limit(limit)
