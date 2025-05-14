@@ -108,6 +108,12 @@ public class ProjectMemberController : ProjectMemberService.ProjectMemberService
                 throw new RpcException(new Status(StatusCode.Unauthenticated, "User must be authenticated"));
             }
 
+            var userMember = await _projectMemberUseCase.GetByProjectAndUserAsync(request.ProjectId, userId);
+            if (userMember == null || userMember.IsPending)
+            {
+                throw new RpcException(new Status(StatusCode.PermissionDenied, "Access denied. User must be an approved member of the project."));
+            }
+
             if (request.Page <= 0) request.Page = 1;
             if (request.Limit <= 0) request.Limit = 10;
 
@@ -176,6 +182,7 @@ public class ProjectMemberController : ProjectMemberService.ProjectMemberService
                     ProjectId = member.ProjectId,
                     UserId = member.UserId,
                     Role = (GrpcProjectMemberRole)member.Role,
+                    IsPending = member.IsPending,
                     CreatedAt = member.CreatedAt.ToString("O"),
                     UpdatedAt = member.UpdatedAt.ToString("O"),
                     Project = new ProjectInfo
@@ -230,6 +237,54 @@ public class ProjectMemberController : ProjectMemberService.ProjectMemberService
         {
             _logger.LogError(ex, "Error approving member for project {ProjectId}", request.ProjectId);
             throw new RpcException(new Status(StatusCode.Internal, "Error approving member"));
+        }
+    }
+
+    public override async Task<ProjectMemberRes> AcceptInvitation(AcceptInvitationReq request, ServerCallContext context)
+    {
+        var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User must be authenticated"));
+        }
+
+        try
+        {
+            var member = await _projectMemberUseCase.AcceptInvitationAsync(request.ProjectId, userId);
+            return MapToProjectMemberResponse(member);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error accepting invitation for project {ProjectId}", request.ProjectId);
+            throw new RpcException(new Status(StatusCode.Internal, "Error accepting invitation"));
+        }
+    }
+
+    public override async Task<Empty> RejectInvitation(RejectInvitationReq request, ServerCallContext context)
+    {
+        var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User must be authenticated"));
+        }
+
+        try
+        {
+            await _projectMemberUseCase.RejectInvitationAsync(request.ProjectId, userId);
+            return new Empty();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error rejecting invitation for project {ProjectId}", request.ProjectId);
+            throw new RpcException(new Status(StatusCode.Internal, "Error rejecting invitation"));
         }
     }
 

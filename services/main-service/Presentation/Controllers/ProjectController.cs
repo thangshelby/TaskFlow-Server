@@ -53,7 +53,12 @@ public class ProjectController : ProjectService.ProjectServiceBase
             projectDomain.OwnerId = userId; // Set the authenticated user as owner
 
             var result = await _projectUseCase.CreateProject(projectDomain);
-            return new CreateProjectRes { Data = _mapper.Map<ProjectRes>(result) };
+            return new CreateProjectRes
+            {
+                Data = _mapper.Map<ProjectRes>(result),
+                Message = "Create project success.",
+                Status = "success"
+            };
         }
         catch (Exception ex)
         {

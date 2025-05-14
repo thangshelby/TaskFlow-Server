@@ -48,6 +48,18 @@ service ProjectMemberService {
       body: "*"
     };
   }
+  rpc AcceptInvitation (AcceptInvitationReq) returns (ProjectMemberRes) {
+    option (google.api.http) = {
+      put: "/api/v1/projects/{project_id}/invitations/accept"
+      body: "*"
+    };
+  }
+  rpc RejectInvitation (RejectInvitationReq) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/api/v1/projects/{project_id}/invitations/reject"
+      body: "*"
+    };
+  }
 }
 
 enum ProjectMemberRole {
@@ -111,9 +123,10 @@ message UserMembershipRes {
   string project_id = 2;
   string user_id = 3;
   ProjectMemberRole role = 4;
-  string created_at = 5;
-  string updated_at = 6;
-  ProjectInfo project = 7;
+  bool is_pending = 5;
+  string created_at = 6;
+  string updated_at = 7;
+  ProjectInfo project = 8;
 }
 
 message ListProjectMembersRes {
@@ -140,4 +153,12 @@ message ApproveMemberReq {
 message RejectMemberReq {
   string project_id = 1;
   string user_id = 2;
+}
+
+message AcceptInvitationReq {
+  string project_id = 1;
+}
+
+message RejectInvitationReq {
+  string project_id = 1;
 }
