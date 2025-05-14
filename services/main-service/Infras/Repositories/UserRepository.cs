@@ -120,11 +120,9 @@ public class UserRepository : IUserRepository
     {
         var filterBuilder = Builders<User>.Filter;
         var filters = new List<FilterDefinition<User>>();
-        var hasValidSearch = false;
 
         if (!string.IsNullOrEmpty(name))
         {
-            hasValidSearch = true;
             var decodedName = Uri.UnescapeDataString(name.Replace("+", " "));
             var normalizedName = decodedName.NormalizeVietnamese();
             
@@ -137,14 +135,11 @@ public class UserRepository : IUserRepository
 
         if (!string.IsNullOrEmpty(email))
         {
-            hasValidSearch = true;
             var decodedEmail = Uri.UnescapeDataString(email.Replace("+", " ")).Trim();
             filters.Add(filterBuilder.Regex(x => x.Email, new BsonRegularExpression(decodedEmail, "i")));
         }
 
-        var filter = !hasValidSearch ?
-            filterBuilder.Eq("_id", "no_results") :
-            filters.Any() ? filterBuilder.And(filters) : filterBuilder.Empty;
+        var filter = filters.Any() ? filterBuilder.And(filters) : filterBuilder.Empty;
 
         var options = new FindOptions<User, User>
         {

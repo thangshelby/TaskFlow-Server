@@ -29,7 +29,13 @@ public class ProjectMemberUseCase
 
         // Check if requester is project owner
         var requester = await _projectMemberRepository.GetByProjectAndUserAsync(projectId, requesterId);
-        var isPending = requester?.Role != TeamMemberRole.Owner;
+        if (requester == null)
+        {
+            throw new KeyNotFoundException("Requester not found in project");
+        }
+
+        // If the requester is the owner, the member is automatically approved
+        var isPending = requester.Role != TeamMemberRole.Owner;
 
         var member = new ProjectMemberDomain
         {
@@ -69,6 +75,11 @@ public class ProjectMemberUseCase
         }
 
         await _projectMemberRepository.DeleteAsync(member.Id!);
+    }
+
+    public async Task<ProjectMemberDomain?> GetByProjectAndUserAsync(string projectId, string userId)
+    {
+        return await _projectMemberRepository.GetByProjectAndUserAsync(projectId, userId);
     }
 
     public async Task<(IEnumerable<ProjectMemberDomain> Members, int TotalCount)> GetProjectMembersAsync(
@@ -136,6 +147,36 @@ public class ProjectMemberUseCase
         if (!result)
         {
             throw new KeyNotFoundException("Pending project member not found");
+        }
+    }
+
+    public async Task<ProjectMemberDomain> AcceptInvitationAsync(string projectId, string userId)
+    {
+        var member = await _projectMemberRepository.GetByProjectAndUserAsync(projectId, userId)
+            ?? throw new KeyNotFoundException("Invitation not found");
+
+        if (!member.IsPending)
+        {
+            throw new InvalidOperationException("Member is already approved");
+        }
+
+        return await _projectMemberRepository.ApproveMemberAsync(projectId, userId);
+    }
+
+    public async Task RejectInvitationAsync(string projectId, string userId)
+    {
+        var member = await _projectMemberRepository.GetByProjectAndUserAsync(projectId, userId)
+            ?? throw new KeyNotFoundException("Invitation not found");
+
+        if (!member.IsPending)
+        {
+            throw new InvalidOperationException("Cannot reject an already approved membership");
+        }
+
+        var result = await _projectMemberRepository.RejectMemberAsync(projectId, userId);
+        if (!result)
+        {
+            throw new KeyNotFoundException("Failed to reject membership");
         }
     }
 }
