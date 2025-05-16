@@ -163,14 +163,16 @@ public class IssueController : IssueService.IssueServiceBase
                 string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
         var columnIds = request.ColumnIds.ToList();
+        var assigneeIds = request.AssigneeIds.ToList();
+        var sprintIds = request.SprintIds.ToList();
         var (issues, totalCount) = await _issueUseCase.ListIssues(new GetIssuesParams
         {
             Limit = request.Limit == 0 ? 10 : request.Limit,
             Page = request.Page == 0 ? 1 : request.Page,
             ProjectId = request.ProjectId,
-            AssigneeId = request.AssingeeId,
+            AssigneeIds = assigneeIds,
             Keyword = request.Keyword,
-            SprintId = request.SprintId,
+            SprintIds = sprintIds,
             ColumnIds = columnIds
         });
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
