@@ -37,10 +37,28 @@ public class IssueRepository : IIssueRepository
 
     public async Task<IssueDomain> GetIssue(string id)
     {
-        var issueEntity = await _issues.Find(i => i.Id == id).FirstOrDefaultAsync();
-        if (issueEntity == null)
+        var pipeline = new[]
+        {
+            new BsonDocument("$match", new BsonDocument("_id", ObjectId.Parse(id))),
+            new BsonDocument("$lookup", new BsonDocument
+            {
+                { "from", "project_column" },
+                { "localField", "column_id" },
+                { "foreignField", "_id" },
+                { "as", "column" }
+            }),
+            new BsonDocument("$unwind", new BsonDocument
+            {
+                { "path", "$column" },
+                { "preserveNullAndEmptyArrays", true }
+            })
+        };
+
+        var result = await _issues.Aggregate<Issue>(pipeline).FirstOrDefaultAsync();
+        if (result == null)
             throw new Exception("Issue not found");
-        return _mapper.Map<IssueDomain>(issueEntity);
+
+        return _mapper.Map<IssueDomain>(result);
     }
 
     public async Task<IssueDomain> UpdateIssue(UpdateIssueParams body)
@@ -67,7 +85,38 @@ public class IssueRepository : IIssueRepository
         existingIssue.UpdatedAt = DateTime.UtcNow;
         await _issues.ReplaceOneAsync(i => i.Id == body.IssueId, existingIssue);
 
-        return _mapper.Map<IssueDomain>(existingIssue);
+        // Fetch the updated issue with column information
+        var pipeline = new[]
+        {
+            new BsonDocument("$match", new BsonDocument("_id", ObjectId.Parse(body.IssueId))),
+            new BsonDocument("$lookup", new BsonDocument
+            {
+                { "from", "project_column" },
+                { "let", new BsonDocument { { "colId", "$column_id" } } },
+                { "pipeline", new BsonArray
+                    {
+                        new BsonDocument("$match", new BsonDocument
+                        {
+                            { "$expr", new BsonDocument
+                                {
+                                    { "$eq", new BsonArray { "$_id", new BsonDocument("$toObjectId", "$$colId") } }
+                                }
+                            }
+                        })
+                    }
+                },
+                { "as", "column" }
+            }),
+            new BsonDocument("$unwind", new BsonDocument
+            {
+                { "path", "$column" },
+                { "preserveNullAndEmptyArrays", true }
+            })
+        };
+
+        var rawResult = await _issues.Aggregate<BsonDocument>(pipeline).FirstOrDefaultAsync();
+        var updatedIssue = BsonSerializer.Deserialize<Issue>(rawResult);
+        return _mapper.Map<IssueDomain>(updatedIssue);
     }
 
     public async Task DeleteIssue(string id)

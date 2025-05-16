@@ -17,6 +17,13 @@ public class User
     [BsonElement("last_name")]
     public string LastName { get; set; } = null!;
 
+    [BsonElement("full_name")]
+    public string FullName
+    {
+        get => $"{FirstName} {LastName}";
+        set { } // MongoDB needs this
+    }
+
     [BsonElement("email")]
     public string Email { get; set; } = null!;
 

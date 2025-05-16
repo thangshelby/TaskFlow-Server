@@ -1,137 +1,205 @@
+// using System.Text.Json;
 // using AutoMapper;
-// using Grpc.Core;
 // using MainService.Domain.Entities;
 // using MainService.Domain.Interfaces;
 // using MainService.Infras.Entities;
-// using MongoDB.Driver;
 // using MongoDB.Bson;
-// using System.Text.RegularExpressions;
-// using System.Text;
-// using System.Globalization;
+// using MongoDB.Bson.IO;
+// using MongoDB.Bson.Serialization;
+// using MongoDB.Driver;
 
 // namespace MainService.Infras.Repositories;
 
-// public static class StringExtensions
+// public class IssueRepository : IIssueRepository
 // {
-//     public static string NormalizeVietnamese(this string text)
-//     {
-//         if (string.IsNullOrEmpty(text)) return text;
-        
-//         var normalized = text.Normalize(NormalizationForm.FormD);
-//         var sb = new StringBuilder();
+//     private readonly IMongoCollection<Issue> _issues;
+//     private readonly ILogger<IssueRepository> _logger;
+//     private readonly IProjectRepository _projectRepository;
 
-//         foreach (char c in normalized)
-//         {
-//             if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-//                 sb.Append(c);
-//         }
-
-//         return sb.ToString();
-//     }
-// }
-
-// public class UserRepository : IUserRepository
-// {
-//     private readonly IMongoCollection<User> _users;
 //     private readonly IMapper _mapper;
-//     public UserRepository(MongoDbService mongoDbService, IMapper mapper)
+
+//     public IssueRepository(MongoDbService mongoDbService, IMapper mapper, IProjectRepository projectRepository, ILogger<IssueRepository> logger)
 //     {
 //         var database = mongoDbService.Database;
-//         _users = database.GetCollection<User>("users");
+//         _issues = database.GetCollection<Issue>("issues");
 //         _mapper = mapper;
-
-
-//         // Indexing email 
-//         var indexKeys = Builders<User>.IndexKeys.Ascending(u => u.Email);
-//         var indexOptions = new CreateIndexOptions { Unique = true };
-//         var indexModel = new CreateIndexModel<User>(indexKeys, indexOptions);
-//         _users.Indexes.CreateOne(indexModel);
+//         _logger = logger;
+//         _projectRepository = projectRepository;
 //     }
 
-//     public async Task<UserDomain> CreateUserAsync(UserDomain userDomain)
+//     public async Task<IssueDomain> CreateIssue(IssueDomain issueDomain)
 //     {
-//         // Convert Domain to Entity
-//         var userEntity = _mapper.Map<User>(userDomain);
-
-//         await _users.InsertOneAsync(userEntity);
-
-//         // Update domain with new ID
-//         userDomain.Id = userEntity.Id;
-//         return userDomain;
+//         var issueEntity = _mapper.Map<Issue>(issueDomain);
+//         await _issues.InsertOneAsync(issueEntity);
+//         issueDomain.Id = issueEntity.Id;
+//         return issueDomain;
 //     }
 
-//     public async Task<UserDomain?> FindUserAsync(UserQueryParams query)
+//     public async Task<IssueDomain> GetIssue(string id)
 //     {
-//         var filters = new List<FilterDefinition<User>>();
-
-//         if (!string.IsNullOrEmpty(query.UserId))
+//         var pipeline = new[]
 //         {
-//             filters.Add(Builders<User>.Filter.Eq(x => x.Id, query.UserId));
-//         }
-
-//         if (!string.IsNullOrEmpty(query.Email))
-//         {
-//             filters.Add(Builders<User>.Filter.Eq(x => x.Email, query.Email));
-//         }
-
-//         var filter = filters.Count > 0 ? Builders<User>.Filter.And(filters) : Builders<User>.Filter.Empty;
-
-//         var userEntity = await _users.Find(filter).FirstOrDefaultAsync();
-
-//         return userEntity == null ? null : _mapper.Map<UserDomain>(userEntity);
-//     }
-//     public async Task<UserDomain> UpdateUser(UserDomain userDomain)
-//     {
-//         var userEntity = _mapper.Map<User>(userDomain);
-//         var result = await _users.ReplaceOneAsync(i => i.Id == userDomain.Id, userEntity);
-//         if (result.MatchedCount == 0)
-//             throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
-//         return userDomain;
-//     }
-
-//     public async Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(string? name, string? email, int page, int limit)
-//     {
-//         var filterBuilder = Builders<User>.Filter;
-//         var filters = new List<FilterDefinition<User>>();
-//         var hasValidSearch = false;
-
-//         if (!string.IsNullOrEmpty(name))
-//         {
-//             hasValidSearch = true;
-//             var decodedName = Uri.UnescapeDataString(name.Replace("+", " "));
-//             var normalizedName = decodedName.NormalizeVietnamese();
-//             var escapedName = Regex.Escape(normalizedName);
-            
-//             // Use aggregation to normalize the stored names during search
-//             filters.Add(filterBuilder.Or(
-//                 filterBuilder.Where(x => x.FirstName.NormalizeVietnamese().Contains(normalizedName)),
-//                 filterBuilder.Where(x => x.LastName.NormalizeVietnamese().Contains(normalizedName))
-//             ));
-//         }
-
-//         if (!string.IsNullOrEmpty(email))
-//         {
-//             hasValidSearch = true;
-//             var decodedEmail = Uri.UnescapeDataString(email.Replace("+", " ")).Trim();
-//             // Add partial email match using case-insensitive regex
-//             filters.Add(filterBuilder.Regex(x => x.Email, new BsonRegularExpression(decodedEmail, "i")));
-//         }
-
-//         // If no valid search criteria, return no results
-//         var filter = !hasValidSearch ?
-//             filterBuilder.Eq("_id", "no_results") :
-//             filters.Any() ? filterBuilder.And(filters) : filterBuilder.Empty;
-
-//         var options = new FindOptions<User, User>
-//         {
-//             Collation = new Collation("en", strength: CollationStrength.Secondary)
+//             new BsonDocument("$match", new BsonDocument("_id", ObjectId.Parse(id))),
+//             new BsonDocument("$lookup", new BsonDocument
+//             {
+//                 { "from", "project_column" },
+//                 { "localField", "column_id" },
+//                 { "foreignField", "_id" },
+//                 { "as", "column" }
+//             }),
+//             new BsonDocument("$unwind", new BsonDocument
+//             {
+//                 { "path", "$column" },
+//                 { "preserveNullAndEmptyArrays", true }
+//             })
 //         };
-//         var totalCount = await _users.CountDocumentsAsync(filter, new CountOptions { Collation = options.Collation });
-//         var users = await _users.Find(filter)
-//             .Skip((page - 1) * limit)
-//             .Limit(limit)
-//             .ToListAsync();
 
-//         return (users.Select(u => _mapper.Map<UserDomain>(u)), (int)totalCount);
+//         var result = await _issues.Aggregate<Issue>(pipeline).FirstOrDefaultAsync();
+//         if (result == null)
+//             throw new Exception("Issue not found");
+
+//         return _mapper.Map<IssueDomain>(result);
+//     }
+
+//     public async Task<IssueDomain> UpdateIssue(UpdateIssueParams body)
+//     {
+//         var existingIssue = await _issues.Find(i => i.Id == body.IssueId).FirstOrDefaultAsync();
+//         _logger.LogInformation(body.StoryPoint.ToString());
+//         if (existingIssue == null)
+//             throw new Exception("Issue not found");
+
+//         if (!string.IsNullOrEmpty(body.Title)) existingIssue.Title = body.Title;
+//         if (!string.IsNullOrEmpty(body.ProjectId)) existingIssue.ProjectId = body.ProjectId;
+//         if (!string.IsNullOrEmpty(body.SprintId)) existingIssue.SprintId = body.SprintId;
+//         if (!string.IsNullOrEmpty(body.AssigneeId)) existingIssue.AssigneeId = body.AssigneeId;
+//         if (!string.IsNullOrEmpty(body.Description)) existingIssue.Description = body.Description;
+//         if (!string.IsNullOrEmpty(body.Summary)) existingIssue.Summary = body.Summary;
+//         if (body.StoryPoint.HasValue) existingIssue.StoryPoint = body.StoryPoint.Value;
+//         if (!string.IsNullOrEmpty(body.ReporterId)) existingIssue.ReporterId = body.ReporterId;
+//         if (!string.IsNullOrEmpty(body.ColumnId)) existingIssue.ColumnId = body.ColumnId;
+//         if (!string.IsNullOrEmpty(body.ParentId)) existingIssue.ParentId = body.ParentId;
+//         if (body.Type.HasValue) existingIssue.Type = body.Type;
+//         if (body.Priority.HasValue) existingIssue.Priority = body.Priority;
+//         if (body.Attachments != null && body.Attachments.Count > 0) existingIssue.Attachments = body.Attachments;
+
+//         existingIssue.UpdatedAt = DateTime.UtcNow;
+//         await _issues.ReplaceOneAsync(i => i.Id == body.IssueId, existingIssue);
+
+//         // Fetch the updated issue with column information
+//         var pipeline = new[]
+//         {
+//             new BsonDocument("$match", new BsonDocument("_id", ObjectId.Parse(body.IssueId))),
+//             new BsonDocument("$lookup", new BsonDocument
+//             {
+//                 { "from", "project_column" },
+//                 { "let", new BsonDocument { { "colId", "$column_id" } } },
+//                 { "pipeline", new BsonArray
+//                     {
+//                         new BsonDocument("$match", new BsonDocument
+//                         {
+//                             { "$expr", new BsonDocument
+//                                 {
+//                                     { "$eq", new BsonArray { "$_id", new BsonDocument("$toObjectId", "$$colId") } }
+//                                 }
+//                             }
+//                         })
+//                     }
+//                 },
+//                 { "as", "column" }
+//             }),
+//             new BsonDocument("$unwind", new BsonDocument
+//             {
+//                 { "path", "$column" },
+//                 { "preserveNullAndEmptyArrays", true }
+//             })
+//         };
+
+//         var rawResult = await _issues.Aggregate<BsonDocument>(pipeline).FirstOrDefaultAsync();
+//         var updatedIssue = BsonSerializer.Deserialize<Issue>(rawResult);
+//         return _mapper.Map<IssueDomain>(updatedIssue);
+//     }
+
+//     public async Task DeleteIssue(string id)
+//     {
+//         var result = await _issues.DeleteOneAsync(i => i.Id == id);
+//         if (result.DeletedCount == 0)
+//             throw new Exception("Issue not found");
+//     }
+
+//     public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(GetIssuesParams param)
+//     {
+//         var filterBuilder = Builders<Issue>.Filter;
+//         var filter = filterBuilder.Empty;
+
+//         if (!string.IsNullOrEmpty(param.ProjectId))
+//         {
+//             filter &= filterBuilder.Eq(i => i.ProjectId, param.ProjectId);
+//         }
+
+//         if (param.ColumnIds != null && param.ColumnIds.Any())
+//         {
+//             filter &= filterBuilder.In(i => i.ColumnId, param.ColumnIds);
+//         }
+
+//         if (!string.IsNullOrEmpty(param.AssigneeId))
+//         {
+//             filter &= filterBuilder.Eq(i => i.AssigneeId, param.AssigneeId);
+//         }
+
+//         if (!string.IsNullOrEmpty(param.SprintId))
+//         {
+//             filter &= filterBuilder.Eq(i => i.SprintId, param.SprintId);
+//         }
+
+//         if (!string.IsNullOrEmpty(param.Keyword))
+//         {
+//             var decodedKeyword = Uri.UnescapeDataString(param.Keyword.Replace("+", " "));
+
+//             var keywordFilter = filterBuilder.Or(
+//                 filterBuilder.Regex(i => i.Title, new BsonRegularExpression(decodedKeyword, "i")),
+//                 filterBuilder.Regex(i => i.Description, new BsonRegularExpression(decodedKeyword, "i"))
+//             );
+//             filter &= keywordFilter;
+//         }
+
+//         var totalCount = await _issues.CountDocumentsAsync(filter);
+//         var renderedFilter = filter.Render(new RenderArgs<Issue>(
+//             BsonSerializer.SerializerRegistry.GetSerializer<Issue>(),
+//             BsonSerializer.SerializerRegistry
+//         ));
+//         var pipeline = new[]
+//         {
+//             new BsonDocument("$match", renderedFilter),
+//             new BsonDocument("$lookup", new BsonDocument
+//             {
+//                 { "from", "project_column" },
+//                 { "let", new BsonDocument { { "colId", "$column_id" } } },
+//                 { "pipeline", new BsonArray
+//                     {
+//                         new BsonDocument("$match", new BsonDocument
+//                         {
+//                             { "$expr", new BsonDocument
+//                                 {
+//                                     { "$eq", new BsonArray { "$_id", new BsonDocument("$toObjectId", "$$colId") } }
+//                                 }
+//                             }
+//                         })
+//                     }
+//                 },
+//                 { "as", "column" }
+//             }),
+//             new BsonDocument("$unwind", new BsonDocument
+//             {
+//                 { "path", "$column" },
+//                 { "preserveNullAndEmptyArrays", true }
+//             }),
+//             new BsonDocument("$skip", (param.Page - 1) * param.Limit),
+//             new BsonDocument("$limit", param.Limit)
+//         };
+
+//         var rawResults = await _issues.Aggregate<BsonDocument>(pipeline).ToListAsync();
+//         var issues = rawResults.Select(bson => BsonSerializer.Deserialize<Issue>(bson)).ToList();
+
+//         return (_mapper.Map<List<IssueDomain>>(issues), (int)totalCount);
 //     }
 // }
