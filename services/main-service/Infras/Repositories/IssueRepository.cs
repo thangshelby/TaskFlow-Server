@@ -141,14 +141,14 @@ public class IssueRepository : IIssueRepository
             filter &= filterBuilder.In(i => i.ColumnId, param.ColumnIds);
         }
 
-        if (!string.IsNullOrEmpty(param.AssigneeId))
+        if (param.AssigneeIds != null && param.AssigneeIds.Any())
         {
-            filter &= filterBuilder.Eq(i => i.AssigneeId, param.AssigneeId);
+            filter &= filterBuilder.In(i => i.AssigneeId, param.AssigneeIds);
         }
 
-        if (!string.IsNullOrEmpty(param.SprintId))
+        if (param.SprintIds != null && param.SprintIds.Any())
         {
-            filter &= filterBuilder.Eq(i => i.SprintId, param.SprintId);
+            filter &= filterBuilder.In(i => i.SprintId, param.SprintIds);
         }
 
         if (!string.IsNullOrEmpty(param.Keyword))

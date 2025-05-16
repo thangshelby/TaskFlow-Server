@@ -74,8 +74,8 @@ message UpdateIssueReq {
 message ListIssuesReq {
   string project_id = 1;
   repeated string column_ids = 2;
-  optional string assingee_id = 3;
-  optional string sprint_id = 4;
+  repeated string assignee_ids = 3;
+  repeated string sprint_ids = 4;
   optional string keyword = 5;
   int32 page = 6;
   int32 limit = 7;
