@@ -7,6 +7,7 @@ public class UserDomain
     public string? Id { get; set; }
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
+    public string FullName { get => $"{FirstName} {LastName}"; }
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
 

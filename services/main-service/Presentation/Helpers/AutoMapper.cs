@@ -16,6 +16,9 @@ public class AutoMapperProfiles : Profile
     {
         CreateMap<Project, ProjectDomain>().ReverseMap();
         CreateMap<ProjectColumn, ProjectColumnDomain>().ReverseMap();
+        CreateMap<User, UserDomain>()
+            .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName))
+            .ReverseMap();
         CreateMap<Issue, IssueDomain>()
             .ForMember(dest => dest.SprintId, opt => opt.MapFrom(src => src.SprintId ?? string.Empty))
             .ForMember(dest => dest.AssigneeId, opt => opt.MapFrom(src => src.AssigneeId ?? string.Empty))
@@ -58,7 +61,8 @@ public class AutoMapperProfiles : Profile
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("o")))
             .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("o")))
             .ForMember(dest => dest.SprintId, opt => opt.MapFrom(src => src.SprintId ?? string.Empty))
-            .ForMember(dest => dest.AssigneeId, opt => opt.MapFrom(src => src.AssigneeId ?? string.Empty));
+            .ForMember(dest => dest.AssigneeId, opt => opt.MapFrom(src => src.AssigneeId ?? string.Empty))
+            .ForMember(dest => dest.Column, opt => opt.MapFrom(src => src.Column));
 
         CreateMap<UserDomain, UserRes>()
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("o")))

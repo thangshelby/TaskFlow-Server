@@ -125,12 +125,19 @@ public class UserRepository : IUserRepository
         {
             var decodedName = Uri.UnescapeDataString(name.Replace("+", " "));
             var normalizedName = decodedName.NormalizeVietnamese();
+            var searchTerms = normalizedName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             
-            var pattern = RegexHelper.BuildAccentInsensitivePattern(normalizedName);
-            filters.Add(filterBuilder.Or(
-                filterBuilder.Regex(x => x.FirstName, new BsonRegularExpression(pattern, "i")),
-                filterBuilder.Regex(x => x.LastName, new BsonRegularExpression(pattern, "i"))
-            ));
+            var nameFilters = new List<FilterDefinition<User>>();
+            foreach (var term in searchTerms)
+            {
+                var pattern = RegexHelper.BuildAccentInsensitivePattern(term);
+                nameFilters.Add(filterBuilder.Or(
+                    filterBuilder.Regex(x => x.FirstName, new BsonRegularExpression(pattern, "i")),
+                    filterBuilder.Regex(x => x.LastName, new BsonRegularExpression(pattern, "i")),
+                    filterBuilder.Regex(x => x.FullName, new BsonRegularExpression(pattern, "i"))
+                ));
+            }
+            filters.Add(filterBuilder.And(nameFilters));
         }
 
         if (!string.IsNullOrEmpty(email))
