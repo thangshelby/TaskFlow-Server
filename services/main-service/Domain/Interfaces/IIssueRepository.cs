@@ -24,8 +24,8 @@ public class GetIssuesParams
 {
     public string? ProjectId;
     public List<string>? ColumnIds;
-    public string? AssigneeId;
-    public string? SprintId;
+    public List<string>? AssigneeIds;
+    public List<string>? SprintIds;
     public string? Keyword;
     public int Page;
     public int Limit;
