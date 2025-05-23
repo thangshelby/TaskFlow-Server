@@ -3,17 +3,20 @@ using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using MainService.Domain.Packages;
 using Microsoft.Extensions.Logging;
+using TaskFlow.UserService;
 
 namespace MainService.Domain.UseCases;
 
 public class UserUseCase
 {
     private readonly IUserRepository _userRepository;
+    private readonly IIssueRepository _issueRepository;
     private readonly ILogger<UserUseCase> _logger;
 
-    public UserUseCase(IUserRepository userRepository, ILogger<UserUseCase> logger)
+    public UserUseCase(IUserRepository userRepository, IIssueRepository issueRepository, ILogger<UserUseCase> logger)
     {
         _userRepository = userRepository;
+        _issueRepository = issueRepository;
         _logger = logger;
     }
 
@@ -102,7 +105,10 @@ public class UserUseCase
 
         return await _userRepository.UpdateUser(existingUser);
     }
-
+    public async Task<UserStats> GetStats(string projectId)
+    {
+        return await _issueRepository.GetStats(projectId);
+    }
     public async Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(string? name, string? email, int page, int limit)
     {
         try

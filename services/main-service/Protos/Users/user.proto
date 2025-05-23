@@ -3,7 +3,6 @@ syntax = "proto3";
 option csharp_namespace = "TaskFlow.UserService";
 
 package project_service;
-
 import "google/api/annotations.proto";
 
 // Define the gRPC service
@@ -59,6 +58,44 @@ service UserService {
       body: "*"
     };
   }
+  rpc GetStats (GetStatsReq) returns (GetStatsRes) {
+    option (google.api.http) = {
+      post: "/api/v1/users/stats"
+      body: "*"
+    };
+  }
+}
+
+message GetStatsReq {
+  string project_id = 1;
+}
+message StatusCount {
+  string name = 1;
+  int32 count = 2;
+}
+
+message PriorityCount {
+  string priority = 1;
+  int32 count = 2;
+}
+
+message TypeCount {
+  string type = 1;
+  int32 count = 2;
+}
+
+message UserStats {
+  repeated StatusCount by_status = 1;
+  repeated PriorityCount by_priority = 2;
+  repeated TypeCount by_type = 3;
+  int32 new_issues_count = 4;
+  int32 recently_updated_count = 5;
+}
+
+message GetStatsRes {
+  string status = 1;
+  string message = 2;
+  UserStats data = 3; 
 }
 
 // LogoutUserReq and LogoutUserRes

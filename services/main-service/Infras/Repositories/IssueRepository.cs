@@ -7,6 +7,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
+using TaskFlow.UserService;
 
 namespace MainService.Infras.Repositories;
 
@@ -124,6 +125,132 @@ public class IssueRepository : IIssueRepository
         var result = await _issues.DeleteOneAsync(i => i.Id == id);
         if (result.DeletedCount == 0)
             throw new Exception("Issue not found");
+    }
+    public async Task<UserStats> GetStats(string projectId)
+    {
+        var now = DateTime.UtcNow;
+        var oneDayAgo = now.AddDays(-1);
+        var sixHoursAgo = now.AddHours(-6);
+
+        var pipeline = new[]
+        {
+            new BsonDocument("$match", new BsonDocument("project_id", projectId)),
+            new BsonDocument("$lookup", new BsonDocument
+            {
+                { "from", "project_column" },
+                { "let", new BsonDocument("colId", "$column_id") },
+                { "pipeline", new BsonArray
+                    {
+                        new BsonDocument("$match", new BsonDocument
+                        {
+                            { "$expr", new BsonDocument("$eq", new BsonArray
+                                {
+                                    "$_id",
+                                    new BsonDocument("$toObjectId", "$$colId")
+                                })
+                            }
+                        })
+                    }
+                },
+                { "as", "column" }
+            }),
+            new BsonDocument("$unwind", new BsonDocument
+            {
+                { "path", "$column" },
+                { "preserveNullAndEmptyArrays", true }
+            }),
+            new BsonDocument("$facet", new BsonDocument
+            {
+                {
+                    "byStatus", new BsonArray
+                    {
+                        new BsonDocument("$group", new BsonDocument
+                        {
+                            { "_id", new BsonDocument {
+                                { "name", "$column.name" },
+                                { "order", "$column.order" }
+                            }},
+                            { "count", new BsonDocument("$sum", 1) }
+                        }),
+                        new BsonDocument("$sort", new BsonDocument("_id.order", 1)),
+                        new BsonDocument("$project", new BsonDocument
+                        {
+                            { "_id", 0 },
+                            { "name", "$_id.name" },
+                            { "count", 1 }
+                        })
+                    }
+                },
+                {
+                    "byPriority", new BsonArray
+                    {
+                        new BsonDocument("$group", new BsonDocument
+                        {
+                            { "_id", "$priority" },
+                            { "count", new BsonDocument("$sum", 1) }
+                        })
+                    }
+                },
+                {
+                    "byType", new BsonArray
+                    {
+                        new BsonDocument("$group", new BsonDocument
+                        {
+                            { "_id", "$type" },
+                            { "count", new BsonDocument("$sum", 1) }
+                        })
+                    }
+                },
+                {
+                    "newIssuesCount", new BsonArray
+                    {
+                        new BsonDocument("$match", new BsonDocument
+                        {
+                            { "created_at", new BsonDocument("$gte", oneDayAgo) }
+                        }),
+                        new BsonDocument("$count", "count")
+                    }
+                },
+                {
+                    "updatedIssuesCount", new BsonArray
+                    {
+                        new BsonDocument("$match", new BsonDocument
+                        {
+                            { "updated_at", new BsonDocument("$gte", sixHoursAgo) }
+                        }),
+                        new BsonDocument("$count", "count")
+                    }
+                }
+            })
+        };
+
+        var results = await _issues.Aggregate<BsonDocument>(pipeline).FirstOrDefaultAsync();
+        var newIssuesCount = results["newIssuesCount"].IsBsonArray && results["newIssuesCount"].AsBsonArray.Count > 0
+        ? results["newIssuesCount"][0]["count"].AsInt32
+        : 0;
+        var updatedIssuesCount = results["updatedIssuesCount"].IsBsonArray && results["updatedIssuesCount"].AsBsonArray.Count > 0
+            ? results["updatedIssuesCount"][0]["count"].AsInt32
+            : 0;
+
+        var response = new UserStats
+        {
+            ByStatus = { results["byStatus"].AsBsonArray.Select(x => new StatusCount {
+                Name = x["name"].AsString,
+                Count = x["count"].AsInt32
+            }) },
+            ByPriority = { results["byPriority"].AsBsonArray.Select(x => new PriorityCount {
+                Priority = x["_id"].AsString,
+                Count = x["count"].AsInt32
+            }) },
+            ByType = { results["byType"].AsBsonArray.Select(x => new TypeCount {
+                Type = x["_id"].AsString,
+                Count = x["count"].AsInt32
+            }) },
+            NewIssuesCount = newIssuesCount,
+            RecentlyUpdatedCount = updatedIssuesCount
+        };
+
+        return response;
     }
 
     public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(GetIssuesParams param)
