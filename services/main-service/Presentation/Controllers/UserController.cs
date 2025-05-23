@@ -13,6 +13,7 @@ using System.Security.Cryptography;
 using AutoMapper;
 using MainService.Domain.Interfaces;
 using Google.Protobuf.WellKnownTypes;
+using System.Text.Json;
 
 public class UserController : UserService.UserServiceBase
 {
@@ -233,40 +234,40 @@ public class UserController : UserService.UserServiceBase
             throw new RpcException(new Status(StatusCode.Internal, "Error searching users"));
         }
     }
-    
-        public override async Task<GetUserRes> GetByEmail(GetUserByEmailReq request, ServerCallContext context)
+
+    public override async Task<GetUserRes> GetByEmail(GetUserByEmailReq request, ServerCallContext context)
+    {
+        try
         {
-            try
+            if (string.IsNullOrEmpty(request.Email))
             {
-                if (string.IsNullOrEmpty(request.Email))
-                {
-                    throw new RpcException(new Status(StatusCode.InvalidArgument, "Email is required"));
-                }
-    
-                _logger.LogInformation("Getting user by email: {Email}", request.Email);
-                var user = await _userUseCase.FindUserAsync(new UserQueryParams { Email = request.Email });
-                
-                if (user == null)
-                {
-                    throw new RpcException(new Status(StatusCode.NotFound, $"User with email {request.Email} not found"));
-                }
-    
-                return new GetUserRes
-                {
-                    Status = "success",
-                    Data = _mapper.Map<UserRes>(user)
-                };
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Email is required"));
             }
-            catch (RpcException)
+
+            _logger.LogInformation("Getting user by email: {Email}", request.Email);
+            var user = await _userUseCase.FindUserAsync(new UserQueryParams { Email = request.Email });
+
+            if (user == null)
             {
-                throw;
+                throw new RpcException(new Status(StatusCode.NotFound, $"User with email {request.Email} not found"));
             }
-            catch (Exception ex)
+
+            return new GetUserRes
             {
-                _logger.LogError(ex, "Error getting user by email {Email}", request.Email);
-                throw new RpcException(new Status(StatusCode.Internal, "Error retrieving user"));
-            }
+                Status = "success",
+                Data = _mapper.Map<UserRes>(user)
+            };
         }
+        catch (RpcException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user by email {Email}", request.Email);
+            throw new RpcException(new Status(StatusCode.Internal, "Error retrieving user"));
+        }
+    }
     public override async Task<LogoutUserRes> Logout(LogoutUserReq request, ServerCallContext context)
     {
         var metadata = new Metadata
@@ -288,6 +289,28 @@ public class UserController : UserService.UserServiceBase
         };
     }
 
+    // TODO: Move to stat service
+    public override async Task<GetStatsRes> GetStats(GetStatsReq request, ServerCallContext context)
+    {
+        var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User is not authenticated."));
+        }
+        var result = await _userUseCase.GetStats(request.ProjectId);
+        if (result == null)
+        {
+            throw new RpcException(new Status(StatusCode.Internal, "Failed to retrieve stats."));
+        }
+
+        return new GetStatsRes
+        {
+            Status = "success",
+            Message = "Logged out successfully",
+            Data = result
+        };
+    }
     private async Task SetJwtToken(string userId, UserRole role, string email, ServerCallContext context)
     {
         string? privateKeyPem = _configuration["JWT_SECRET"];

@@ -1,11 +1,14 @@
 using MainService.Domain.Entities;
 using MainService.Domain.Enums;
+using TaskFlow.UserService;
 namespace MainService.Domain.Interfaces;
+
 public interface IIssueRepository
 {
     Task<IssueDomain> CreateIssue(IssueDomain issue);
     Task<IssueDomain> GetIssue(string id);
     Task<IssueDomain> UpdateIssue(UpdateIssueParams issue);
+    Task<UserStats> GetStats(string userId);
     Task DeleteIssue(string id);
     Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(GetIssuesParams param);
 }
@@ -45,5 +48,5 @@ public class UpdateIssueParams
     public string? ParentId;
     public IssueType? Type;
     public IssuePriority? Priority;
-    public List<string>? Attachments; 
+    public List<string>? Attachments;
 }
