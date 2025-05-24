@@ -7,8 +7,8 @@ build:
 	docker compose up --build -d
 logs:
 	docker compose logs -f
-node-server:
-	cd services/node-service && npm run dev
+nest-server:
+	cd services/nest-service && pnpm run start:dev
 mysql:
 	docker start mysql-container
 main-server:
@@ -35,4 +35,4 @@ sync-wd:
 cqlsh:
 	docker exec -it cassandra cqlsh
 
-.PHONY: container-up container-down node-server sync-gateway update-gateway gen-protobuf sync cqlsh
+.PHONY: container-up container-down nest-server sync-gateway update-gateway gen-protobuf sync cqlsh

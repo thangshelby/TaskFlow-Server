@@ -1,5 +1,5 @@
 import { Service } from 'typedi';
-import { INotification } from 'src/models/notification';
+import { INotification } from 'src/common/models/notification';
 import { CassandraBaseRepo } from 'src/repos/cassandra.repo';
 
 @Service()

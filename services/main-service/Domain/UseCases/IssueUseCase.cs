@@ -12,13 +12,15 @@ public class IssueUseCase
     private readonly IProjectRepository _projectRepository;
     private readonly IIssueRepository _issueRepository;
     private readonly ILogger<IssueUseCase> _logger;
+    private readonly IPublisherService _publisher;
 
-    public IssueUseCase(IIssueRepository issueRepository, IProjectRepository projectRepository, ITransactionRepo transactionRepo, ILogger<IssueUseCase> logger)
+    public IssueUseCase(IIssueRepository issueRepository, IProjectRepository projectRepository, ITransactionRepo transactionRepo, ILogger<IssueUseCase> logger, IPublisherService publisher)
     {
         _issueRepository = issueRepository;
         _transactionRepo = transactionRepo;
         _projectRepository = projectRepository;
         _logger = logger;
+        _publisher = publisher;
     }
 
     public async Task<IssueDomain> CreateIssue(CreateIssueReq param)
@@ -65,6 +67,13 @@ public class IssueUseCase
             });
 
             return newIssue;
+        });
+
+        await _publisher.Emit(new IActivitiesMessage
+        {
+            EventType = ActivitiesMessageAction.ISSUE_CREATED,
+            NewIssue = result,
+            OldIssue = null
         });
 
         return result;
@@ -117,7 +126,7 @@ public class IssueUseCase
                     ColumnId = oldColumn.Id,
                 });
             }
-            
+
             return await _issueRepository.UpdateIssue(updateData);
         });
 
@@ -146,6 +155,11 @@ public class IssueUseCase
         await _issueRepository.DeleteIssue(id);
     }
 
+    public async Task OnIssueChanged(IssueDomain? oldIssue, IssueDomain newIssue)
+    {
+        _logger.LogInformation("receive message");
+        MongoDocumentLogUtil.LogObject(_logger, newIssue);
+    }
     public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(GetIssuesParams param)
     {
         if (param.Page <= 0) param.Page = 1;

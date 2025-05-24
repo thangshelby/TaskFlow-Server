@@ -1,7 +1,7 @@
 import { Service } from 'typedi';
 import { Consumer, EachMessagePayload, Kafka, Message, Producer } from 'kafkajs';
 import { v4 as uuidv4 } from 'uuid';
-import { NotificationActionType } from 'src/models/notification.action';
+import { NotificationActionType } from 'src/common/actions/notification.action';
 
 export interface KafkaMessage {
   id: string;

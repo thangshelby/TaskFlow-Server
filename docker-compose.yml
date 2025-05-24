@@ -15,11 +15,11 @@ services:
       - grpc-server
   grpc-server:
     build:
-      context: ./services/main-service  # Path to your .NET project
+      context: ./services/main-service # Path to your .NET project
       dockerfile: Dockerfile
     container_name: grpc_server
     ports:
-      - "5001:5001"  # Map host port 5001 to container port 5001
+      - "5001:5001" # Map host port 5001 to container port 5001
     networks:
       - taskflow-network
     environment:
@@ -30,30 +30,37 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-  # kafka:
-  #   image: bitnami/kafka:3.8
-  #   container_name: kafka
-  #   environment:
-  #     - KAFKA_CFG_NODE_ID=1
-  #     - KAFKA_CFG_PROCESS_ROLES=controller,broker
-  #     - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-  #     - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
-  #     - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
-  #     - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@localhost:9093
-  #     - KAFKA_CFG_BROKER_ID=1
-  #     - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-  #     - ALLOW_PLAINTEXT_LISTENER=yes
-  #   volumes:
-  #     - kafka-data:/bitnami/kafka
-  #   network_mode: "host"
-  # kafka-ui:
-  #   image: provectuslabs/kafka-ui:latest
-  #   container_name: kafka_ui
-  #   environment:
-  #     - KAFKA_CLUSTERS_0_NAME=local
-  #     - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=localhost:9092
-  #     - SERVER_PORT=8081
-  #   network_mode: "host"
+  kafka:
+    image: bitnami/kafka:3.8
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_CFG_BROKER_ID=1
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    volumes:
+      - kafka-data:/bitnami/kafka
+    networks:
+      - taskflow-network
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka_ui
+    ports:
+      - "8888:8888"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - SERVER_PORT=8888
+    networks:
+      - taskflow-network
   # cassandra:
   #   image: cassandra:latest
   #   container_name: cassandra
@@ -82,10 +89,6 @@ services:
 
   #       CREATE TABLE IF NOT EXISTS notifications (
   #         id TEXT PRIMARY KEY,
-  #         user_id TEXT,
-  #         event_type TEXT,
-  #         message TEXT,
-  #         created_at TIMESTAMP
   #       );
   #     \"
   #     "
