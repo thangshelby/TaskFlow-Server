@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { INotification } from 'src/models/notification';
+import { INotification } from 'src/common/models/notification';
 import { NotificationRepo } from 'src/repos/notification.repo';
 import { Service } from 'typedi';
 
@@ -17,7 +17,6 @@ export class NotificationService {
     };
 
     try {
-      // Save the notification to Cassandra
       await this.notificationRepo.createNotification(notification);
       console.log('Notification created for user:', userId);
     } catch (error) {

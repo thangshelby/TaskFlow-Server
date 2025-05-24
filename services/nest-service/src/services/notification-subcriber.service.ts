@@ -1,7 +1,7 @@
 import { OnModuleInit } from '@nestjs/common';
 import { EachMessagePayload } from 'kafkajs';
-import { UserCreatedData } from 'src/models/notification';
-import { NotificationAction } from 'src/models/notification.action';
+import { UserCreatedData } from 'src/common/models/notification';
+import { NOTIFICATION_KAFKA_TOPIC, NotificationAction } from 'src/common/actions/notification.action';
 import { KafkaMessage, KafkaService } from 'src/services/kafka.service';
 import { NotificationService } from 'src/services/notification.service';
 import { Service } from 'typedi';
@@ -15,7 +15,7 @@ export class NotificationSubscriberService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     await this.kafkaService.connect();
-    this.kafkaService.on('notifications', this.handleNotificationReceiver.bind(this));
+    this.kafkaService.on(NOTIFICATION_KAFKA_TOPIC, this.handleNotificationReceiver.bind(this));
   }
 
   private async handleNotificationReceiver(payload: EachMessagePayload): Promise<void> {

@@ -8,9 +8,10 @@ public static class DependencyInjectionExtensions
 {
     public static IServiceCollection AddProjectServices(this IServiceCollection services)
     {
+
+
         // Database Service
         services.AddSingleton<MongoDbService>();
-
         // Use Cases
         services.AddScoped<UserUseCase>();
         services.AddScoped<ProjectUseCase>();
@@ -25,7 +26,10 @@ public static class DependencyInjectionExtensions
         services.AddScoped<ISprintRepository, SprintRepository>();
         services.AddScoped<IIssueRepository, IssueRepository>();
         services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
+        services.AddSingleton<IPublisherService, ActivitiesPublisher>();
 
+        // Workers
+        services.AddHostedService<ActivitiesConsumer>();
         return services;
     }
 
