@@ -21,6 +21,7 @@ public class UserController : UserService.UserServiceBase
     private readonly IValidator<LoginUserReq> _loginUserValidator;
     private readonly IValidator<UpdateUserReq> _updateUserValidator;
     private readonly IValidator<RegisterUserReq> _registerUserValidator;
+    private readonly IValidator<ChangePasswordReq> _changePasswordValidator;
     private readonly IMapper _mapper;
     private readonly UserUseCase _userUseCase;
     private readonly ILogger<UserController> _logger;
@@ -31,6 +32,7 @@ public class UserController : UserService.UserServiceBase
         IValidator<LoginUserReq> loginUserValidator,
         IValidator<UpdateUserReq> updateUserValidator,
         IValidator<RegisterUserReq> registerUserValidator,
+        IValidator<ChangePasswordReq> changePasswordValidator,
         UserUseCase userUseCase,
         ILogger<UserController> logger,
         IConfiguration configuration,
@@ -40,6 +42,7 @@ public class UserController : UserService.UserServiceBase
         _loginUserValidator = loginUserValidator ?? throw new ArgumentNullException(nameof(loginUserValidator));
         _updateUserValidator = updateUserValidator ?? throw new ArgumentNullException(nameof(updateUserValidator));
         _registerUserValidator = registerUserValidator ?? throw new ArgumentNullException(nameof(registerUserValidator));
+        _changePasswordValidator = changePasswordValidator ?? throw new ArgumentNullException(nameof(changePasswordValidator));
         _userUseCase = userUseCase ?? throw new ArgumentNullException(nameof(userUseCase));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
@@ -311,6 +314,48 @@ public class UserController : UserService.UserServiceBase
             Data = result
         };
     }
+
+    public override async Task<ChangePasswordRes> ChangePassword(ChangePasswordReq request, ServerCallContext context)
+    {
+        var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User is not authenticated"));
+        }
+
+        // Ensure user can only change their own password
+        if (userId != request.UserId)
+        {
+            throw new RpcException(new Status(StatusCode.PermissionDenied, "Cannot change another user's password"));
+        }
+
+        var validationResult = await _changePasswordValidator.ValidateAsync(request);
+        if (!validationResult.IsValid)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
+        }
+
+        try
+        {
+            await _userUseCase.ChangePassword(request.UserId, request.OldPassword, request.NewPassword);
+            
+            return new ChangePasswordRes
+            {
+                Status = "success",
+                Message = "Password changed successfully"
+            };
+        }
+        catch (RpcException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error changing password for user {UserId}", request.UserId);
+            throw new RpcException(new Status(StatusCode.Internal, "Error changing password"));
+        }
+    }
+
     private async Task SetJwtToken(string userId, UserRole role, string email, ServerCallContext context)
     {
         string? privateKeyPem = _configuration["JWT_SECRET"];
