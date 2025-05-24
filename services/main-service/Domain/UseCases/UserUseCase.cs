@@ -125,4 +125,23 @@ public class UserUseCase
             throw;
         }
     }
+
+    public async Task ChangePassword(string userId, string oldPassword, string newPassword)
+    {
+        var user = await _userRepository.FindUserAsync(new UserQueryParams
+        {
+            UserId = userId
+        });
+
+        if (user == null)
+            throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
+
+        if (!PasswordHasher.ValidatePassword(oldPassword, user.Password))
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "Current password is incorrect"));
+
+        user.Password = PasswordHasher.HashPassword(newPassword);
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _userRepository.UpdateUser(user);
+    }
 }

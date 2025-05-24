@@ -3,6 +3,7 @@ using MainService.Domain.Interfaces;
 using MainService.Domain.UseCases;
 using MainService.Infras;
 using MainService.Infras.Repositories;
+using MainService.Presentation.Validator.Users;
 
 public static class DependencyInjectionExtensions
 {
@@ -54,6 +55,7 @@ public static class DependencyInjectionExtensions
         services.AddValidatorsFromAssemblyContaining<LoginUserValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateUserValidator>();
         services.AddValidatorsFromAssemblyContaining<RegisterUserValidator>();
+        services.AddValidatorsFromAssemblyContaining<ChangePasswordValidator>();
 
         services.AddValidatorsFromAssemblyContaining<CreateIssueValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateIssueValidator>();
