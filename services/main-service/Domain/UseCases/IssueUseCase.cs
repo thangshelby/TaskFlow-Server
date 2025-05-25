@@ -10,16 +10,25 @@ public class IssueUseCase
 {
     private readonly ITransactionRepo _transactionRepo;
     private readonly IProjectRepository _projectRepository;
+    private readonly ISprintRepository _sprintRepository;
+    private readonly IUserRepository _userRepository;
+    private readonly IActivitiesRepository _activitiesRepository;
     private readonly IIssueRepository _issueRepository;
     private readonly ILogger<IssueUseCase> _logger;
     private readonly IPublisherService _publisher;
 
-    public IssueUseCase(IIssueRepository issueRepository, IProjectRepository projectRepository, ITransactionRepo transactionRepo, ILogger<IssueUseCase> logger, IPublisherService publisher)
+    public IssueUseCase(IIssueRepository issueRepository, IUserRepository userRepository,
+    ISprintRepository sprintRepository, IActivitiesRepository activitiesRepository,
+    IProjectRepository projectRepository, ITransactionRepo transactionRepo,
+    ILogger<IssueUseCase> logger, IPublisherService publisher)
     {
         _issueRepository = issueRepository;
         _transactionRepo = transactionRepo;
+        _activitiesRepository = activitiesRepository;
         _projectRepository = projectRepository;
         _logger = logger;
+        _userRepository = userRepository;
+        _sprintRepository = sprintRepository;
         _publisher = publisher;
     }
 
@@ -73,7 +82,9 @@ public class IssueUseCase
         {
             EventType = ActivitiesMessageAction.ISSUE_CREATED,
             NewIssue = result,
-            OldIssue = null
+            OldIssue = null,
+            // TODO: Fix to get creatorId
+            UserId = result.ReporterId,
         });
 
         return result;
@@ -94,9 +105,11 @@ public class IssueUseCase
         if (string.IsNullOrEmpty(updateData.IssueId))
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Issue ID cannot be empty"));
 
+        IssueDomain existingIssue = null!;
+
         var updatedIssue = await _transactionRepo.ExecuteAsync(async session =>
         {
-            var existingIssue = await _issueRepository.GetIssue(updateData.IssueId);
+            existingIssue = await _issueRepository.GetIssue(updateData.IssueId);
             if (!string.IsNullOrEmpty(updateData.ColumnId) && updateData.ColumnId != existingIssue.ColumnId)
             {
                 var newColumn = await _projectRepository.FindColumn(new GetColumnParams
@@ -127,7 +140,16 @@ public class IssueUseCase
                 });
             }
 
+
             return await _issueRepository.UpdateIssue(updateData);
+        });
+
+        await _publisher.Emit(new IActivitiesMessage
+        {
+            EventType = ActivitiesMessageAction.ISSUE_CHANGED,
+            OldIssue = existingIssue,
+            NewIssue = updatedIssue,
+            UserId = updateData.CreatorId
         });
 
         return updatedIssue;
@@ -155,10 +177,134 @@ public class IssueUseCase
         await _issueRepository.DeleteIssue(id);
     }
 
-    public async Task OnIssueChanged(IssueDomain? oldIssue, IssueDomain newIssue)
+    public async Task OnIssueChanged(IActivitiesMessage message)
     {
-        _logger.LogInformation("receive message");
-        MongoDocumentLogUtil.LogObject(_logger, newIssue);
+        var oldIssue = message.OldIssue;
+        var newIssue = message.NewIssue;
+        ActivityDomain activity;
+        if (message.EventType == ActivitiesMessageAction.ISSUE_CREATED || oldIssue == null)
+        {
+            activity = new ActivityDomain
+            {
+                IssueId = newIssue.Id!,
+                UserId = message.UserId,
+                ActionType = ActivityAction.ISSUE_CREATED,
+                Changes = []
+            };
+            await _activitiesRepository.CreateActivity(activity);
+            return;
+        }
+        _logger.LogInformation("beforechange");
+
+        var changes = await getDifferentChange(oldIssue, newIssue);
+        if (changes.Count == 0)
+            return;
+        _logger.LogInformation("afterchange");
+
+        activity = new ActivityDomain
+        {
+            IssueId = newIssue.Id!,
+            UserId = message.UserId,
+            ActionType = ActivityAction.ISSUE_UPDATED,
+            Changes = changes
+        };
+        _logger.LogInformation("create");
+        await _activitiesRepository.CreateActivity(activity);
+    }
+    private async Task<List<ActivityChange>> getDifferentChange(IssueDomain oldIssue, IssueDomain newIssue)
+    {
+        var changes = new List<ActivityChange>();
+
+        void Compare<T>(string field, T? oldValue, T? newValue)
+        {
+            if (!EqualityComparer<T>.Default.Equals(oldValue, newValue))
+            {
+                changes.Add(new ActivityChange
+                {
+                    Field = field,
+                    OldValue = oldValue?.ToString(),
+                    NewValue = newValue?.ToString()
+                });
+            }
+        }
+
+        if (oldIssue.ColumnId != newIssue.ColumnId && oldIssue.ColumnId != null && newIssue.ColumnId != null)
+        {
+            var oldColumnTask = _projectRepository.FindColumn(new GetColumnParams
+            {
+                ColumnId = oldIssue.ColumnId
+            });
+            var newColumnTask = _projectRepository.FindColumn(new GetColumnParams
+            {
+                ColumnId = newIssue.ColumnId
+            });
+
+            await Task.WhenAll(oldColumnTask, newColumnTask);
+
+            var oldStatus = oldColumnTask.Result;
+            var newStatus = newColumnTask.Result;
+
+            Compare("Status", oldStatus.Name, newStatus.Name);
+        }
+        if (oldIssue.AssigneeId != newIssue.AssigneeId && oldIssue.AssigneeId != null && newIssue.AssigneeId != null)
+        {
+            var oldAsigneeTask = _userRepository.FindUserAsync(new UserQueryParams
+            {
+                UserId = oldIssue.AssigneeId
+            });
+            var newAsigneeTask = _userRepository.FindUserAsync(new UserQueryParams
+            {
+                UserId = newIssue.AssigneeId
+            });
+
+            await Task.WhenAll(oldAsigneeTask, newAsigneeTask);
+
+            var oldAsignee = oldAsigneeTask.Result;
+            var newAsignee = newAsigneeTask.Result;
+
+            Compare("Assignee", oldAsignee.FullName, newAsignee.FullName);
+        }
+        if (oldIssue.ReporterId != newIssue.ReporterId && oldIssue.ReporterId != null && newIssue.ReporterId != null)
+        {
+            var oldReporterTask = _userRepository.FindUserAsync(new UserQueryParams
+            {
+                UserId = oldIssue.ReporterId
+            });
+            var newReporterTask = _userRepository.FindUserAsync(new UserQueryParams
+            {
+                UserId = newIssue.ReporterId
+            });
+
+            await Task.WhenAll(oldReporterTask, newReporterTask);
+
+            var oldReporter = oldReporterTask.Result;
+            var newReporter = newReporterTask.Result;
+
+            Compare("Reporter", oldReporter.FullName, newReporter.FullName);
+        }
+        if (oldIssue.SprintId != newIssue.SprintId && oldIssue.SprintId != null && newIssue.SprintId != null)
+        {
+            var oldSprintTask = _sprintRepository.GetSprint(oldIssue.SprintId);
+            var newSprintTask = _sprintRepository.GetSprint(newIssue.SprintId);
+
+            await Task.WhenAll(oldSprintTask, newSprintTask);
+
+            var oldSprint = oldSprintTask.Result;
+            var newSprint = newSprintTask.Result;
+
+            Compare("Sprint", oldSprint.Name, newSprint.Name);
+        }
+
+        Compare("Title", oldIssue.Title, newIssue.Title);
+        Compare("Description", oldIssue.Description, newIssue.Description);
+        Compare("Priority", oldIssue.Priority, newIssue.Priority);
+        Compare("Type", oldIssue.Type, newIssue.Type);
+        Compare("Priority", oldIssue.Priority, newIssue.Priority);
+        Compare("Summary", oldIssue.Summary, newIssue.Summary);
+        Compare<int?>("StoryPoint", oldIssue.StoryPoint, newIssue.StoryPoint);
+        // Compare("DueDate", oldIssue.DueDate, newIssue.DueDate);
+
+        return changes;
     }
     public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(GetIssuesParams param)
     {
@@ -166,5 +312,10 @@ public class IssueUseCase
         if (param.Limit <= 0) param.Limit = 10;
 
         return await _issueRepository.ListIssues(param);
+    }
+
+    public async Task<(List<ActivityDomain>, int totalCount)> ListActivities(GetActivityParams param)
+    {
+        return await _activitiesRepository.ListActivities(param);
     }
 }

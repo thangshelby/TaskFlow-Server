@@ -38,6 +38,23 @@ service IssueService {
       body: "*"
     };
   }
+  rpc GetActivities (GetActivitiesReq) returns (GetActivitiesRes) {
+    option (google.api.http) = {
+      post: "/api/v1/issues/list-activities"
+      body: "*"
+    };
+  }
+}
+
+message GetActivitiesReq {
+  string issue_id = 1;
+  int32 page = 2;
+  int32 limit = 3;
+}
+
+message GetActivitiesRes {
+  repeated base.ActivityRes data = 1;
+  base.PaginationRes pagination = 2;
 }
 
 // Get by ID

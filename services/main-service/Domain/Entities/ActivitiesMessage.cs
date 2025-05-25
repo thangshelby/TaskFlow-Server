@@ -4,6 +4,7 @@ public class IActivitiesMessage
     public IssueDomain? OldIssue { get; set; }
     public required IssueDomain NewIssue { get; set; }
     public required string EventType { get; set; }
+    public required string UserId { get; set; }
 };
 
 public static class ActivitiesMessageAction

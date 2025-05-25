@@ -83,10 +83,8 @@ public class ActivitiesConsumer : IHostedService, IDisposable
         switch (message.EventType)
         {
             case ActivitiesMessageAction.ISSUE_CREATED:
-                await issueUseCase.OnIssueChanged(null, message.NewIssue);
-                break;
             case ActivitiesMessageAction.ISSUE_CHANGED:
-                await issueUseCase.OnIssueChanged(message.OldIssue, message.NewIssue);
+                await issueUseCase.OnIssueChanged(message);
                 break;
             default:
                 break;

@@ -15,6 +15,8 @@ public class AutoMapperProfiles : Profile
     public AutoMapperProfiles()
     {
         CreateMap<Project, ProjectDomain>().ReverseMap();
+        CreateMap<Activity, ActivityDomain>().ReverseMap();
+        CreateMap<ActivityChangeEntity, ActivityChange>().ReverseMap();
         CreateMap<ProjectColumn, ProjectColumnDomain>().ReverseMap();
         CreateMap<User, UserDomain>()
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName))
@@ -89,5 +91,18 @@ public class AutoMapperProfiles : Profile
         CreateMap<ProjectMemberDomain, UserMembershipRes>()
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("o")))
             .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("o")));
+
+        CreateMap<ActivityDomain, ActivityRes>()
+           .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id ?? ""))
+           .ForMember(dest => dest.IssueId, opt => opt.MapFrom(src => src.IssueId))
+           .ForMember(dest => dest.ActionType, opt => opt.MapFrom(src => src.ActionType ?? ""))
+           .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("o")))
+           .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("o")))
+           .ForMember(dest => dest.Changes, opt => opt.MapFrom(src => src.Changes ?? new List<ActivityChange>()));
+
+        CreateMap<ActivityChange, ActivityChangesRes>()
+            .ForMember(dest => dest.Field, opt => opt.MapFrom(src => src.Field ?? ""))
+            .ForMember(dest => dest.OldValue, opt => opt.MapFrom(src => src.OldValue ?? ""))
+            .ForMember(dest => dest.NewValue, opt => opt.MapFrom(src => src.NewValue ?? ""));
     }
 }
