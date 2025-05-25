@@ -40,7 +40,7 @@ public class IssueController : IssueService.IssueServiceBase
     public override async Task<CreateIssueRes> CreateIssue(CreateIssueReq request, ServerCallContext context)
     {
         // _logger.LogInformation("Creating new issue. Request: {@Request}", request);
-        
+
         var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
         if (string.IsNullOrEmpty(userId))
         {
@@ -116,6 +116,13 @@ public class IssueController : IssueService.IssueServiceBase
 
     public override async Task<IssueRes> UpdateIssue(UpdateIssueReq request, ServerCallContext context)
     {
+        var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User is not authenticated."));
+        }
+
         var validationResult = await _updateIssueValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
         {
@@ -125,6 +132,7 @@ public class IssueController : IssueService.IssueServiceBase
         var result = await _issueUseCase.UpdateIssue(new UpdateIssueParams
         {
             IssueId = request.Id,
+            CreatorId = userId,
             AssigneeId = request.AssigneeId,
             Description = request.Description,
             ProjectId = request.ProjectId,
@@ -178,6 +186,27 @@ public class IssueController : IssueService.IssueServiceBase
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
         var response = new ListIssuesRes();
         response.Data.AddRange(_mapper.Map<List<IssueRes>>(issues));
+        response.Pagination = new PaginationRes
+        {
+            TotalItems = totalCount,
+            TotalPages = totalPages,
+            CurrentPage = request.Page,
+            Limit = request.Limit
+        };
+        return response;
+    }
+    public override async Task<GetActivitiesRes> GetActivities(GetActivitiesReq request, ServerCallContext context)
+    {
+        var (activities, totalCount) = await _issueUseCase.ListActivities(new GetActivityParams
+        {
+            IssueId = request.IssueId,
+            Limit = request.Limit == 0 ? 10 : request.Limit,
+            Page = request.Page == 0 ? 1 : request.Page,
+        });
+        var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
+
+        var response = new GetActivitiesRes();
+        response.Data.AddRange(_mapper.Map<List<ActivityRes>>(activities));
         response.Pagination = new PaginationRes
         {
             TotalItems = totalCount,

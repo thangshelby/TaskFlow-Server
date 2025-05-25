@@ -36,6 +36,7 @@ public class GetIssuesParams
 public class UpdateIssueParams
 {
     public required string IssueId;
+    public required string CreatorId;
     public string? Title;
     public string? ProjectId;
     public string? SprintId;

@@ -25,6 +25,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<ISprintRepository, SprintRepository>();
         services.AddScoped<IIssueRepository, IssueRepository>();
+        services.AddScoped<IActivitiesRepository, ActivitiesRepository>();
         services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
         services.AddSingleton<IPublisherService, ActivitiesPublisher>();
 

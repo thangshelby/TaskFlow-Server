@@ -41,4 +41,19 @@ message IssueRes {
     string created_at = 15;
     string updated_at = 16;
 }
-  
+
+//Activity
+message ActivityRes{
+    string id = 1;
+    string issue_id = 2;
+    string action_type = 3;
+    string created_at = 4;
+    string updated_at = 5;
+    repeated ActivityChangesRes changes = 6;
+}
+
+message ActivityChangesRes {
+    string field = 1;
+    string old_value = 2;
+    string new_value = 3;
+}
