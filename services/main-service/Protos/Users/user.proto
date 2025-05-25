@@ -64,6 +64,23 @@ service UserService {
       body: "*"
     };
   }
+  rpc ChangePassword (ChangePasswordReq) returns (ChangePasswordRes) {
+    option (google.api.http) = {
+      post: "/api/v1/users/change-password"
+      body: "*"
+    };
+  }
+}
+
+message ChangePasswordReq {
+  string user_id = 1;
+  string old_password = 2;
+  string new_password = 3;
+}
+
+message ChangePasswordRes {
+  string status = 1;
+  string message = 2;
 }
 
 message GetStatsReq {
