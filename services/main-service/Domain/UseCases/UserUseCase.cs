@@ -105,9 +105,9 @@ public class UserUseCase
 
         return await _userRepository.UpdateUser(existingUser);
     }
-    public async Task<UserStats> GetStats(string projectId)
+    public async Task<UserStats> GetStats(string id, bool isSprintId)
     {
-        return await _issueRepository.GetStats(projectId);
+        return await _issueRepository.GetStats(id, isSprintId);
     }
     public async Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(string? name, string? email, int page, int limit)
     {

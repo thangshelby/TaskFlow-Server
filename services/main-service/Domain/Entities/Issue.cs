@@ -13,13 +13,14 @@ public class IssueDomain
     public IssueType? Type { get; set; }
     public string ColumnId { get; set; } = string.Empty;
     public ProjectColumnDomain? Column { get; set; }
-    public IssuePriority? Priority { get; set; } 
+    public IssuePriority? Priority { get; set; }
 
     public string Summary { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public int StoryPoint { get; set; }
     public List<string> Attachments { get; set; } = new();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CompletedAt { get; set; } = DateTime.MinValue;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public void AssignToSprint(string? sprintId)
     {

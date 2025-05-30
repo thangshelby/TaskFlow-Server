@@ -59,6 +59,9 @@ public class Issue
     [BsonElement("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    [BsonElement("completed_at")]
+    public DateTime CompletedAt { get; set; } = DateTime.MinValue;
+
     [BsonElement("updated_at")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
@@ -81,6 +84,7 @@ public class Issue
             StoryPoint = domain.StoryPoint,
             Attachments = domain.Attachments,
             CreatedAt = domain.CreatedAt,
+            CompletedAt = domain.CompletedAt,
             UpdatedAt = domain.UpdatedAt
         };
     }

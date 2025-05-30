@@ -8,7 +8,7 @@ public interface IIssueRepository
     Task<IssueDomain> CreateIssue(IssueDomain issue);
     Task<IssueDomain> GetIssue(string id);
     Task<IssueDomain> UpdateIssue(UpdateIssueParams issue);
-    Task<UserStats> GetStats(string userId);
+    Task<UserStats> GetStats(string id, bool isSprintId);
     Task DeleteIssue(string id);
     Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(GetIssuesParams param);
 }
@@ -30,8 +30,8 @@ public class GetIssuesParams
     public List<string>? AssigneeIds;
     public List<string>? SprintIds;
     public string? Keyword;
-    public int Page;
-    public int Limit;
+    public int Page = 1;
+    public int Limit = 10;
 }
 public class UpdateIssueParams
 {

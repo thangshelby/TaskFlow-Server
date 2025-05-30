@@ -11,19 +11,21 @@ public class SprintController : SprintService.SprintServiceBase
 {
     private readonly SprintUseCase _sprintUseCase;
     private readonly IMapper _mapper;
+    private readonly ILogger<SprintController> _logger;
     private readonly IValidator<CreateSprintReq> _createSprintValidator;
     private readonly IValidator<UpdateSprintReq> _updateSprintValidator;
     private readonly IValidator<ListSprintsReq> _listSprintsValidator;
 
     public SprintController(
         SprintUseCase sprintUseCase,
-        IMapper mapper,
+        IMapper mapper, ILogger<SprintController> logger,
         IValidator<CreateSprintReq> createSprintValidator,
         IValidator<UpdateSprintReq> updateSprintValidator,
         IValidator<ListSprintsReq> listSprintsValidator)
     {
         _sprintUseCase = sprintUseCase ?? throw new ArgumentNullException(nameof(sprintUseCase));
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        _logger = logger;
         _createSprintValidator = createSprintValidator ?? throw new ArgumentNullException(nameof(createSprintValidator));
         _updateSprintValidator = updateSprintValidator ?? throw new ArgumentNullException(nameof(updateSprintValidator));
         _listSprintsValidator = listSprintsValidator ?? throw new ArgumentNullException(nameof(listSprintsValidator));
@@ -111,6 +113,24 @@ public class SprintController : SprintService.SprintServiceBase
             CurrentPage = request.Page,
             Limit = request.Limit
         };
+        return response;
+    }
+    public override async Task<GetSrintStatsRes> GetSprintStats(GetSrintStatsReq request, ServerCallContext context)
+    {
+        var (sprint, sprintStats, dailyData) = await _sprintUseCase.GetStats(request.SprintId);
+        var data = new SprintStatData
+        {
+            Sprint = _mapper.Map<SprintRes>(sprint),
+            SprintStats = sprintStats
+        };
+        data.SprintDailyStats.AddRange(dailyData);
+        var response = new GetSrintStatsRes
+        {
+            Data = data,
+            Message = "Get sprint stats successfully",
+            Status = "success"
+        };
+
         return response;
     }
 }

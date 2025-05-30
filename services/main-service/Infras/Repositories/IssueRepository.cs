@@ -1,10 +1,8 @@
-using System.Text.Json;
 using AutoMapper;
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using MainService.Infras.Entities;
 using MongoDB.Bson;
-using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using TaskFlow.UserService;
@@ -64,10 +62,13 @@ public class IssueRepository : IIssueRepository
 
     public async Task<IssueDomain> UpdateIssue(UpdateIssueParams body)
     {
+
         var existingIssue = await _issues.Find(i => i.Id == body.IssueId).FirstOrDefaultAsync();
-        _logger.LogInformation(body.StoryPoint.ToString());
         if (existingIssue == null)
             throw new Exception("Issue not found");
+
+        var columns = await _projectRepository.FindColumnsByProjectId(existingIssue.ProjectId);
+        string? lastColId = columns.Count > 0 ? columns[^1].Id : null;
 
         if (!string.IsNullOrEmpty(body.Title)) existingIssue.Title = body.Title;
         if (!string.IsNullOrEmpty(body.ProjectId)) existingIssue.ProjectId = body.ProjectId;
@@ -77,7 +78,18 @@ public class IssueRepository : IIssueRepository
         if (!string.IsNullOrEmpty(body.Summary)) existingIssue.Summary = body.Summary;
         if (body.StoryPoint.HasValue) existingIssue.StoryPoint = body.StoryPoint.Value;
         if (!string.IsNullOrEmpty(body.ReporterId)) existingIssue.ReporterId = body.ReporterId;
-        if (!string.IsNullOrEmpty(body.ColumnId)) existingIssue.ColumnId = body.ColumnId;
+        if (!string.IsNullOrEmpty(body.ColumnId))
+        {
+            existingIssue.ColumnId = body.ColumnId;
+            if (existingIssue.ColumnId == lastColId)
+            {
+                existingIssue.CompletedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                existingIssue.CompletedAt = DateTime.MinValue;
+            }
+        }
         if (!string.IsNullOrEmpty(body.ParentId)) existingIssue.ParentId = body.ParentId;
         if (body.Type.HasValue) existingIssue.Type = body.Type;
         if (body.Priority.HasValue) existingIssue.Priority = body.Priority;
@@ -126,15 +138,16 @@ public class IssueRepository : IIssueRepository
         if (result.DeletedCount == 0)
             throw new Exception("Issue not found");
     }
-    public async Task<UserStats> GetStats(string projectId)
+    public async Task<UserStats> GetStats(string id, bool isSprintId = false)
     {
         var now = DateTime.UtcNow;
         var oneDayAgo = now.AddDays(-1);
         var sixHoursAgo = now.AddHours(-6);
+        var matchField = isSprintId ? "sprint_id" : "project_id";
 
         var pipeline = new[]
         {
-            new BsonDocument("$match", new BsonDocument("project_id", projectId)),
+            new BsonDocument("$match", new BsonDocument(matchField, id)),
             new BsonDocument("$lookup", new BsonDocument
             {
                 { "from", "project_column" },

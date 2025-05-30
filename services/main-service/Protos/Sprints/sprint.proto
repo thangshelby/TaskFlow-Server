@@ -36,7 +36,39 @@ service SprintService {
       get: "/api/v1/project/{project_id}/sprints"
     };
   }
+  rpc GetSprintStats (GetSrintStatsReq) returns (GetSrintStatsRes) {
+    option (google.api.http) = {
+      get: "/api/v1/sprints/{sprint_id}/get-sprint-stat"
+    };
+  }
 }
+
+message GetSrintStatsReq {
+  string sprint_id = 1;
+}
+
+message GetSrintStatsRes {
+  string status = 1;
+  string message = 2;
+  SprintStatData data = 3;
+}
+message SprintStatData {
+  SprintRes sprint = 1;
+  SprintStats sprint_stats = 2;
+  repeated SprintDailyStats sprint_daily_stats = 3;
+}
+message SprintStats {
+  int32 total_issues = 1;
+  int32 completed_issues = 2;
+  int32 total_story_point = 3;
+  int32 completed_story_point = 4;
+}
+message SprintDailyStats {
+  string date = 1;
+  int32 completed_issues = 2;
+  int32 remaining_issues = 3;
+}
+
 // Sprint Messages
 message CreateSprintReq {
   string name = 1;

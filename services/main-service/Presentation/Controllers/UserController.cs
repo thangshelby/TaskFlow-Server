@@ -301,7 +301,7 @@ public class UserController : UserService.UserServiceBase
         {
             throw new RpcException(new Status(StatusCode.Unauthenticated, "User is not authenticated."));
         }
-        var result = await _userUseCase.GetStats(request.ProjectId);
+        var result = await _userUseCase.GetStats(request.Id, request.IsSprintId);
         if (result == null)
         {
             throw new RpcException(new Status(StatusCode.Internal, "Failed to retrieve stats."));
@@ -338,7 +338,7 @@ public class UserController : UserService.UserServiceBase
         try
         {
             await _userUseCase.ChangePassword(request.UserId, request.OldPassword, request.NewPassword);
-            
+
             return new ChangePasswordRes
             {
                 Status = "success",

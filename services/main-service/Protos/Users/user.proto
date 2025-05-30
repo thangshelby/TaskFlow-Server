@@ -84,7 +84,8 @@ message ChangePasswordRes {
 }
 
 message GetStatsReq {
-  string project_id = 1;
+  string id = 1;
+  bool is_sprintId = 2;
 }
 message StatusCount {
   string name = 1;

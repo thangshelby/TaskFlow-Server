@@ -1,5 +1,6 @@
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
+using TaskFlow.SprintService;
 
 namespace MainService.Domain.UseCases;
 
@@ -79,10 +80,17 @@ public class SprintUseCase
 
         if (page < 1)
             throw new ArgumentException("Page number must be greater than 0");
-        
+
         if (pageSize < 1)
             throw new ArgumentException("Page size must be greater than 0");
 
         return await _sprintRepository.ListSprints(projectId, page, pageSize);
+    }
+    public async Task<(SprintDomain, SprintStats, List<SprintDailyStats>)> GetStats(string sprint_id)
+    {
+        var sprint = await GetSprint(sprint_id);
+        SprintStats sprintStats = await _sprintRepository.GetSprintStats(sprint_id, sprint.ProjectId);
+        List<SprintDailyStats> dailyData = await _sprintRepository.GetSprintDailyStats(sprint_id);
+        return (sprint, sprintStats, dailyData);
     }
 }
