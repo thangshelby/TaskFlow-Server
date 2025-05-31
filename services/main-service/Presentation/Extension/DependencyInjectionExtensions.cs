@@ -19,6 +19,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<SprintUseCase>();
         services.AddScoped<IssueUseCase>();
         services.AddScoped<ProjectMemberUseCase>();
+        services.AddScoped<CommentUseCase>();
 
         // Repositories
         services.AddScoped<ITransactionRepo, MongoTransactionRepo>();
@@ -28,6 +29,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IIssueRepository, IssueRepository>();
         services.AddScoped<IActivitiesRepository, ActivitiesRepository>();
         services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
+        services.AddSingleton<ICommentsRepository, CommentsRepository>();
         services.AddSingleton<IPublisherService, ActivitiesPublisher>();
 
         // Workers

@@ -162,6 +162,7 @@ static_resources:
                           "project_service.ProjectService",
                           "project_service.IssueService",
                           "project_service.ProjectMemberService",
+                          "project_service.CommentService",
                         ]
                       convert_grpc_status: true
                       print_options:

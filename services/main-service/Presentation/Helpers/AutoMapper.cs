@@ -15,6 +15,7 @@ public class AutoMapperProfiles : Profile
     public AutoMapperProfiles()
     {
         CreateMap<Project, ProjectDomain>().ReverseMap();
+        CreateMap<Comment, CommentDomain>().ReverseMap();
         CreateMap<Activity, ActivityDomain>().ReverseMap();
         CreateMap<ActivityChangeEntity, ActivityChange>().ReverseMap();
         CreateMap<ProjectColumn, ProjectColumnDomain>().ReverseMap();
@@ -89,6 +90,10 @@ public class AutoMapperProfiles : Profile
             .ForMember(dest => dest.User, opt => opt.MapFrom(src => src.User));
 
         CreateMap<ProjectMemberDomain, UserMembershipRes>()
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("o")))
+            .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("o")));
+
+        CreateMap<CommentDomain, CommentRes>()
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("o")))
             .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("o")));
 

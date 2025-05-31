@@ -59,3 +59,14 @@ message ActivityChangesRes {
     string old_value = 2;
     string new_value = 3;
 }
+
+//Comment
+message CommentRes {
+    string id = 1;
+    string content = 2;
+    string user_id = 3;
+    string issue_id = 4;
+    string created_at = 5;
+    string updated_at = 6;
+}
+  
