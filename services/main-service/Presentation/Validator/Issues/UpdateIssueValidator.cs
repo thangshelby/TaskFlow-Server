@@ -54,9 +54,9 @@ public class UpdateIssueValidator : AbstractValidator<UpdateIssueReq>
             .GreaterThanOrEqualTo(0).WithMessage("Story point must be a non-negative number.")
             .When(x => x.StoryPoint > 0);
 
-        RuleForEach(x => x.Attachments)
-            .Must(uri => Uri.IsWellFormedUriString(uri, UriKind.Absolute))
-            .WithMessage("Each attachment must be a valid URL.")
-            .When(x => x.Attachments != null && x.Attachments.Count > 0);
+        // RuleForEach(x => x.Attachments)
+        //     .Must(uri => Uri.IsWellFormedUriString(uri, UriKind.Absolute))
+        //     .WithMessage("Each attachment must be a valid URL.")
+        //     .When(x => x.Attachments != null && x.Attachments.Count > 0);
     }
 }

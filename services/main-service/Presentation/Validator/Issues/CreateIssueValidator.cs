@@ -59,10 +59,10 @@ public class CreateIssueValidator : AbstractValidator<CreateIssueReq>
         RuleFor(x => x.Description)
             .MaximumLength(2000).WithMessage("Description must not exceed 2000 characters.");
 
-        RuleForEach(x => x.Attachments)
-            .Must(uri => Uri.IsWellFormedUriString(uri, UriKind.Absolute))
-            .WithMessage("Each attachment must be a valid URL.")
-            .When(x => x.Attachments != null && x.Attachments.Count > 0);
+        // RuleForEach(x => x.Attachments)
+        //     .Must(uri => Uri.IsWellFormedUriString(uri, UriKind.Absolute))
+        //     .WithMessage("Each attachment must be a valid URL.")
+        //     .When(x => x.Attachments != null && x.Attachments.Count > 0);
 
         // Validate parent_id format if provided
         When(x => !string.IsNullOrEmpty(x.ParentId), () =>
