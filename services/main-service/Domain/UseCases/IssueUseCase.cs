@@ -54,6 +54,7 @@ public class IssueUseCase
             Priority = Enum.TryParse<IssuePriority>(param.Priority, true, out var priority) ? priority : IssuePriority.Medium,
             StoryPoint = param.StoryPoint,
             ParentId = param.ParentId ?? string.Empty,
+            Attachments = param.Attachments.ToList()
         };
 
         if (param.SprintId != null)
@@ -141,8 +142,6 @@ public class IssueUseCase
                     ColumnId = oldColumn.Id,
                 });
             }
-
-
             return await _issueRepository.UpdateIssue(updateData);
         });
 

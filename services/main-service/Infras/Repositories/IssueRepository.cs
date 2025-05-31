@@ -73,6 +73,7 @@ public class IssueRepository : IIssueRepository
         if (!string.IsNullOrEmpty(body.Title)) existingIssue.Title = body.Title;
         if (!string.IsNullOrEmpty(body.ProjectId)) existingIssue.ProjectId = body.ProjectId;
         if (!string.IsNullOrEmpty(body.SprintId)) existingIssue.SprintId = body.SprintId;
+        if (body.SprintId == "null") existingIssue.SprintId = "";
         if (!string.IsNullOrEmpty(body.AssigneeId)) existingIssue.AssigneeId = body.AssigneeId;
         if (!string.IsNullOrEmpty(body.Description)) existingIssue.Description = body.Description;
         if (!string.IsNullOrEmpty(body.Summary)) existingIssue.Summary = body.Summary;
@@ -93,7 +94,12 @@ public class IssueRepository : IIssueRepository
         if (!string.IsNullOrEmpty(body.ParentId)) existingIssue.ParentId = body.ParentId;
         if (body.Type.HasValue) existingIssue.Type = body.Type;
         if (body.Priority.HasValue) existingIssue.Priority = body.Priority;
-        if (body.Attachments != null && body.Attachments.Count > 0) existingIssue.Attachments = body.Attachments;
+        if (body.Attachments != null && body.Attachments.Count > 0)
+        {
+            _logger.LogInformation("Attachments: {@Attachments} repository", body.Attachments);
+            existingIssue.Attachments = body.Attachments;
+        }
+
 
         existingIssue.UpdatedAt = DateTime.UtcNow;
         await _issues.ReplaceOneAsync(i => i.Id == body.IssueId, existingIssue);

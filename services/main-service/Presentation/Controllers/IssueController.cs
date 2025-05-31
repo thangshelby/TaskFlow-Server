@@ -75,11 +75,12 @@ public class IssueController : IssueService.IssueServiceBase
                 AssigneeId = request.AssigneeId,
                 ParentId = request.ParentId,
                 ReporterId = userId,
-                StoryPoint = request.StoryPoint
+                StoryPoint = request.StoryPoint,
             };
-
+          
             if (request.Attachments != null)
             {
+
                 issueRequest.Attachments.AddRange(request.Attachments);
             }
 
@@ -144,8 +145,10 @@ public class IssueController : IssueService.IssueServiceBase
             Title = request.Title,
             ParentId = request.ParentId,
             Priority = System.Enum.TryParse<IssuePriority>(request.Priority, true, out var priorityEnum) ? priorityEnum : null,
-            Type = System.Enum.TryParse<IssueType>(request.Type, true, out var typeEnum) ? typeEnum : null
+            Type = System.Enum.TryParse<IssueType>(request.Type, true, out var typeEnum) ? typeEnum : null,
+            Attachments = request.Attachments.ToList()
         });
+        _logger.LogInformation("Attachments: {@Attachments} controller", request.Attachments);
         return _mapper.Map<IssueRes>(result);
     }
 
