@@ -11,6 +11,7 @@ public class ActivityDomain
     public string? Id { get; set; }
     public required string IssueId { get; set; }
     public string? UserId { get; set; }
+    public string? UserName { get; set; }
     public string? ActionType { get; set; }
     public List<ActivityChange>? Changes { get; set; }
 

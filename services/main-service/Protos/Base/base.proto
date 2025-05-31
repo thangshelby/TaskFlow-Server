@@ -46,10 +46,12 @@ message IssueRes {
 message ActivityRes{
     string id = 1;
     string issue_id = 2;
-    string action_type = 3;
-    string created_at = 4;
-    string updated_at = 5;
-    repeated ActivityChangesRes changes = 6;
+    string user_id = 3;
+    string user_name = 4;
+    string action_type = 5;
+    string created_at = 6;
+    string updated_at = 7;
+    repeated ActivityChangesRes changes = 8;
 }
 
 message ActivityChangesRes {

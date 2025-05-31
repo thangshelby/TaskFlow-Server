@@ -53,7 +53,7 @@ public class IssueUseCase
             Type = Enum.TryParse<IssueType>(param.Type, true, out var type) ? type : IssueType.Task,
             Priority = Enum.TryParse<IssuePriority>(param.Priority, true, out var priority) ? priority : IssuePriority.Medium,
             StoryPoint = param.StoryPoint,
-            ParentId = param.ParentId ?? string.Empty
+            ParentId = param.ParentId ?? string.Empty,
         };
 
         if (param.SprintId != null)
@@ -106,10 +106,12 @@ public class IssueUseCase
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Issue ID cannot be empty"));
 
         IssueDomain existingIssue = null!;
+        IssueDomain oldIssue = null!;
 
         var updatedIssue = await _transactionRepo.ExecuteAsync(async session =>
         {
             existingIssue = await _issueRepository.GetIssue(updateData.IssueId);
+            oldIssue = existingIssue;
             if (!string.IsNullOrEmpty(updateData.ColumnId) && updateData.ColumnId != existingIssue.ColumnId)
             {
                 var newColumn = await _projectRepository.FindColumn(new GetColumnParams
@@ -147,7 +149,7 @@ public class IssueUseCase
         await _publisher.Emit(new IActivitiesMessage
         {
             EventType = ActivitiesMessageAction.ISSUE_CHANGED,
-            OldIssue = existingIssue,
+            OldIssue = oldIssue,
             NewIssue = updatedIssue,
             UserId = updateData.CreatorId
         });
@@ -179,6 +181,10 @@ public class IssueUseCase
 
     public async Task OnIssueChanged(IActivitiesMessage message)
     {
+        var user = await _userRepository.FindUserAsync(new UserQueryParams
+        {
+            UserId = message.UserId
+        });
         var oldIssue = message.OldIssue;
         var newIssue = message.NewIssue;
         ActivityDomain activity;
@@ -188,23 +194,22 @@ public class IssueUseCase
             {
                 IssueId = newIssue.Id!,
                 UserId = message.UserId,
+                UserName = user.FullName,
                 ActionType = ActivityAction.ISSUE_CREATED,
                 Changes = []
             };
             await _activitiesRepository.CreateActivity(activity);
             return;
         }
-        _logger.LogInformation("beforechange");
-
         var changes = await getDifferentChange(oldIssue, newIssue);
         if (changes.Count == 0)
             return;
-        _logger.LogInformation("afterchange");
 
         activity = new ActivityDomain
         {
             IssueId = newIssue.Id!,
             UserId = message.UserId,
+            UserName = user.FullName,
             ActionType = ActivityAction.ISSUE_UPDATED,
             Changes = changes
         };

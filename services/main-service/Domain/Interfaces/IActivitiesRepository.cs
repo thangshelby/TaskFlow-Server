@@ -13,7 +13,7 @@ public interface IActivitiesRepository
 
 public class GetActivityParams
 {
-    public required string IssueId;
+    public string? IssueId;
     public int Page;
     public int Limit;
 }

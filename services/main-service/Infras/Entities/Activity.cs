@@ -27,6 +27,9 @@ public class Activity
     [BsonElement("user_id")]
     public string? UserId { get; set; }
 
+    [BsonElement("user_name")]
+    public string? UserName { get; set; }
+
     [BsonElement("action_type")]
     public string? ActionType { get; set; }
 
