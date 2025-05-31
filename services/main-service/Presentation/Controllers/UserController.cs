@@ -310,7 +310,7 @@ public class UserController : UserService.UserServiceBase
         return new GetStatsRes
         {
             Status = "success",
-            Message = "Logged out successfully",
+            Message = "Get stats successfully",
             Data = result
         };
     }

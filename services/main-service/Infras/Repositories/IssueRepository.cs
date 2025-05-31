@@ -150,7 +150,6 @@ public class IssueRepository : IIssueRepository
         var oneDayAgo = now.AddDays(-1);
         var sixHoursAgo = now.AddHours(-6);
         var matchField = isSprintId ? "sprint_id" : "project_id";
-
         var pipeline = new[]
         {
             new BsonDocument("$match", new BsonDocument(matchField, id)),

@@ -47,12 +47,18 @@ public class ActivitiesRepository : IActivitiesRepository
 
     public async Task<(List<ActivityDomain>, int totalCount)> ListActivities(GetActivityParams param)
     {
-        var filter = Builders<Activity>.Filter.Eq(a => a.IssueId, param.IssueId);
+        var filter = Builders<Activity>.Filter.Empty;
+
+        if (!string.IsNullOrEmpty(param.IssueId))
+        {
+            filter = Builders<Activity>.Filter.Eq(a => a.IssueId, param.IssueId);
+        }
 
         var totalCount = (int)await _activities.CountDocumentsAsync(filter);
 
         var entities = await _activities
             .Find(filter)
+            .SortByDescending(a => a.CreatedAt)
             .Skip((param.Page - 1) * param.Limit)
             .Limit(param.Limit)
             .ToListAsync();

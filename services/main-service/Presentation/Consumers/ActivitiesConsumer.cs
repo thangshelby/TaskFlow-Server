@@ -33,42 +33,50 @@ public class ActivitiesConsumer : IHostedService, IDisposable
 
     private async Task ConsumeLoop(CancellationToken cancellationToken)
     {
-        while (!cancellationToken.IsCancellationRequested)
+        try
         {
-            var result = _consumer.Consume(cancellationToken);
-            if (result.Message.Value == null)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Received null message value, skipping.");
-                _consumer.Commit(result);
-                continue;
-            }
-
-            try
-            {
-                var message = JsonSerializer.Deserialize<IActivitiesMessage>(result.Message.Value);
-                if (message == null)
+                var result = _consumer.Consume(cancellationToken);
+                if (result?.Message?.Value == null)
                 {
-                    _logger.LogInformation("Deserialized message is null, skipping.");
+                    _logger.LogWarning("Received null message.");
                     _consumer.Commit(result);
                     continue;
                 }
-                _logger.LogInformation($"Received message: {message.NewIssue.Title} - {message.NewIssue.Id}");
 
-                using (var scope = _serviceProvider.CreateScope())
+                try
                 {
+                    var message = JsonSerializer.Deserialize<IActivitiesMessage>(result.Message.Value);
+
+                    if (message == null)
+                    {
+                        _logger.LogWarning("Deserialized message is null.");
+                        _consumer.Commit(result);
+                        continue;
+                    }
+
+                    _logger.LogInformation($"Received message: {message.NewIssue.Title}");
+
+                    using var scope = _serviceProvider.CreateScope();
                     var issueUseCase = scope.ServiceProvider.GetRequiredService<IssueUseCase>();
                     await handleActivitiesMessage(issueUseCase, message);
-                }
 
-                _consumer.Commit(result);
-            }
-            catch (JsonException ex)
-            {
-                _logger.LogInformation($"Failed to deserialize message: {ex.Message}");
-                _consumer.Commit(result); // Commit to avoid reprocessing
+                    _consumer.Commit(result);
+                }
+                catch (JsonException jsonEx)
+                {
+                    _logger.LogError(jsonEx, "Failed to deserialize Kafka message");
+                    _consumer.Commit(result);
+                }
             }
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error in Kafka consume loop");
+        }
     }
+
 
     public Task StopAsync(CancellationToken cancellationToken)
     {

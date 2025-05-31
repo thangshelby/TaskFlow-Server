@@ -27,8 +27,16 @@ public class ActivitiesPublisher : IPublisherService, IDisposable
             throw new ArgumentNullException(nameof(message));
         }
 
-        var json = JsonSerializer.Serialize(message);
-        await _producer.ProduceAsync(_topic, new Message<Null, string> { Value = json });
+
+        try
+        {
+            var json = JsonSerializer.Serialize(message);
+            await _producer.ProduceAsync(_topic, new Message<Null, string> { Value = json });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogInformation($"Error sending message to topic {_topic}: {ex.Message}");
+        }
     }
 
     public void Dispose() => _producer.Dispose();

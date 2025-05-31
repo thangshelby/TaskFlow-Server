@@ -85,7 +85,7 @@ public class Issue
             Attachments = domain.Attachments,
             CreatedAt = domain.CreatedAt,
             CompletedAt = domain.CompletedAt,
-            UpdatedAt = domain.UpdatedAt
+            UpdatedAt = domain.UpdatedAt,
         };
     }
 
@@ -106,7 +106,8 @@ public class Issue
             ProjectId = ProjectId,
             ReporterId = ReporterId,
             CreatedAt = CreatedAt,
-            UpdatedAt = UpdatedAt
+            UpdatedAt = UpdatedAt,
+
         };
 
         domain.AssignToSprint(SprintId);
