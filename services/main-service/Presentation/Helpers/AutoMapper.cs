@@ -1,5 +1,6 @@
 using AutoMapper;
 using MainService.Domain.Entities;
+using MainService.Domain.Common;
 using MainService.Infras.Entities;
 using TaskFlow.IssueService;
 using TaskFlow.ProjectService;
@@ -19,6 +20,7 @@ public class AutoMapperProfiles : Profile
         CreateMap<Activity, ActivityDomain>().ReverseMap();
         CreateMap<ActivityChangeEntity, ActivityChange>().ReverseMap();
         CreateMap<ProjectColumn, ProjectColumnDomain>().ReverseMap();
+        CreateMap<NotificationEntity, NotificationMessageDomain>().ReverseMap();
         CreateMap<User, UserDomain>()
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName))
             .ReverseMap();
@@ -109,5 +111,15 @@ public class AutoMapperProfiles : Profile
             .ForMember(dest => dest.Field, opt => opt.MapFrom(src => src.Field ?? ""))
             .ForMember(dest => dest.OldValue, opt => opt.MapFrom(src => src.OldValue ?? ""))
             .ForMember(dest => dest.NewValue, opt => opt.MapFrom(src => src.NewValue ?? ""));
+
+        // Fixed mapping
+        CreateMap<NotificationMessageDomain, BaseService.NotificationRes>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id ?? ""))
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("o")))
+            .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("o")));
+
+        CreateMap<PaginatedResult<NotificationMessageDomain>, List<BaseService.NotificationRes>>()
+            .ConvertUsing((src, dest, context) =>
+                context.Mapper.Map<List<BaseService.NotificationRes>>(src.Items));
     }
 }

@@ -1,10 +1,8 @@
 syntax = "proto3";
 
-
 option csharp_namespace = "BaseService";
 
 package base;
-
 
 message PaginationRes {
     int32 total_items = 1;
@@ -69,4 +67,25 @@ message CommentRes {
     string created_at = 5;
     string updated_at = 6;
 }
-  
+
+//Notification
+message NotificationRes {
+    string id = 1;
+    string user_id = 2;
+    string title = 3;
+    string content = 4;
+    NotificationType type = 5;
+    string reference_id = 6;
+    bool is_read = 7;
+    string created_at = 8;
+    string updated_at = 9;
+}
+
+enum NotificationType {
+    ISSUE_ASSIGNED = 0;
+    ISSUE_UPDATED = 1;
+    COMMENT_MENTION = 2;
+    SPRINT_STARTING = 3;
+    PROJECT_INVITATION = 4;
+    TEAM_MEMBER_ADDED = 5;
+}

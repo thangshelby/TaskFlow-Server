@@ -61,6 +61,21 @@ services:
       - SERVER_PORT=8888
     networks:
       - taskflow-network
+  kafka-init:
+    image: bitnami/kafka:3.8
+    depends_on:
+      - kafka
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "
+      echo '⏳ Waiting for Kafka to be ready...' &&
+      sleep 10 &&
+      kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092 --topic notifications --partitions 1 --replication-factor 1 &&
+      kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092 --topic activities --partitions 1 --replication-factor 1 &&
+      echo '✅ Kafka topics created!'
+      "
+    networks:
+      - taskflow-network
   # cassandra:
   #   image: cassandra:latest
   #   container_name: cassandra
