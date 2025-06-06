@@ -5,12 +5,11 @@ using MainService.Infras;
 using MainService.Infras.Repositories;
 using MainService.Presentation.Validator.Users;
 
+
 public static class DependencyInjectionExtensions
 {
     public static IServiceCollection AddProjectServices(this IServiceCollection services)
     {
-
-
         // Database Service
         services.AddSingleton<MongoDbService>();
         // Use Cases
@@ -20,6 +19,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IssueUseCase>();
         services.AddScoped<ProjectMemberUseCase>();
         services.AddScoped<CommentUseCase>();
+        services.AddScoped<NotificationUseCase>();
 
         // Repositories
         services.AddScoped<ITransactionRepo, MongoTransactionRepo>();
@@ -29,11 +29,14 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IIssueRepository, IssueRepository>();
         services.AddScoped<IActivitiesRepository, ActivitiesRepository>();
         services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddSingleton<ICommentsRepository, CommentsRepository>();
         services.AddSingleton<IPublisherService, ActivitiesPublisher>();
+        services.AddSingleton<IPublisherService, NotificationPublisher>();
 
         // Workers
         services.AddHostedService<ActivitiesConsumer>();
+        services.AddHostedService<NotificationConsumer>();
         return services;
     }
 
@@ -62,7 +65,6 @@ public static class DependencyInjectionExtensions
 
         services.AddValidatorsFromAssemblyContaining<CreateIssueValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateIssueValidator>();
-
 
         return services;
     }

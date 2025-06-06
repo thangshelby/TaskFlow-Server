@@ -1,4 +1,6 @@
 using MainService.Infras;
+
+
 // using MainService.Presentation.Services;
 
 using Serilog;
@@ -45,6 +47,8 @@ app.MapGrpcService<UserController>();
 app.MapGrpcService<IssueController>();
 app.MapGrpcService<ProjectMemberController>();
 app.MapGrpcService<CommentController>();
+app.MapGrpcService<NotificationController>();
+
 if (app.Environment.IsDevelopment())
 {
   app.MapGrpcReflectionService();

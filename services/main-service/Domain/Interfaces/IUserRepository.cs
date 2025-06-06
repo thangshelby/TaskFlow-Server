@@ -15,7 +15,6 @@ public class LoginReqParams
     public string Password { get; set; } = string.Empty;
 }
 
-
 public class UserQueryParams
 {
     public string? UserId { get; set; }
