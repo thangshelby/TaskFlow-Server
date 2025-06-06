@@ -34,7 +34,7 @@ service NotificationService {
 
   rpc GetUnreadCount(GetUnreadCountRequest) returns (GetUnreadCountResponse) {
     option (google.api.http) = {
-      get: "  "
+      get: "/api/v1/notifications/unread-count"
     };
   }
 }
