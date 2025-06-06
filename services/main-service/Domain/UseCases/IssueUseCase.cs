@@ -16,11 +16,18 @@ public class IssueUseCase
     private readonly IIssueRepository _issueRepository;
     private readonly ILogger<IssueUseCase> _logger;
     private readonly IPublisherService _publisher;
+    private readonly NotificationUseCase _notificationUseCase;
 
-    public IssueUseCase(IIssueRepository issueRepository, IUserRepository userRepository,
-    ISprintRepository sprintRepository, IActivitiesRepository activitiesRepository,
-    IProjectRepository projectRepository, ITransactionRepo transactionRepo,
-    ILogger<IssueUseCase> logger, IPublisherService publisher)
+    public IssueUseCase(
+        IIssueRepository issueRepository,
+        IUserRepository userRepository,
+        ISprintRepository sprintRepository,
+        IActivitiesRepository activitiesRepository,
+        IProjectRepository projectRepository,
+        ITransactionRepo transactionRepo,
+        ILogger<IssueUseCase> logger,
+        IPublisherService publisher,
+        NotificationUseCase notificationUseCase)
     {
         _issueRepository = issueRepository;
         _transactionRepo = transactionRepo;
@@ -30,6 +37,7 @@ public class IssueUseCase
         _userRepository = userRepository;
         _sprintRepository = sprintRepository;
         _publisher = publisher;
+        _notificationUseCase = notificationUseCase;
     }
 
     public async Task<IssueDomain> CreateIssue(CreateIssueReq param)
@@ -79,12 +87,21 @@ public class IssueUseCase
             return newIssue;
         });
 
+        // Trigger IssueAssigned notification if AssigneeId is provided
+        if (!string.IsNullOrEmpty(result.AssigneeId))
+        {
+            await _notificationUseCase.CreateIssueAssignedNotification(
+                result.AssigneeId,
+                result.Title,
+                result.Id
+            );
+        }
+
         await _publisher.Emit(new IActivitiesMessage
         {
             EventType = ActivitiesMessageAction.ISSUE_CREATED,
             NewIssue = result,
             OldIssue = null,
-            // TODO: Fix to get creatorId
             UserId = result.ReporterId,
         });
 
@@ -144,6 +161,29 @@ public class IssueUseCase
             }
             return await _issueRepository.UpdateIssue(updateData);
         });
+
+        // Trigger IssueAssigned notification if AssigneeId changed
+        if (oldIssue.AssigneeId != updatedIssue.AssigneeId && !string.IsNullOrEmpty(updatedIssue.AssigneeId))
+        {
+            await _notificationUseCase.CreateIssueAssignedNotification(
+                updatedIssue.AssigneeId,
+                updatedIssue.Title,
+                updatedIssue.Id
+            );
+        }
+
+        // Trigger IssueUpdated notification
+        var changes = await getDifferentChange(oldIssue, updatedIssue);
+        if (changes.Count > 0)
+        {
+            var updatedBy = await _userRepository.FindUserAsync(new UserQueryParams { UserId = updateData.CreatorId });
+            await _notificationUseCase.CreateIssueUpdatedNotification(
+                updatedIssue.AssigneeId ?? updatedIssue.ReporterId,
+                updatedIssue.Title,
+                updatedIssue.Id,
+                updatedBy?.FullName ?? "Unknown"
+            );
+        }
 
         await _publisher.Emit(new IActivitiesMessage
         {
@@ -215,6 +255,7 @@ public class IssueUseCase
         _logger.LogInformation("create");
         await _activitiesRepository.CreateActivity(activity);
     }
+
     private async Task<List<ActivityChange>> getDifferentChange(IssueDomain oldIssue, IssueDomain newIssue)
     {
         var changes = new List<ActivityChange>();
@@ -306,10 +347,10 @@ public class IssueUseCase
         Compare("Priority", oldIssue.Priority, newIssue.Priority);
         Compare("Summary", oldIssue.Summary, newIssue.Summary);
         Compare<int?>("StoryPoint", oldIssue.StoryPoint, newIssue.StoryPoint);
-        // Compare("DueDate", oldIssue.DueDate, newIssue.DueDate);
 
         return changes;
     }
+
     public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(GetIssuesParams param)
     {
         if (param.Page <= 0) param.Page = 1;

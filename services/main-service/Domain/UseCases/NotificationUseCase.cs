@@ -77,6 +77,34 @@ public class NotificationUseCase
         return await _notificationRepository.Create(notification);
     }
 
+    public async Task<NotificationMessageDomain> CreateIssueUpdatedNotification(string userId, string issueTitle, string issueId, string updatedBy)
+    {
+        var notification = new NotificationMessageDomain
+        {
+            UserId = userId,
+            Title = "Issue Updated",
+            Content = $"Issue '{issueTitle}' was updated by {updatedBy}",
+            Type = NotificationType.IssueUpdated,
+            ReferenceId = issueId
+        };
+
+        return await _notificationRepository.Create(notification);
+    }
+
+    public async Task<NotificationMessageDomain> CreateTeamMemberAddedNotification(string userId, string projectName, string projectId)
+    {
+        var notification = new NotificationMessageDomain
+        {
+            UserId = userId,
+            Title = "Added to Project Team",
+            Content = $"You have been added as a team member to project: {projectName}",
+            Type = NotificationType.TeamMemberAdded,
+            ReferenceId = projectId
+        };
+
+        return await _notificationRepository.Create(notification);
+    }
+
     public async Task MarkAsRead(string notificationId)
     {
         await _notificationRepository.MarkAsRead(notificationId);
