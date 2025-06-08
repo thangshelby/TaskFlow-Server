@@ -7,10 +7,17 @@ namespace MainService.Domain.UseCases;
 public class SprintUseCase
 {
     private readonly ISprintRepository _sprintRepository;
+    private readonly IProjectMemberRepository _projectMemberRepository;
+    private readonly NotificationUseCase _notificationUseCase;
 
-    public SprintUseCase(ISprintRepository sprintRepository)
+    public SprintUseCase(
+        ISprintRepository sprintRepository,
+        IProjectMemberRepository projectMemberRepository,
+        NotificationUseCase notificationUseCase)
     {
         _sprintRepository = sprintRepository;
+        _projectMemberRepository = projectMemberRepository;
+        _notificationUseCase = notificationUseCase;
     }
 
     public async Task<SprintDomain> CreateSprint(SprintDomain sprint)
@@ -25,7 +32,26 @@ public class SprintUseCase
         if (sprint.DateStarted >= sprint.DateEnded)
             throw new ArgumentException("Start date must be before end date");
 
-        return await _sprintRepository.CreateSprint(sprint);
+        var newSprint = await _sprintRepository.CreateSprint(sprint);
+
+        // Notify all project members if the sprint is starting today or in the future
+        if (sprint.DateStarted.Date >= DateTime.UtcNow.Date)
+        {
+            // Get all project members
+            var members = await _projectMemberRepository.GetProjectMembersAsync(sprint.ProjectId, 1, int.MaxValue);
+
+            // Send notification to each member
+            foreach (var member in members)
+            {
+                await _notificationUseCase.CreateSprintStartingNotification(
+                    member.UserId,
+                    sprint.Name,
+                    newSprint.Id
+                );
+            }
+        }
+
+        return newSprint;
     }
 
     public async Task<SprintDomain> GetSprint(string id)

@@ -9,11 +9,16 @@ public class ProjectMemberUseCase
 {
     private readonly IProjectMemberRepository _projectMemberRepository;
     private readonly IProjectRepository _projectRepository;
+    private readonly NotificationUseCase _notificationUseCase;
 
-    public ProjectMemberUseCase(IProjectMemberRepository projectMemberRepository, IProjectRepository projectRepository)
+    public ProjectMemberUseCase(
+        IProjectMemberRepository projectMemberRepository,
+        IProjectRepository projectRepository,
+        NotificationUseCase notificationUseCase)
     {
         _projectMemberRepository = projectMemberRepository;
         _projectRepository = projectRepository;
+        _notificationUseCase = notificationUseCase;
     }
 
     public async Task<ProjectMemberDomain> AddProjectMemberAsync(string projectId, string requesterId, string userId, TeamMemberRole role)
@@ -45,7 +50,29 @@ public class ProjectMemberUseCase
             IsPending = isPending
         };
 
-        return await _projectMemberRepository.AddAsync(member);
+        var addedMember = await _projectMemberRepository.AddAsync(member);
+
+        // Send appropriate notification based on pending status
+        if (isPending)
+        {
+            // Send invitation notification if pending approval
+            await _notificationUseCase.CreateProjectInvitationNotification(
+                userId,
+                project.Name,
+                projectId
+            );
+        }
+        else
+        {
+            // Send team member added notification if directly approved (added by owner)
+            await _notificationUseCase.CreateTeamMemberAddedNotification(
+                userId,
+                project.Name,
+                projectId
+            );
+        }
+
+        return addedMember;
     }
 
     public async Task<ProjectMemberDomain> UpdateProjectMemberRoleAsync(string projectId, string userId, TeamMemberRole newRole)
@@ -129,7 +156,19 @@ public class ProjectMemberUseCase
             throw new InvalidOperationException("Member is already approved");
         }
 
-        return await _projectMemberRepository.ApproveMemberAsync(projectId, userId);
+        var approvedMember = await _projectMemberRepository.ApproveMemberAsync(projectId, userId);
+        
+        // Get project details to include in notification
+        var project = await _projectRepository.GetProject(projectId);
+        
+        // Send notification to the approved member
+        await _notificationUseCase.CreateTeamMemberAddedNotification(
+            userId,
+            project.Name,
+            projectId
+        );
+
+        return approvedMember;
     }
 
     public async Task RejectProjectMemberAsync(string projectId, string approverId, string userId)
@@ -160,7 +199,19 @@ public class ProjectMemberUseCase
             throw new InvalidOperationException("Member is already approved");
         }
 
-        return await _projectMemberRepository.ApproveMemberAsync(projectId, userId);
+        var approvedMember = await _projectMemberRepository.ApproveMemberAsync(projectId, userId);
+        
+        // Get project details to include in notification
+        var project = await _projectRepository.GetProject(projectId);
+        
+        // Send notification when invitation is accepted
+        await _notificationUseCase.CreateTeamMemberAddedNotification(
+            userId,
+            project.Name,
+            projectId
+        );
+
+        return approvedMember;
     }
 
     public async Task RejectInvitationAsync(string projectId, string userId)
