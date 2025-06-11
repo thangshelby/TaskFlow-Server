@@ -34,14 +34,18 @@ services:
     image: bitnami/kafka:3.8
     container_name: kafka
     ports:
-      - "9092:9092"
-      - "9093:9093"
+      - "9092:9092" # External access
+      - "9094:9094" # Internal access
+      - "9093:9093" # Controller
     environment:
       - KAFKA_CFG_NODE_ID=1
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      # Define multiple listeners: INTERNAL for Docker network, EXTERNAL for host access
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9094,EXTERNAL://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      # Advertise different addresses for internal vs external clients
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:9094,EXTERNAL://localhost:9092
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
       - KAFKA_CFG_BROKER_ID=1
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
@@ -57,42 +61,48 @@ services:
       - "8888:8888"
     environment:
       - KAFKA_CLUSTERS_0_NAME=local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9094 # Use internal port
       - SERVER_PORT=8888
+    depends_on:
+      - kafka
     networks:
       - taskflow-network
-  # cassandra:
-  #   image: cassandra:latest
-  #   container_name: cassandra
-  #   environment:
-  #     - CASSANDRA_CLUSTER_NAME=my-cluster
-  #     - CASSANDRA_BROADCAST_ADDRESS=127.0.0.1
-  #     - CASSANDRA_LISTEN_ADDRESS=127.0.0.1
-  #   volumes:
-  #     - cassandra-data:/var/lib/cassandra
-  #   network_mode: "host"
-  # cassandra-init:
-  #   image: cassandra:latest
-  #   depends_on:
-  #     - cassandra
-  #   entrypoint: ["/bin/sh", "-c"]
-  #   command: >
-  #     "
-  #     echo '⏳ Waiting for Cassandra to be available...' &&
-  #     while ! cqlsh 127.0.0.1 -e 'describe keyspaces'; do sleep 2; done &&
-  #     echo '✅ Cassandra is up!' &&
-  #     cqlsh 127.0.0.1 -e \"
-  #       CREATE KEYSPACE IF NOT EXISTS taskflow
-  #       WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+  cassandra:
+    image: cassandra:5.0.4
+    container_name: cassandra
+    environment:
+      - CASSANDRA_CLUSTER_NAME=my-cluster
+      - CASSANDRA_BROADCAST_ADDRESS=127.0.0.1
+      - CASSANDRA_LISTEN_ADDRESS=127.0.0.1
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra-data:/var/lib/cassandra
+    networks:
+      - taskflow-network
+  cassandra-init:
+    image: cassandra:5.0.4
+    depends_on:
+      - cassandra
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "
+      echo '⏳ Waiting for Cassandra to be available...' &&
+      while ! cqlsh 127.0.0.1 -e 'describe keyspaces'; do sleep 2; done &&
+      echo '✅ Cassandra is up!' &&
+      cqlsh 127.0.0.1 -e \"
+        CREATE KEYSPACE IF NOT EXISTS taskflow
+        WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
 
-  #       USE taskflow;
+        USE taskflow;
 
-  #       CREATE TABLE IF NOT EXISTS notifications (
-  #         id TEXT PRIMARY KEY,
-  #       );
-  #     \"
-  #     "
-  #   network_mode: "host"
+        CREATE TABLE IF NOT EXISTS notifications (
+          id TEXT PRIMARY KEY,
+        );
+      \"
+      "
+    networks:
+      - taskflow-network
 networks:
   taskflow-network:
     driver: bridge
