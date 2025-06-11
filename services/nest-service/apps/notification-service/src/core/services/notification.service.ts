@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { INotification } from '@notification-service/core/models/notification';
-import { NotificationRepo } from '@notification-service/repo/notification.repo';
+import { NotificationRepo } from '@notification-service/infras/notification.repo';
 import { Injectable } from '@nestjs/common';
 @Injectable()
 export class NotificationService {
