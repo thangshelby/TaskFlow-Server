@@ -5,7 +5,7 @@
   "scripts": {
     "serve": "npm run gen-proto-type && nx serve --skip-nx-cache",
     "test": "nx test",
-    "gen-proto-type": "protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./apps/notification-service/src/types --ts_proto_opt=nestJs=true --proto_path=./apps/notification-service/src/proto ./apps/notification-service/src/proto/notification.proto"
+    "gen-proto-type": "protoc --plugin=protoc-gen-ts_proto=.\\node_modules\\.bin\\protoc-gen-ts_proto.cmd --ts_proto_out=.\\apps\\notification-service\\src\\types --ts_proto_opt=nestJs=true --proto_path=.\\apps\\notification-service\\src\\proto .\\apps\\notification-service\\src\\proto\\notification.proto"
   },
   "private": true,
   "dependencies": {

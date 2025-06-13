@@ -74,8 +74,8 @@ services:
     container_name: cassandra
     environment:
       - CASSANDRA_CLUSTER_NAME=my-cluster
-      - CASSANDRA_BROADCAST_ADDRESS=127.0.0.1
-      - CASSANDRA_LISTEN_ADDRESS=127.0.0.1
+      - CASSANDRA_BROADCAST_ADDRESS=auto
+      - CASSANDRA_LISTEN_ADDRESS=auto
     ports:
       - "9042:9042"
     volumes:
@@ -90,18 +90,27 @@ services:
     command: >
       "
       echo '⏳ Waiting for Cassandra to be available...' &&
-      while ! cqlsh 127.0.0.1 -e 'describe keyspaces'; do sleep 2; done &&
+      while ! cqlsh cassandra -e 'describe keyspaces'; do sleep 2; done &&
       echo '✅ Cassandra is up!' &&
-      cqlsh 127.0.0.1 -e \"
+      cqlsh cassandra -e \"
         CREATE KEYSPACE IF NOT EXISTS taskflow
         WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
-
-        USE taskflow;
-
-        CREATE TABLE IF NOT EXISTS notifications (
-          id TEXT PRIMARY KEY,
-        );
       \"
+      "
+    networks:
+      - taskflow-network
+  kafka-topic-creator:
+    image: bitnami/kafka:3.8
+    depends_on:
+      - kafka
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "
+      echo '⏳ Waiting for Kafka to be available...' &&
+      while ! kafka-topics.sh --bootstrap-server kafka:9094 --list; do sleep 2; done &&
+      echo '✅ Kafka is up!' &&
+      kafka-topics.sh --bootstrap-server kafka:9094 --create --if-not-exists --topic activities --partitions 3 --replication-factor 1 && 
+      kafka-topics.sh --bootstrap-server kafka:9094 --create --if-not-exists --topic notification --partitions 3 --replication-factor 1
       "
     networks:
       - taskflow-network

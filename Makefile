@@ -38,12 +38,20 @@ gen-protobuf-notification-service:
 		--include_source_info \
 		--descriptor_set_out=../../../../notification.pb \
 		./src/proto/notification.proto
+gen-protobuf-notification-service-wd:
+	cd services\nest-service\apps\notification-service && \
+	protoc --plugin=protoc-gen-ts_proto=..\..\node_modules\.bin\protoc-gen-ts_proto.cmd --ts_proto_out=.\src\types --ts_proto_opt=nestJs=true --proto_path=.\src\proto .\src\proto\notification.proto && \
+	protoc -I .\src\proto -I .\src\proto\google\api --include_imports --include_source_info --descriptor_set_out=..\..\..\..\notification.pb .\src\proto\notification.proto
+
+gen-protobuf-main-service-wd:
+	powershell -Command "$$protos = Get-ChildItem -Recurse -Filter *.proto -Path './services/main-service/Protos' | ForEach-Object { $$_.FullName | Resolve-Path -Relative }; protoc -I './services/main-service/Protos' --include_imports --include_source_info --descriptor_set_out=./proto.pb $$protos"
 
 gen-protobuf: 
 	make gen-protobuf-main-service && make gen-protobuf-notification-service 
 
-gen-protobuf-wd:
-	powershell -Command "$$protos = Get-ChildItem -Recurse -Filter *.proto -Path './services/main-service/Protos' | ForEach-Object { $$_.FullName | Resolve-Path -Relative }; protoc -I './services/main-service/Protos' --include_imports --include_source_info --descriptor_set_out=./proto.pb $$protos"
+gen-protobuf-wd: 
+	make gen-protobuf-main-service-wd && make gen-protobuf-notification-service-wd 
+
 gen-testtoken:
 	cd services/node-service && node genjwt.js
 sync:

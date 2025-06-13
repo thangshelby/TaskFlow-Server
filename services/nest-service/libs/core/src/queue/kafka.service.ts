@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { Kafka, Producer, Consumer, EachMessagePayload, Message } from 'kafkajs';
+import { Kafka, Producer, Consumer, EachMessagePayload, Message, Partitioners } from 'kafkajs';
 import { v4 as uuidv4 } from 'uuid';
 import { LogService } from '../log/log.service';
 import { ConfigService } from '@nestjs/config';
@@ -26,7 +26,9 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
       clientId,
       brokers,
     });
-    this.producer = this.kafka.producer();
+    this.producer = this.kafka.producer({
+      createPartitioner: Partitioners.LegacyPartitioner,
+    });
     this.consumer = this.kafka.consumer({ groupId });
   }
 

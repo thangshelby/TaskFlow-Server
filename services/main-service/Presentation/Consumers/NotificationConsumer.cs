@@ -21,7 +21,7 @@ public class NotificationConsumer : IHostedService, IDisposable
             EnableAutoCommit = false
         };
         _consumer = new ConsumerBuilder<Null, string>(config).Build();
-        _topic = "notifications"; // Match Activity pattern of using hardcoded topic name
+        _topic = "notifications"; 
         _logger = logger;
         _serviceProvider = serviceProvider;
     }
