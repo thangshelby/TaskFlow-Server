@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package notification_service;
+
+import "google/api/annotations.proto";
+
+service NotificationService {
+  rpc SendNotification (NotificationRequest) returns (NotificationResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/notifications/send"
+      body: "*"
+    };
+  }
+}
+
+message NotificationRequest {
+  string title = 1;
+  string message = 2;
+  string userId = 3;
+}
+
+message NotificationResponse {
+  bool success = 1;
+  string message = 2;
+}

@@ -37,5 +37,18 @@
         "targetName": "test"
       }
     }
-  ]
+  ],
+  "targetDefaults": {
+    "build": {
+      "options": {
+        "assets": [
+          {
+            "glob": "**/*.proto",
+            "input": "apps/notification-service/src/proto",
+            "output": "proto"
+          }
+        ]
+      }
+    }
+  }
 }
