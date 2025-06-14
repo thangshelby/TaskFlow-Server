@@ -16,7 +16,7 @@
 | `kafka`                | `localhost:9092`        | `none`                  |
 | `mysql`                | `localhost:3306`        | `none`                  |
 | `mongodb`              | `localhost:27017`       | `none`                  |
-| `postgres`             | `localhost:5432`        | `none`                  |
+| `kafka_ui`             | `localhost:8888`        | `none`                  |
 | `cassandra`            | `localhost:9042`        | `none`                  |
 | `redis`                | `localhost:6379`        | `none`                  |
 
