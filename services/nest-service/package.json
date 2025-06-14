@@ -3,20 +3,26 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "serve": "nx serve --skip-nx-cache",
-    "test": "nx test"
+    "serve": "npm run gen-proto-type && nx serve --skip-nx-cache",
+    "test": "nx test",
+    "gen-proto-type": "protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./apps/notification-service/src/types --ts_proto_opt=nestJs=true --proto_path=./apps/notification-service/src/proto ./apps/notification-service/src/proto/notification.proto"
   },
   "private": true,
   "dependencies": {
+    "@grpc/grpc-js": "^1.13.4",
+    "@grpc/proto-loader": "^0.7.15",
+    "@grpc/reflection": "^1.0.4",
     "@nestjs/common": "^10.0.2",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^10.0.2",
+    "@nestjs/microservices": "^10.4.19",
     "@nestjs/platform-express": "^10.0.2",
     "axios": "^1.6.0",
     "cassandra-driver": "^4.8.0",
     "kafkajs": "^2.2.4",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0",
+    "ts-proto": "^2.7.5",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

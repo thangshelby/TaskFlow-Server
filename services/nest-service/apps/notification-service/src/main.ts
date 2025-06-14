@@ -1,21 +1,28 @@
-/**
- * This is not a production server yet!
- * This is only a minimal backend to get started.
- */
-
 import { Logger } from '@nestjs/common';
+import { ReflectionService } from '@grpc/reflection';
 import { NestFactory } from '@nestjs/core';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { NotificationModule } from '@notification-service/notification.module';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(NotificationModule);
-  const globalPrefix = 'api';
+  const app = await NestFactory.createMicroservice<MicroserviceOptions>(NotificationModule, {
+    transport: Transport.GRPC,
+    options: {
+      package: 'notification_service',
+      protoPath: join(__dirname, 'proto/notification.proto'),
+      url: '0.0.0.0:5002',
+      loader: {
+        includeDirs: [join(__dirname, 'proto')],
+      },
+      onLoadPackageDefinition: (pkg, server) => {
+        new ReflectionService(pkg).addToServer(server);
+      },
+    },
+  });
 
-  app.setGlobalPrefix(globalPrefix);
-  const port = process.env.PORT || 3000;
-  await app.listen(port);
-
-  Logger.log(`🚀 Application is running on: http://localhost:${port}/${globalPrefix}`);
+  await app.listen();
+  Logger.log(`🚀 gRPC server running at http://localhost:5002`);
 }
 
 bootstrap();
