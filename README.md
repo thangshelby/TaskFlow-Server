@@ -6,19 +6,19 @@
 
 ### 📦 Service Port Mapping
 
-| Service Name           | HTTP Port               | gRPC Port               |
-| ---------------------- | ----------------------- | ----------------------- |
-| `main-service`         | `http://localhost:8081` | `http://localhost:5001` |
-| `notification-service` | `http://localhost:8082` | `http://localhost:5002` |
-| `chat-service`         | `none`                  | `none`                  |
-| `metrics-service`      | `none`                  | `none`                  |
-| `envoy`                | `http://localhost:9901` | `none`                  |
-| `kafka`                | `localhost:9092`        | `none`                  |
-| `mysql`                | `localhost:3306`        | `none`                  |
-| `mongodb`              | `localhost:27017`       | `none`                  |
-| `kafka_ui`             | `localhost:8888`        | `none`                  |
-| `cassandra`            | `localhost:9042`        | `none`                  |
-| `redis`                | `localhost:6379`        | `none`                  |
+| Service Name           | HTTP Port         | gRPC Port        |
+| ---------------------- | ----------------- | ---------------- |
+| `main-service`         | `localhost:8081`  | `localhost:5001` |
+| `notification-service` | `localhost:8082`  | `localhost:5002` |
+| `chat-service`         | `none`            | `none`           |
+| `metrics-service`      | `none`            | `none`           |
+| `envoy`                | `localhost:9901`  | `none`           |
+| `kafka`                | `localhost:9092`  | `none`           |
+| `mysql`                | `localhost:3306`  | `none`           |
+| `mongodb`              | `localhost:27017` | `none`           |
+| `kafka_ui`             | `localhost:8888`  | `none`           |
+| `cassandra`            | `localhost:9042`  | `none`           |
+| `redis`                | `localhost:6379`  | `none`           |
 
 ---
 
