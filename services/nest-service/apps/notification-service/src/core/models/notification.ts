@@ -1,8 +1,11 @@
-export interface INotification {
-  id: string;
-  userId: string;
-  eventType: string;
-  message: string;
+export interface NotificationDomain {
+  recipientId: string;
+  actorId?: string;
+  type: string;
+  referenceId?: string;
+  referenceType?: string;
+  content: string;
+  isRead: boolean;
   createdAt: Date;
 }
 export interface UserCreatedData {

@@ -1,5 +1,5 @@
 import { KafkaMessage, KafkaService } from '@nest-service/core';
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { UserCreatedData } from '@notification-service/core/models/notification';
 import { NotificationService } from '@notification-service/core/services/notification.service';
 import { EachMessagePayload } from 'kafkajs';
@@ -49,7 +49,7 @@ export class NotificationSubscriberService implements OnModuleInit {
       return;
     }
 
-    await this.notificationService.createNotification(data.userId, kafkaMessage.id, 'A new user has been created!');
+    // await this.notificationService.createNotification(data.userId, kafkaMessage.id, 'A new user has been created!');
   }
 
   private validateRequiredFields<T>(message: KafkaMessage): {
