@@ -7,7 +7,7 @@ import { status } from '@grpc/grpc-js';
 export class GlobalHandleErrorInterceptor implements NestInterceptor {
   private readonly logger = new Logger(GlobalHandleErrorInterceptor.name);
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     return next.handle().pipe(
       catchError((error) => {
         const handler = context.getHandler().name;
