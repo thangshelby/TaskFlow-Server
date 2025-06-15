@@ -1,4 +1,5 @@
-import { Controller } from '@nestjs/common';
+import { Metadata } from '@grpc/grpc-js';
+import { Controller, Logger } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { NotificationService } from '@notification-service/core/services/notification.service';
 import { NotificationMapper } from '@notification-service/infras/mapper';
@@ -9,7 +10,12 @@ export class NotificationGrpcController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @GrpcMethod('notification_service.NotificationService', 'SendNotification')
-  async sendNotification(data: CreateNotificationReq): Promise<CreateNotificationRes> {
+  async sendNotification(data: CreateNotificationReq, metadata: Metadata): Promise<CreateNotificationRes> {
+    const userId = metadata.get('userId')?.[0];
+    const userRole = metadata.get('userRole')?.[0];
+
+    Logger.log('UserId:', userId);
+    Logger.log('UserRole:', userRole);
     const type = this.notificationService.ValidateNotificationType(data.type);
 
     const noti = await this.notificationService.createNotification({
