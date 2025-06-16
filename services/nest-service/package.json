@@ -3,11 +3,12 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "serve": "npm run gen-proto-type && nx serve --skip-nx-cache",
-    "serve-wd": "npm run gen-proto-type-wd && nx serve --skip-nx-cache",
+    "serve": "npm run gen-proto-type-noti && nx serve --skip-nx-cache",
+    "serve-wd": "npm run gen-proto-type-noti-wd && nx serve --skip-nx-cache",
     "test": "nx test",
-    "gen-proto-type-wd": "protoc --plugin=protoc-gen-ts_proto=.\\node_modules\\.bin\\protoc-gen-ts_proto.cmd --ts_proto_out=.\\apps\\notification-service\\src\\types --ts_proto_opt=nestJs=true --proto_path=.\\apps\\notification-service\\src\\proto .\\apps\\notification-service\\src\\proto\\notification.proto",
-    "gen-proto-type": "protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./apps/notification-service/src/types --ts_proto_opt=nestJs=true --proto_path=./apps/notification-service/src/proto ./apps/notification-service/src/proto/notification.proto"
+    "gen-proto-type-noti-wd": "protoc --plugin=protoc-gen-ts_proto=.\\node_modules\\.bin\\protoc-gen-ts_proto.cmd --ts_proto_out=.\\apps\\notification-service\\src\\types --ts_proto_opt=nestJs=true --proto_path=.\\apps\\notification-service\\src\\proto .\\apps\\notification-service\\src\\proto\\notification.proto",
+    "gen-proto-type-noti": "protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./apps/notification-service/src/types --ts_proto_opt=nestJs=true --proto_path=./apps/notification-service/src/proto ./apps/notification-service/src/proto/notification.proto",
+    "gen-proto-type-core": "protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./libs/core/src/types --ts_proto_opt=nestJs=true --proto_path=../main-service/Protos $(find ../main-service/Protos -name \"*.proto\")"
   },
   "private": true,
   "dependencies": {

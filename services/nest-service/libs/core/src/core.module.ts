@@ -4,6 +4,7 @@ import { LogService } from './log/log.service';
 import { KafkaService } from './queue/kafka.service';
 import { CassandraService } from './cassandra/cassandra.service';
 import { MongooseModule } from '@nestjs/mongoose';
+import { UserClientService } from './client/user-client.service';
 
 @Module({
   controllers: [],
@@ -18,7 +19,7 @@ import { MongooseModule } from '@nestjs/mongoose';
       }),
     }),
   ],
-  providers: [LogService, KafkaService, CassandraService],
-  exports: [LogService, KafkaService, CassandraService],
+  providers: [LogService, KafkaService, CassandraService, UserClientService],
+  exports: [LogService, KafkaService, CassandraService, UserClientService],
 })
 export class CoreModule {}

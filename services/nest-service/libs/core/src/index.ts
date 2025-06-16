@@ -4,3 +4,5 @@ export * from './queue/kafka.service';
 export * from './cassandra/cassandra.service';
 export * from './interceptors/globalHandleError.interceptor';
 export * from './interceptors/auth.interceptor';
+export * from './client/user-client.service';
+export * from './common/decorators/user.decorator';
