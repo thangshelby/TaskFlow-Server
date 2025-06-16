@@ -288,7 +288,7 @@ static_resources:
                   - name: envoy.filters.http.grpc_json_transcoder
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_json_transcoder.v3.GrpcJsonTranscoder
-                      proto_descriptor: "/etc/envoy/notification.pb"
+                      proto_descriptor: "/etc/envoy/proto.pb"
                       services: ["notification_service.NotificationService"]
                       convert_grpc_status: true
                       print_options:
@@ -311,7 +311,7 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 192.168.1.131
+                      address: 192.168.88.4
                       port_value: 5001
     - name: notification_service
       type: LOGICAL_DNS
@@ -325,5 +325,5 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 192.168.1.131
+                      address: 192.168.88.4
                       port_value: 5002

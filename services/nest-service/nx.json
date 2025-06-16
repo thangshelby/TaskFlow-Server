@@ -44,7 +44,7 @@
         "assets": [
           {
             "glob": "**/*.proto",
-            "input": "apps/notification-service/src/proto",
+            "input": "protos",
             "output": "proto"
           }
         ]

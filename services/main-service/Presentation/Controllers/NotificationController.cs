@@ -1,8 +1,6 @@
 using AutoMapper;
 using Grpc.Core;
 using MainService.Domain.UseCases;
-using Google.Protobuf.WellKnownTypes;
-using BaseService;
 using TaskFlow.NotificationService;
 
 public class NotificationController : NotificationService.NotificationServiceBase
