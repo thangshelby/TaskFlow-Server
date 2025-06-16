@@ -10,7 +10,6 @@ services:
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
       - ./proto.pb:/etc/envoy/proto.pb
-      - ./notification.pb:/etc/envoy/notification.pb
     networks:
       - taskflow-network
     # depends_on:

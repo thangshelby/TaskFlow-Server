@@ -1,5 +1,4 @@
 using FluentValidation;
-using FluentValidation.Results;
 using Grpc.Core;
 using MainService.Domain.Entities;
 using MainService.Domain.Enums;
@@ -8,12 +7,9 @@ using TaskFlow.UserService;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using System.Security.Cryptography;
 using AutoMapper;
 using MainService.Domain.Interfaces;
-using Google.Protobuf.WellKnownTypes;
-using System.Text.Json;
 
 public class UserController : UserService.UserServiceBase
 {
@@ -89,7 +85,7 @@ public class UserController : UserService.UserServiceBase
             LastName = request.LastName,
             Email = request.Email,
             Password = request.Password,
-            Role = System.Enum.TryParse(request.Role, out UserRole parsedRole) ? parsedRole : UserRole.User,
+            Role = Enum.TryParse(request.Role, out UserRole parsedRole) ? parsedRole : UserRole.User,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         });

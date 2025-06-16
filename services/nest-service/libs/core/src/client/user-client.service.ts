@@ -1,5 +1,6 @@
 import { Metadata } from '@grpc/grpc-js';
 import { Injectable } from '@nestjs/common';
+import { GetUserRes } from '../types/main_service/user';
 
 @Injectable()
 export class UserClientService {

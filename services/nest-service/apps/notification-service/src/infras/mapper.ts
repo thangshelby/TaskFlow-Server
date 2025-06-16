@@ -1,5 +1,5 @@
 import { NotificationDomain } from '@notification-service/core/models/notification';
-import { NotificationRes } from '@notification-service/types/notification';
+import { NotificationRes } from '@notification-service/types/notification_service/notification';
 
 export class NotificationMapper {
   static toNotiResponse(domain: NotificationDomain): NotificationRes {

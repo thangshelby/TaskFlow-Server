@@ -4,7 +4,7 @@ import { Controller, Logger } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { NotificationService } from '@notification-service/core/services/notification.service';
 import { NotificationMapper } from '@notification-service/infras/mapper';
-import { CreateNotificationReq, CreateNotificationRes } from '@notification-service/types/notification';
+import { CreateNotificationReq, CreateNotificationRes } from '@notification-service/types/notification_service/notification';
 @Controller()
 export class NotificationGrpcController {
   constructor(private readonly notificationService: NotificationService, private readonly userClientService: UserClientService) {}
