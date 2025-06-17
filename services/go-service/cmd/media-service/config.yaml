@@ -1,4 +1,4 @@
 app:
   name: media-service
-  port: 5003
+  port: localhost:5003
   env: dev

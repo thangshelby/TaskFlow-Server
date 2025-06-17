@@ -13,7 +13,6 @@ Thumbs.db
 # ===================
 **/bin/
 **/obj/
-**/pkg/
 **/vendor/
 **/coverage.out
 **/*.test

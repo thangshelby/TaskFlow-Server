@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+option go_package = "github.com/vudinhan2525/TaskFlow-Server/services/go-service/types;base";
 option csharp_namespace = "BaseService";
 
 package base;

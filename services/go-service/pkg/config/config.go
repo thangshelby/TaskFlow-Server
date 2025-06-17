@@ -11,7 +11,7 @@ type Config struct {
 }
 type AppConfig struct {
 	Name string `yaml:"name"`
-	Port int    `yaml:"port"`
+	Port string `yaml:"port"`
 	Env  string `yaml:"env"`
 }
 
