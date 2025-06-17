@@ -1,6 +1,6 @@
-import { KafkaMessage, KafkaService } from '@nest-service/core';
+import { KafkaActionType, KafkaMessage, KafkaService } from '@nest-service/core';
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { NotificationType, UserAssignmentData } from '@notification-service/core/models/notification';
+import { UserAssignmentData } from '@notification-service/core/models/notification';
 import { CreateNotificationParams, NotificationService } from '@notification-service/core/services/notification.service';
 import { EachMessagePayload } from 'kafkajs';
 
@@ -22,8 +22,8 @@ export class NotificationSubscriberService implements OnModuleInit {
       const notificationMessage: KafkaMessage = value ? JSON.parse(value) : null;
 
       switch (notificationMessage.eventType) {
-        case NotificationType.ASSIGNMENT:
-          await this.handleUserAssignment(notificationMessage);
+        case KafkaActionType.CREATE_NOTIFICATION:
+          await this.handleCreateNotification(notificationMessage);
           break;
         default:
           console.error('❌ Unknown event type:', notificationMessage.eventType);
@@ -34,13 +34,13 @@ export class NotificationSubscriberService implements OnModuleInit {
     }
   }
 
-  private async handleUserAssignment(kafkaMessage: KafkaMessage): Promise<void> {
+  private async handleCreateNotification(kafkaMessage: KafkaMessage): Promise<void> {
     const { isValid, message, data } = this.validateRequiredFields<UserAssignmentData>(kafkaMessage);
     if (!isValid || !data) {
       console.error('❌ Missing field:', message);
       return;
     }
-    const type = this.notificationService.ValidateNotificationType(kafkaMessage.eventType);
+    const type = this.notificationService.ValidateNotificationType(data.type);
 
     const notification: CreateNotificationParams = {
       recipientId: data.recipientId,

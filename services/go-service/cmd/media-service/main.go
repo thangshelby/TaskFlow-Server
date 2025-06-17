@@ -11,7 +11,7 @@ import (
 )
 
 type Server struct {
-	media_service.UnimplementedMediaServiceServer
+	ms     media_service.UnimplementedMediaServiceServer
 	Config config.Config
 }
 
@@ -34,10 +34,10 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	media_service.RegisterMediaServiceServer(grpcServer, server)
+	media_service.RegisterMediaServiceServer(grpcServer, server.ms)
 	reflection.Register(grpcServer)
 
-	listener, err := net.Listen("tcp", "127.0.0.1:5003")
+	listener, err := net.Listen("tcp", cfg.App.Port)
 	if err != nil {
 		log.Logger.Fatal("Error when creating listener")
 	}

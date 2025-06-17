@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package task;
-option go_package = "/pb";
-
-message Task {
-    int64 task_id = 1;           
-};

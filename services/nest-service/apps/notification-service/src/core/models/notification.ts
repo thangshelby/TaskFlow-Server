@@ -53,4 +53,5 @@ export interface UserAssignmentData {
   recipientId: string;
   actorId: string;
   issueId: string;
+  type: string;
 }
