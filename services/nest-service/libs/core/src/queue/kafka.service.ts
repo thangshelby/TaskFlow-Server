@@ -6,9 +6,13 @@ import { ConfigService } from '@nestjs/config';
 
 export interface KafkaMessage {
   id: string;
-  eventType: string;
+  eventType: KafkaActionType;
   data?: Record<string, unknown>;
   [key: string]: unknown;
+}
+
+export enum KafkaActionType {
+  CREATE_NOTIFICATION = 'CREATE_NOTIFICATION'
 }
 
 @Injectable()

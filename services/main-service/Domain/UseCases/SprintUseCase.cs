@@ -8,16 +8,14 @@ public class SprintUseCase
 {
     private readonly ISprintRepository _sprintRepository;
     private readonly IProjectMemberRepository _projectMemberRepository;
-    private readonly NotificationUseCase _notificationUseCase;
 
     public SprintUseCase(
         ISprintRepository sprintRepository,
-        IProjectMemberRepository projectMemberRepository,
-        NotificationUseCase notificationUseCase)
+        IProjectMemberRepository projectMemberRepository
+        )
     {
         _sprintRepository = sprintRepository;
         _projectMemberRepository = projectMemberRepository;
-        _notificationUseCase = notificationUseCase;
     }
 
     public async Task<SprintDomain> CreateSprint(SprintDomain sprint)
@@ -43,11 +41,11 @@ public class SprintUseCase
             // Send notification to each member
             foreach (var member in members)
             {
-                await _notificationUseCase.CreateSprintStartingNotification(
-                    member.UserId,
-                    sprint.Name,
-                    newSprint.Id
-                );
+                // await _notificationUseCase.CreateSprintStartingNotification(
+                //     member.UserId,
+                //     sprint.Name,
+                //     newSprint.Id
+                // );
             }
         }
 

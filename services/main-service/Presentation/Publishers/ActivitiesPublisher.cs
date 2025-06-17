@@ -1,14 +1,16 @@
 using Confluent.Kafka;
 using System.Text.Json;
-public class ActivitiesPublisher : IPublisherService, IDisposable
+using System.Text.Json.Serialization;
+
+
+public class KafkaPublisher : IPublisherService, IDisposable
 {
     private readonly IProducer<Null, string> _producer;
-    private readonly string _topic;
 
-    private readonly ILogger<ActivitiesPublisher> _logger;
+    private readonly ILogger<KafkaPublisher> _logger;
 
 
-    public ActivitiesPublisher(IConfiguration configuration, ILogger<ActivitiesPublisher> logger)
+    public KafkaPublisher(IConfiguration configuration, ILogger<KafkaPublisher> logger)
     {
         var config = new ProducerConfig
         {
@@ -16,26 +18,33 @@ public class ActivitiesPublisher : IPublisherService, IDisposable
             Acks = Acks.All
         };
         _producer = new ProducerBuilder<Null, string>(config).Build();
-        _topic = "activities";
         _logger = logger;
     }
 
-    public async Task Emit<IActivitiesMessage>(IActivitiesMessage message)
+    public async Task EmitKafka<T>(TopicName topic, KafkaMessageAction type, T message)
     {
         if (message == null)
-        {
             throw new ArgumentNullException(nameof(message));
-        }
-
 
         try
         {
-            var json = JsonSerializer.Serialize(message);
-            await _producer.ProduceAsync(_topic, new Message<Null, string> { Value = json });
+            var payload = new KafkaMessage<T>
+            {
+                EventType = type.ToString(),
+                Data = message
+            };
+
+            var json = JsonSerializer.Serialize(payload, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+                Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false) }
+            });
+            await _producer.ProduceAsync(topic.ToString(), new Message<Null, string> { Value = json });
         }
         catch (Exception ex)
         {
-            _logger.LogInformation($"Error sending message to topic {_topic}: {ex.Message}");
+            _logger.LogError(ex, $"Error sending message to topic {topic}");
         }
     }
 

@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 option csharp_namespace = "TaskFlow.CommentService";
+option go_package = "github.com/vudinhan2525/TaskFlow-Server/services/go-service/types/main_service;main_service";
 
 package project_service;
 import "google/api/annotations.proto";

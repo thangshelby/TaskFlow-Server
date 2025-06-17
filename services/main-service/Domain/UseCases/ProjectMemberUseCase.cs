@@ -9,21 +9,18 @@ public class ProjectMemberUseCase
 {
     private readonly IProjectMemberRepository _projectMemberRepository;
     private readonly IProjectRepository _projectRepository;
-    private readonly NotificationUseCase _notificationUseCase;
 
     public ProjectMemberUseCase(
         IProjectMemberRepository projectMemberRepository,
-        IProjectRepository projectRepository,
-        NotificationUseCase notificationUseCase)
+        IProjectRepository projectRepository)
     {
         _projectMemberRepository = projectMemberRepository;
         _projectRepository = projectRepository;
-        _notificationUseCase = notificationUseCase;
     }
 
     public async Task<ProjectMemberDomain> AddProjectMemberAsync(string projectId, string requesterId, string userId, TeamMemberRole role)
     {
-        var project = await _projectRepository.GetProject(projectId) 
+        var project = await _projectRepository.GetProject(projectId)
             ?? throw new KeyNotFoundException("Project not found");
 
         var existingMember = await _projectMemberRepository.GetByProjectAndUserAsync(projectId, userId);
@@ -56,20 +53,20 @@ public class ProjectMemberUseCase
         if (isPending)
         {
             // Send invitation notification if pending approval
-            await _notificationUseCase.CreateProjectInvitationNotification(
-                userId,
-                project.Name,
-                projectId
-            );
+            // await _notificationUseCase.CreateProjectInvitationNotification(
+            //     userId,
+            //     project.Name,
+            //     projectId
+            // );
         }
         else
         {
             // Send team member added notification if directly approved (added by owner)
-            await _notificationUseCase.CreateTeamMemberAddedNotification(
-                userId,
-                project.Name,
-                projectId
-            );
+            // await _notificationUseCase.CreateTeamMemberAddedNotification(
+            //     userId,
+            //     project.Name,
+            //     projectId
+            // );
         }
 
         return addedMember;
@@ -157,16 +154,16 @@ public class ProjectMemberUseCase
         }
 
         var approvedMember = await _projectMemberRepository.ApproveMemberAsync(projectId, userId);
-        
+
         // Get project details to include in notification
         var project = await _projectRepository.GetProject(projectId);
-        
+
         // Send notification to the approved member
-        await _notificationUseCase.CreateTeamMemberAddedNotification(
-            userId,
-            project.Name,
-            projectId
-        );
+        // await _notificationUseCase.CreateTeamMemberAddedNotification(
+        //     userId,
+        //     project.Name,
+        //     projectId
+        // );
 
         return approvedMember;
     }
@@ -200,16 +197,16 @@ public class ProjectMemberUseCase
         }
 
         var approvedMember = await _projectMemberRepository.ApproveMemberAsync(projectId, userId);
-        
+
         // Get project details to include in notification
         var project = await _projectRepository.GetProject(projectId);
-        
+
         // Send notification when invitation is accepted
-        await _notificationUseCase.CreateTeamMemberAddedNotification(
-            userId,
-            project.Name,
-            projectId
-        );
+        // await _notificationUseCase.CreateTeamMemberAddedNotification(
+        //     userId,
+        //     project.Name,
+        //     projectId
+        // );
 
         return approvedMember;
     }

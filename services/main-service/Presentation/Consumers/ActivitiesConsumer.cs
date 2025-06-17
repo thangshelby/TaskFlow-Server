@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Confluent.Kafka;
 using MainService.Domain.UseCases;
 
@@ -47,7 +48,14 @@ public class ActivitiesConsumer : IHostedService, IDisposable
 
                 try
                 {
-                    var message = JsonSerializer.Deserialize<IActivitiesMessage>(result.Message.Value);
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+                        Converters = { new JsonStringEnumConverter(null, allowIntegerValues: false) }
+                    };
+
+                    var message = JsonSerializer.Deserialize<KafkaMessage<IActivitiesMessage>>(result.Message.Value, options);
 
                     if (message == null)
                     {
@@ -56,7 +64,7 @@ public class ActivitiesConsumer : IHostedService, IDisposable
                         continue;
                     }
 
-                    _logger.LogInformation($"Received message: {message.NewIssue.Title}");
+                    _logger.LogInformation($"Received message: {message.Data.NewIssue.Title}");
 
                     using var scope = _serviceProvider.CreateScope();
                     var issueUseCase = scope.ServiceProvider.GetRequiredService<IssueUseCase>();
@@ -86,16 +94,19 @@ public class ActivitiesConsumer : IHostedService, IDisposable
 
     public void Dispose() => _consumer.Dispose();
 
-    private async Task handleActivitiesMessage(IssueUseCase issueUseCase, IActivitiesMessage message)
+    private async Task handleActivitiesMessage(IssueUseCase issueUseCase, KafkaMessage<IActivitiesMessage> message)
     {
-        switch (message.EventType)
+        if (Enum.TryParse<KafkaMessageAction>(message.EventType, out var action))
         {
-            case ActivitiesMessageAction.ISSUE_CREATED:
-            case ActivitiesMessageAction.ISSUE_CHANGED:
-                await issueUseCase.OnIssueChanged(message);
-                break;
-            default:
-                break;
+            switch (action)
+            {
+                case KafkaMessageAction.ACTIVITIES_ISSUE_CHANGED:
+                case KafkaMessageAction.ACTIVITIES_ISSUE_CREATED:
+                    await issueUseCase.OnIssueChanged(message);
+                    break;
+                default:
+                    break;
+            }
         }
     }
 }

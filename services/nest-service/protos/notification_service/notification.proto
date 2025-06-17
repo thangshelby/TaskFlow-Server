@@ -3,6 +3,7 @@ syntax = "proto3";
 package notification_service;
 
 import "google/api/annotations.proto";
+option go_package = "github.com/vudinhan2525/TaskFlow-Server/services/go-service/types/noti_service;noti_service";
 
 service NotificationService {
   rpc SendNotification (CreateNotificationReq) returns (CreateNotificationRes) {
