@@ -16,7 +16,6 @@ public class IssueUseCase
     private readonly IIssueRepository _issueRepository;
     private readonly ILogger<IssueUseCase> _logger;
     private readonly IPublisherService _publisher;
-    private readonly NotificationUseCase _notificationUseCase;
 
     public IssueUseCase(
         IIssueRepository issueRepository,
@@ -26,8 +25,7 @@ public class IssueUseCase
         IProjectRepository projectRepository,
         ITransactionRepo transactionRepo,
         ILogger<IssueUseCase> logger,
-        IPublisherService publisher,
-        NotificationUseCase notificationUseCase)
+        IPublisherService publisher)
     {
         _issueRepository = issueRepository;
         _transactionRepo = transactionRepo;
@@ -37,7 +35,6 @@ public class IssueUseCase
         _userRepository = userRepository;
         _sprintRepository = sprintRepository;
         _publisher = publisher;
-        _notificationUseCase = notificationUseCase;
     }
 
     public async Task<IssueDomain> CreateIssue(CreateIssueReq param)
@@ -87,19 +84,8 @@ public class IssueUseCase
             return newIssue;
         });
 
-        // Trigger IssueAssigned notification if AssigneeId is provided
-        if (!string.IsNullOrEmpty(result.AssigneeId))
+        await _publisher.EmitKafka(TopicName.ACTIVITIES, KafkaMessageAction.ACTIVITIES_ISSUE_CREATED, new IActivitiesMessage
         {
-            await _notificationUseCase.CreateIssueAssignedNotification(
-                result.AssigneeId,
-                result.Title,
-                result.Id
-            );
-        }
-
-        await _publisher.Emit(new IActivitiesMessage
-        {
-            EventType = ActivitiesMessageAction.ISSUE_CREATED,
             NewIssue = result,
             OldIssue = null,
             UserId = result.ReporterId,
@@ -165,29 +151,16 @@ public class IssueUseCase
         // Trigger IssueAssigned notification if AssigneeId changed
         if (oldIssue.AssigneeId != updatedIssue.AssigneeId && !string.IsNullOrEmpty(updatedIssue.AssigneeId))
         {
-            await _notificationUseCase.CreateIssueAssignedNotification(
-                updatedIssue.AssigneeId,
-                updatedIssue.Title,
-                updatedIssue.Id
-            );
+            // await _notificationUseCase.CreateIssueAssignedNotification(
+            //     updatedIssue.AssigneeId,
+            //     updatedIssue.Title,
+            //     updatedIssue.Id
+            // );
+
         }
 
-        // Trigger IssueUpdated notification
-        var changes = await getDifferentChange(oldIssue, updatedIssue);
-        if (changes.Count > 0)
+        await _publisher.EmitKafka(TopicName.ACTIVITIES, KafkaMessageAction.ACTIVITIES_ISSUE_CHANGED, new IActivitiesMessage
         {
-            var updatedBy = await _userRepository.FindUserAsync(new UserQueryParams { UserId = updateData.CreatorId });
-            await _notificationUseCase.CreateIssueUpdatedNotification(
-                updatedIssue.AssigneeId ?? updatedIssue.ReporterId,
-                updatedIssue.Title,
-                updatedIssue.Id,
-                updatedBy?.FullName ?? "Unknown"
-            );
-        }
-
-        await _publisher.Emit(new IActivitiesMessage
-        {
-            EventType = ActivitiesMessageAction.ISSUE_CHANGED,
             OldIssue = oldIssue,
             NewIssue = updatedIssue,
             UserId = updateData.CreatorId
@@ -218,22 +191,25 @@ public class IssueUseCase
         await _issueRepository.DeleteIssue(id);
     }
 
-    public async Task OnIssueChanged(IActivitiesMessage message)
+    public async Task OnIssueChanged(KafkaMessage<IActivitiesMessage> message)
     {
+        var data = message.Data;
+
         var user = await _userRepository.FindUserAsync(new UserQueryParams
         {
-            UserId = message.UserId
+            UserId = data.UserId
         });
-        var oldIssue = message.OldIssue;
-        var newIssue = message.NewIssue;
+
+        var oldIssue = data.OldIssue;
+        var newIssue = data.NewIssue;
         ActivityDomain activity;
-        if (message.EventType == ActivitiesMessageAction.ISSUE_CREATED || oldIssue == null)
+        if (message.EventType == KafkaMessageAction.ACTIVITIES_ISSUE_CREATED.ToString() || oldIssue == null)
         {
             activity = new ActivityDomain
             {
                 IssueId = newIssue.Id!,
-                UserId = message.UserId,
-                UserName = user.FullName,
+                UserId = data.UserId,
+                UserName = user?.FullName ?? "Unknown",
                 ActionType = ActivityAction.ISSUE_CREATED,
                 Changes = []
             };
@@ -247,8 +223,8 @@ public class IssueUseCase
         activity = new ActivityDomain
         {
             IssueId = newIssue.Id!,
-            UserId = message.UserId,
-            UserName = user.FullName,
+            UserId = data.UserId,
+            UserName = user?.FullName ?? "Unknown",
             ActionType = ActivityAction.ISSUE_UPDATED,
             Changes = changes
         };

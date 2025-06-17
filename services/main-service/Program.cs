@@ -47,7 +47,6 @@ app.MapGrpcService<UserController>();
 app.MapGrpcService<IssueController>();
 app.MapGrpcService<ProjectMemberController>();
 app.MapGrpcService<CommentController>();
-app.MapGrpcService<NotificationController>();
 
 if (app.Environment.IsDevelopment())
 {

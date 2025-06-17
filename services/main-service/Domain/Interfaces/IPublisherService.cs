@@ -2,5 +2,5 @@
 
 public interface IPublisherService
 {
-    Task Emit<T>(T message);
+    Task EmitKafka<T>(TopicName topic, KafkaMessageAction type, T message);
 }
