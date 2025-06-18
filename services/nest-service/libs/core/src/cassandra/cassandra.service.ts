@@ -9,19 +9,11 @@ export class CassandraService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly logService: LogService
+    private readonly logService: LogService,
   ) {
-    const contactPoints = this.configService
-      .get<string>('CASSANDRA_CONTACT_POINTS', 'localhost')
-      .split(',');
-    const localDataCenter = this.configService.get<string>(
-      'CASSANDRA_LOCAL_DATA_CENTER',
-      'datacenter1'
-    );
-    const keyspace = this.configService.get<string>(
-      'CASSANDRA_KEYSPACE',
-      'taskflow'
-    );
+    const contactPoints = this.configService.get<string>('CASSANDRA_CONTACT_POINTS', 'localhost').split(',');
+    const localDataCenter = this.configService.get<string>('CASSANDRA_LOCAL_DATA_CENTER', 'datacenter1');
+    const keyspace = this.configService.get<string>('CASSANDRA_KEYSPACE', 'taskflow');
 
     this.client = new Client({
       contactPoints,
@@ -53,11 +45,7 @@ export class CassandraService implements OnModuleInit, OnModuleDestroy {
     return this.client;
   }
 
-  async executeQuery(
-    query: string,
-    params: any[],
-    options?: QueryOptions
-  ): Promise<any> {
+  async executeQuery(query: string, params: any[], options?: QueryOptions): Promise<any> {
     try {
       const result = await this.client.execute(query, params, {
         prepare: true,
@@ -66,10 +54,7 @@ export class CassandraService implements OnModuleInit, OnModuleDestroy {
       this.logService.log(`Executed query: ${query}`);
       return result;
     } catch (error: any) {
-      this.logService.error(
-        `Error executing Cassandra query: ${query}`,
-        error.stack
-      );
+      this.logService.error(`Error executing Cassandra query: ${query}`, error.stack);
       throw error;
     }
   }

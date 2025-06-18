@@ -15,11 +15,9 @@ export class GrpcAuthInterceptor implements NestInterceptor {
     const token = this.getTokenFromCookie(cookieHeader);
     if (token) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const payload = jwtDecode(token) as any;
         metadata.add('userId', String(payload.userId));
         metadata.add('userRole', String(payload.role));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         throw new RpcException({
           code: Status.UNAUTHENTICATED,

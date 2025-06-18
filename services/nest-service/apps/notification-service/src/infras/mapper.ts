@@ -15,6 +15,6 @@ export class NotificationMapper {
     };
   }
   static toNotiResponseList(domains: NotificationDomain[]): NotificationRes[] {
-    return domains.map(this.toNotiResponse);
+    return domains.map((domain) => this.toNotiResponse(domain));
   }
 }

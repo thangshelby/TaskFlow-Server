@@ -18,7 +18,7 @@ export class GlobalHandleErrorInterceptor implements NestInterceptor {
           code: status.INTERNAL,
           message: error.message || 'Internal server error',
         });
-      })
+      }),
     );
   }
 }

@@ -11,10 +11,10 @@ fi
 
 # Copy .proto files into local folders
 echo "📂 Copying proto files..."
-rm -rf protos
-mkdir -p protos
+rm -rf ./apps/$SERVICE_NAME/src/protos/
+mkdir -p ./apps/$SERVICE_NAME/src/protos/
 
-cp -r ../../protos/* protos/
+cp -r ../../protos/* ./apps/$SERVICE_NAME/src/protos/
 
 # Generate proto types
 echo "🔧 Generating proto types for $SERVICE_NAME..."
@@ -30,7 +30,5 @@ protoc \
   --ts_proto_out=./libs/core/src/types \
   --ts_proto_opt=nestJs=true,outputTypePrefix=true \
   --proto_path=../../protos \
-  $(find ../../protos -name "*.proto")
-# Serve with Nx
-echo "🚀 Serving $SERVICE_NAME with Nx..."
-nx serve $SERVICE_NAME
+   $(find ../../protos -name "*.proto")
+   

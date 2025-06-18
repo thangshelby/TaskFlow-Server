@@ -12,9 +12,9 @@ async function bootstrap() {
     options: {
       package: 'notification_service',
       url: '0.0.0.0:5002',
-      protoPath: join(__dirname, 'proto/notification_service/notification.proto'),
+      protoPath: join(__dirname, 'protos/notification_service/notification.proto'),
       loader: {
-        includeDirs: [join(__dirname, 'proto')],
+        includeDirs: [join(__dirname, 'protos')],
       },
       onLoadPackageDefinition: (pkg, server) => {
         new ReflectionService(pkg).addToServer(server);

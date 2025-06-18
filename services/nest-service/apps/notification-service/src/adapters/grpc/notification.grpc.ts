@@ -7,7 +7,10 @@ import { NotificationMapper } from '@notification-service/infras/mapper';
 import { CreateNotificationReq, CreateNotificationRes } from '@notification-service/types/notification_service/notification';
 @Controller()
 export class NotificationGrpcController {
-  constructor(private readonly notificationService: NotificationService, private readonly userClientService: UserClientService) {}
+  constructor(
+    private readonly notificationService: NotificationService,
+    private readonly userClientService: UserClientService,
+  ) {}
 
   @GrpcMethod('notification_service.NotificationService', 'SendNotification')
   async sendNotification(data: CreateNotificationReq, metadata: Metadata): Promise<CreateNotificationRes> {
@@ -17,7 +20,7 @@ export class NotificationGrpcController {
     const type = this.notificationService.ValidateNotificationType(data.type);
 
     const noti = await this.notificationService.createNotification({
-      content: data.content,
+      content: data.content || '',
       createdAt: new Date(),
       isRead: false,
       recipientId: data.recipientId,

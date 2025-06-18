@@ -12,7 +12,7 @@ export interface KafkaMessage {
 }
 
 export enum KafkaActionType {
-  CREATE_NOTIFICATION = 'CREATE_NOTIFICATION'
+  CREATE_NOTIFICATION = 'CREATE_NOTIFICATION',
 }
 
 @Injectable()
@@ -21,7 +21,10 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
   private producer: Producer;
   private consumer: Consumer;
 
-  constructor(private readonly logService: LogService, private readonly configService: ConfigService) {
+  constructor(
+    private readonly logService: LogService,
+    private readonly configService: ConfigService,
+  ) {
     const clientId = this.configService.get<string>('KAFKA_CLIENT_ID', 'taskflow-client');
     const brokers = this.configService.get<string>('KAFKA_BROKERS', 'localhost:9092').split(',');
     const groupId = this.configService.get<string>('KAFKA_GROUP_ID', 'taskflow-group');
