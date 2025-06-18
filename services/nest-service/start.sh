@@ -33,4 +33,4 @@ protoc \
   $(find ../../protos -name "*.proto")
 # Serve with Nx
 echo "🚀 Serving $SERVICE_NAME with Nx..."
-nx serve $SERVICE_NAME --skip-nx-cache
+nx serve $SERVICE_NAME
