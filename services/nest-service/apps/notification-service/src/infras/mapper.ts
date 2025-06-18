@@ -9,7 +9,7 @@ export class NotificationMapper {
       type: domain.type,
       referenceId: domain.referenceId || '',
       referenceType: domain.referenceType || '',
-      content: domain.content,
+      content: domain.content || '',
       isRead: domain.isRead,
       createdAt: domain.createdAt.toISOString(),
     };

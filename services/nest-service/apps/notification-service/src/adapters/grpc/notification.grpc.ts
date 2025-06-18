@@ -27,7 +27,6 @@ export class NotificationGrpcController {
       type: type,
       actorId: data.actorId,
       referenceId: data.recipientId,
-      referenceType: data.referenceType,
     });
 
     return {

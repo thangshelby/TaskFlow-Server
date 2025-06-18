@@ -12,7 +12,7 @@ export interface KafkaMessage {
 }
 
 export enum KafkaActionType {
-  CREATE_NOTIFICATION = 'CREATE_NOTIFICATION',
+  NOTIFICATIONS_CREATE_ISSUE = 'NOTIFICATIONS_CREATE_ISSUE',
 }
 
 @Injectable()

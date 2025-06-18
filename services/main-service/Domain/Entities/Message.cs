@@ -1,4 +1,3 @@
-using System.Text.Json;
 using MainService.Domain.Entities;
 public class KafkaMessage<T>
 {
@@ -14,6 +13,8 @@ public enum KafkaMessageAction
 {
     ACTIVITIES_ISSUE_CHANGED,
     ACTIVITIES_ISSUE_CREATED,
+
+    NOTIFICATIONS_CREATE_ISSUE
 }
 
 public readonly record struct TopicName(string Value)
@@ -32,8 +33,21 @@ public class IActivitiesMessage
 
 public class INotificationMessage
 {
-    public IssueDomain? OldIssue { get; set; }
-    public required IssueDomain NewIssue { get; set; }
-    public required string EventType { get; set; }
-    public required string UserId { get; set; }
+    public required string RecipientId { get; set; }
+    public string? ActorId { get; set; }
+    public string? IssueId { get; set; }
+    public required string Type { get; set; }
 };
+
+public enum NotificationType
+{
+    ASSIGNMENT,
+    MENTION,
+    COMMENT,
+    STATUS_UPDATE,
+    DUE_DATE_REMINDER,
+    PROJECT_INVITATION,
+    REACTION,
+    SYSTEM_ALERT,
+    SPRINT_STARTED,
+}
