@@ -8,7 +8,10 @@ export const NOTIFICATION_KAFKA_TOPIC = 'notifications';
 
 @Injectable()
 export class NotificationSubscriberService implements OnModuleInit {
-  constructor(private readonly kafkaService: KafkaService, private readonly notificationService: NotificationService) {}
+  constructor(
+    private readonly kafkaService: KafkaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async onModuleInit(): Promise<void> {
     this.kafkaService.on(NOTIFICATION_KAFKA_TOPIC, this.handleNotificationReceiver.bind(this));

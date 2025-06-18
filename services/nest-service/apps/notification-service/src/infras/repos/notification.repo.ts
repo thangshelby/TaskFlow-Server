@@ -8,7 +8,10 @@ import { INotification, NotificationDocument } from '@notification-service/infra
 
 @Injectable()
 export class NotificationRepo implements INotificationRepo {
-  constructor(@InjectModel(INotification.name) private readonly notificationModel: Model<NotificationDocument>) {}
+  constructor(
+    @InjectModel(INotification.name)
+    private readonly notificationModel: Model<NotificationDocument>,
+  ) {}
 
   async create(notification: NotificationDomain): Promise<NotificationDomain> {
     const newNotification = new this.notificationModel(notification);

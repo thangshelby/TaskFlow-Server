@@ -1,6 +1,5 @@
 import { Metadata } from '@grpc/grpc-js';
 import { Injectable } from '@nestjs/common';
-import { GetUserRes } from '../types/main_service/user';
 
 @Injectable()
 export class UserClientService {
@@ -20,7 +19,10 @@ export class UserClientService {
     };
   }
 
-  extractUserMetadata(metadata: Metadata): { userId: string; userRole: string } {
+  extractUserMetadata(metadata: Metadata): {
+    userId: string;
+    userRole: string;
+  } {
     return {
       userId: (metadata.get('userId')?.[0] as string) || '',
       userRole: (metadata.get('userRole')?.[0] as string) || '',

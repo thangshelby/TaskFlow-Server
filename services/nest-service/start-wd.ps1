@@ -8,9 +8,9 @@ if (-not $serviceName) {
 }
 
 Write-Host "Copying proto files..."
-Remove-Item -Recurse -Force ./protos -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path ./protos | Out-Null
-Copy-Item -Recurse ../../protos/* ./protos/
+Remove-Item -Recurse -Force ./apps/$serviceName/protos -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Path ./apps/$serviceName/protos | Out-Null
+Copy-Item -Recurse ../../protos/* ./apps/$serviceName/protos
 
 Write-Host "Generating proto types for $serviceName..."
 $protoFiles = Get-ChildItem -Recurse ../../protos -Filter *.proto | ForEach-Object { $_.FullName }
@@ -28,6 +28,3 @@ protoc `
   --ts_proto_opt=nestJs=true,outputTypePrefix=true `
   --proto_path=../../protos `
   $protoFiles
-
-Write-Host "Serving $serviceName with Nx..."
-npx nx serve $serviceName --skip-nx-cache

@@ -8,6 +8,7 @@ import { NotificationGrpcController } from '@notification-service/adapters/grpc/
 import { MongooseModule } from '@nestjs/mongoose';
 import { INotificationRepo } from '@notification-service/core/interfaces/notification-repo.interface';
 import { INotification, NotificationSchema } from '@notification-service/infras/schema/notification.schema';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
