@@ -8,14 +8,16 @@ public class SprintUseCase
 {
     private readonly ISprintRepository _sprintRepository;
     private readonly IProjectMemberRepository _projectMemberRepository;
+    private readonly IPublisherService _publisher;
 
     public SprintUseCase(
         ISprintRepository sprintRepository,
-        IProjectMemberRepository projectMemberRepository
-        )
+        IProjectMemberRepository projectMemberRepository,
+        IPublisherService publisher)
     {
         _sprintRepository = sprintRepository;
         _projectMemberRepository = projectMemberRepository;
+        _publisher = publisher;
     }
 
     public async Task<SprintDomain> CreateSprint(SprintDomain sprint)
@@ -38,15 +40,15 @@ public class SprintUseCase
             // Get all project members
             var members = await _projectMemberRepository.GetProjectMembersAsync(sprint.ProjectId, 1, int.MaxValue);
 
-            // Send notification to each member
-            foreach (var member in members)
-            {
-                // await _notificationUseCase.CreateSprintStartingNotification(
-                //     member.UserId,
-                //     sprint.Name,
-                //     newSprint.Id
-                // );
-            }
+            var notificationTasks = members.Select(member => 
+                _publisher.EmitKafka(TopicName.NOTIFICATIONS, KafkaMessageAction.NOTIFICATIONS_CREATE_ISSUE, new INotificationMessage
+                {
+                    Type = NotificationType.SPRINT_STARTED.ToString(),
+                    RecipientId = member.Id
+                })
+            ).ToList();
+
+            await Task.WhenAll(notificationTasks);
         }
 
         return newSprint;

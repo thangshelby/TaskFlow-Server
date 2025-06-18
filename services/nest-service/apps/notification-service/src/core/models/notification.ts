@@ -38,6 +38,11 @@ export enum NotificationType {
    * Cảnh báo từ hệ thống (ví dụ: lỗi, bảo trì, ...)
    */
   SYSTEM_ALERT = 'SYSTEM_ALERT',
+
+  /**
+   * Sprint bắt đầu (ví dụ: lỗi, bảo trì, ...)
+   */
+  SPRINT_STARTED = 'SPRINT_STARTED',
 }
 export interface NotificationDomain {
   recipientId: string;
@@ -45,13 +50,13 @@ export interface NotificationDomain {
   type: NotificationType;
   referenceId?: string;
   referenceType?: string;
-  content: string;
+  content?: string;
   isRead: boolean;
   createdAt: Date;
 }
-export interface UserAssignmentData {
+export interface NotificationMessageData {
   recipientId: string;
-  actorId: string;
-  issueId: string;
+  actorId?: string;
+  issueId?: string;
   type: string;
 }

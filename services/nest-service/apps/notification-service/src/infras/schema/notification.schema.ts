@@ -20,7 +20,7 @@ export class INotification {
   @Prop()
   referenceType?: string;
 
-  @Prop({ required: true })
+  @Prop()
   content: string;
 
   @Prop({ default: false })

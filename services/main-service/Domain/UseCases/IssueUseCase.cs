@@ -148,24 +148,26 @@ public class IssueUseCase
             return await _issueRepository.UpdateIssue(updateData);
         });
 
-        // Trigger IssueAssigned notification if AssigneeId changed
+        var notifyTask = Task.CompletedTask;
         if (oldIssue.AssigneeId != updatedIssue.AssigneeId && !string.IsNullOrEmpty(updatedIssue.AssigneeId))
         {
-            // await _notificationUseCase.CreateIssueAssignedNotification(
-            //     updatedIssue.AssigneeId,
-            //     updatedIssue.Title,
-            //     updatedIssue.Id
-            // );
-
+            notifyTask = _publisher.EmitKafka(TopicName.NOTIFICATIONS, KafkaMessageAction.NOTIFICATIONS_CREATE_ISSUE, new INotificationMessage
+            {
+                Type = NotificationType.ASSIGNMENT.ToString(),
+                ActorId = updateData.CreatorId,
+                IssueId = updatedIssue.Id,
+                RecipientId = updatedIssue.AssigneeId
+            });
         }
 
-        await _publisher.EmitKafka(TopicName.ACTIVITIES, KafkaMessageAction.ACTIVITIES_ISSUE_CHANGED, new IActivitiesMessage
+        var activityTask = _publisher.EmitKafka(TopicName.ACTIVITIES, KafkaMessageAction.ACTIVITIES_ISSUE_CHANGED, new IActivitiesMessage
         {
             OldIssue = oldIssue,
             NewIssue = updatedIssue,
             UserId = updateData.CreatorId
         });
 
+        await Task.WhenAll(notifyTask, activityTask);
         return updatedIssue;
     }
 

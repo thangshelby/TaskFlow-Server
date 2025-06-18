@@ -8,7 +8,44 @@ export class NotificationService {
   constructor(private readonly notificationRepo: INotificationRepo) {}
 
   async createNotification(data: CreateNotificationParams): Promise<NotificationDomain> {
-    return await this.notificationRepo.create(data);
+    const refType = this.getReferenceTypeByNotification(data.type);
+
+    return await this.notificationRepo.create({
+      recipientId: data.recipientId,
+      actorId: data.actorId,
+      type: data.type,
+      referenceId: data.referenceId,
+      referenceType: refType,
+      content: data?.content || '',
+      isRead: false,
+      createdAt: new Date(),
+    });
+  }
+
+  private getReferenceTypeByNotification(type: NotificationType): string {
+    switch (type) {
+      case NotificationType.ASSIGNMENT:
+      case NotificationType.MENTION:
+      case NotificationType.COMMENT:
+      case NotificationType.STATUS_UPDATE:
+      case NotificationType.DUE_DATE_REMINDER:
+        return 'issue';
+
+      case NotificationType.SPRINT_STARTED:
+        return 'sprint';
+
+      case NotificationType.PROJECT_INVITATION:
+        return 'project';
+
+      case NotificationType.REACTION:
+        return 'comment';
+
+      case NotificationType.SYSTEM_ALERT:
+        return 'system';
+
+      default:
+        return '';
+    }
   }
 
   ValidateNotificationType(type: string): NotificationType {
@@ -26,7 +63,6 @@ export interface CreateNotificationParams {
   actorId?: string;
   type: NotificationType;
   referenceId?: string;
-  referenceType?: string;
   content: string;
   isRead: boolean;
   createdAt: Date;

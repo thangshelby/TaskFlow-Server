@@ -1,6 +1,6 @@
 import { KafkaActionType, KafkaMessage, KafkaService } from '@nest-service/core';
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { UserAssignmentData } from '@notification-service/core/models/notification';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { NotificationMessageData } from '@notification-service/core/models/notification';
 import { CreateNotificationParams, NotificationService } from '@notification-service/core/services/notification.service';
 import { EachMessagePayload } from 'kafkajs';
 
@@ -25,7 +25,7 @@ export class NotificationSubscriberService implements OnModuleInit {
       const notificationMessage: KafkaMessage = value ? JSON.parse(value) : null;
 
       switch (notificationMessage.eventType) {
-        case KafkaActionType.CREATE_NOTIFICATION:
+        case KafkaActionType.NOTIFICATIONS_CREATE_ISSUE:
           await this.handleCreateNotification(notificationMessage);
           break;
         default:
@@ -38,7 +38,8 @@ export class NotificationSubscriberService implements OnModuleInit {
   }
 
   private async handleCreateNotification(kafkaMessage: KafkaMessage): Promise<void> {
-    const { isValid, message, data } = this.validateRequiredFields<UserAssignmentData>(kafkaMessage);
+    Logger.log('receive message');
+    const { isValid, message, data } = this.validateRequiredFields<NotificationMessageData>(kafkaMessage);
     if (!isValid || !data) {
       console.error('❌ Missing field:', message);
       return;
@@ -53,7 +54,6 @@ export class NotificationSubscriberService implements OnModuleInit {
       createdAt: new Date(),
       actorId: data.actorId,
       referenceId: data.issueId,
-      referenceType: 'Issue',
     };
 
     await this.notificationService.createNotification(notification);
