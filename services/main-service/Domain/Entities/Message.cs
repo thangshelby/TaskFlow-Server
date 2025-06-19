@@ -50,4 +50,6 @@ public enum NotificationType
     REACTION,
     SYSTEM_ALERT,
     SPRINT_STARTED,
+    PROJECT_ADDED,
+    PROJECT_TEAM_ADDED,
 }

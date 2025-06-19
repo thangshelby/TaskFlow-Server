@@ -3,6 +3,16 @@ import { NotificationDomain, NotificationType } from '@notification-service/core
 import { INotificationRepo } from '@notification-service/core/interfaces/notification-repo.interface';
 import { RpcException } from '@nestjs/microservices';
 import { status } from '@grpc/grpc-js';
+export interface CreateNotificationParams {
+  recipientId: string;
+  actorId?: string;
+  type: NotificationType;
+  referenceId?: string;
+  content: string;
+  isRead: boolean;
+  createdAt: Date;
+}
+
 @Injectable()
 export class NotificationService {
   constructor(private readonly notificationRepo: INotificationRepo) {}
@@ -35,6 +45,7 @@ export class NotificationService {
         return 'sprint';
 
       case NotificationType.PROJECT_INVITATION:
+      case NotificationType.PROJECT_ADDED:
         return 'project';
 
       case NotificationType.REACTION:
@@ -42,6 +53,9 @@ export class NotificationService {
 
       case NotificationType.SYSTEM_ALERT:
         return 'system';
+
+      case NotificationType.PROJECT_TEAM_ADDED:
+        return 'project_member';
 
       default:
         return '';
@@ -57,13 +71,4 @@ export class NotificationService {
     }
     return type as NotificationType;
   }
-}
-export interface CreateNotificationParams {
-  recipientId: string;
-  actorId?: string;
-  type: NotificationType;
-  referenceId?: string;
-  content: string;
-  isRead: boolean;
-  createdAt: Date;
 }

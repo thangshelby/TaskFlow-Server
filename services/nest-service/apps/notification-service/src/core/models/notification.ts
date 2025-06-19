@@ -40,9 +40,19 @@ export enum NotificationType {
   SYSTEM_ALERT = 'SYSTEM_ALERT',
 
   /**
-   * Sprint bắt đầu (ví dụ: lỗi, bảo trì, ...)
+   * Sprint bắt đầu
    */
   SPRINT_STARTED = 'SPRINT_STARTED',
+
+  /**
+   * Được thêm vào dự án
+   */
+  PROJECT_ADDED = 'PROJECT_ADDED',
+
+  /**
+   * Được thêm vào team dự án
+   */
+  PROJECT_TEAM_ADDED = 'PROJECT_TEAM_ADDED',
 }
 export interface NotificationDomain {
   recipientId: string;
