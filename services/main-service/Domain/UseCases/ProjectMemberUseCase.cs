@@ -9,13 +9,17 @@ public class ProjectMemberUseCase
 {
     private readonly IProjectMemberRepository _projectMemberRepository;
     private readonly IProjectRepository _projectRepository;
+    private readonly IPublisherService _publisher;
+
 
     public ProjectMemberUseCase(
         IProjectMemberRepository projectMemberRepository,
-        IProjectRepository projectRepository)
+        IProjectRepository projectRepository,
+        IPublisherService publisher)
     {
         _projectMemberRepository = projectMemberRepository;
         _projectRepository = projectRepository;
+        _publisher = publisher;
     }
 
     public async Task<ProjectMemberDomain> AddProjectMemberAsync(string projectId, string requesterId, string userId, TeamMemberRole role)
@@ -48,25 +52,26 @@ public class ProjectMemberUseCase
         };
 
         var addedMember = await _projectMemberRepository.AddAsync(member);
-
         // Send appropriate notification based on pending status
         if (isPending)
         {
             // Send invitation notification if pending approval
-            // await _notificationUseCase.CreateProjectInvitationNotification(
-            //     userId,
-            //     project.Name,
-            //     projectId
-            // );
+            await _publisher.EmitKafka(TopicName.NOTIFICATIONS, KafkaMessageAction.NOTIFICATIONS_CREATE_ISSUE, new INotificationMessage
+            {
+                Type = NotificationType.PROJECT_INVITATION.ToString(),
+                ActorId = requesterId,
+                RecipientId = addedMember.Id,
+            });
         }
         else
         {
             // Send team member added notification if directly approved (added by owner)
-            // await _notificationUseCase.CreateTeamMemberAddedNotification(
-            //     userId,
-            //     project.Name,
-            //     projectId
-            // );
+            await _publisher.EmitKafka(TopicName.NOTIFICATIONS, KafkaMessageAction.NOTIFICATIONS_CREATE_ISSUE, new INotificationMessage
+            {
+                Type = NotificationType.PROJECT_TEAM_ADDED.ToString(),
+                ActorId = requesterId,
+                RecipientId = addedMember.Id,
+            });
         }
 
         return addedMember;
@@ -155,15 +160,12 @@ public class ProjectMemberUseCase
 
         var approvedMember = await _projectMemberRepository.ApproveMemberAsync(projectId, userId);
 
-        // Get project details to include in notification
-        var project = await _projectRepository.GetProject(projectId);
-
-        // Send notification to the approved member
-        // await _notificationUseCase.CreateTeamMemberAddedNotification(
-        //     userId,
-        //     project.Name,
-        //     projectId
-        // );
+        await _publisher.EmitKafka(TopicName.NOTIFICATIONS, KafkaMessageAction.NOTIFICATIONS_CREATE_ISSUE, new INotificationMessage
+        {
+            Type = NotificationType.PROJECT_TEAM_ADDED.ToString(),
+            ActorId = userId,
+            RecipientId = approvedMember.Id,
+        });
 
         return approvedMember;
     }
@@ -198,15 +200,6 @@ public class ProjectMemberUseCase
 
         var approvedMember = await _projectMemberRepository.ApproveMemberAsync(projectId, userId);
 
-        // Get project details to include in notification
-        var project = await _projectRepository.GetProject(projectId);
-
-        // Send notification when invitation is accepted
-        // await _notificationUseCase.CreateTeamMemberAddedNotification(
-        //     userId,
-        //     project.Name,
-        //     projectId
-        // );
 
         return approvedMember;
     }
