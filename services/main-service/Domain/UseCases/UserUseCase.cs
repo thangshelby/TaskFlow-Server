@@ -109,21 +109,9 @@ public class UserUseCase
     {
         return await _issueRepository.GetStats(id, isSprintId);
     }
-    public async Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(string? name, string? email, int page, int limit)
+    public async Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(SearchUserQueryParams param)
     {
-        try
-        {
-            // Normalize inputs with defaults
-            page = Math.Max(1, page);
-            limit = limit <= 0 ? 10 : limit;
-
-            return await _userRepository.SearchUsersAsync(name, email, page, limit);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error searching users with name: {Name}, email: {Email}", name, email);
-            throw;
-        }
+        return await _userRepository.SearchUsersAsync(param);
     }
 
     public async Task ChangePassword(string userId, string oldPassword, string newPassword)

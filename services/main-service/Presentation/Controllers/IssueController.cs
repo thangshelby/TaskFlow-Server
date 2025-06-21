@@ -77,7 +77,7 @@ public class IssueController : IssueService.IssueServiceBase
                 ReporterId = userId,
                 StoryPoint = request.StoryPoint,
             };
-          
+
             if (request.Attachments != null)
             {
 
@@ -184,7 +184,8 @@ public class IssueController : IssueService.IssueServiceBase
             AssigneeIds = assigneeIds,
             Keyword = request.Keyword,
             SprintIds = sprintIds,
-            ColumnIds = columnIds
+            ColumnIds = columnIds,
+            IssueIds = request.IssueIds.ToList()
         });
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
         var response = new ListIssuesRes();

@@ -3,6 +3,7 @@ syntax = "proto3";
 package notification_service;
 
 import "google/api/annotations.proto";
+import "base.proto";
 option go_package = "github.com/vudinhan2525/TaskFlow-Server/services/go-service/types/noti_service;noti_service";
 
 service NotificationService {
@@ -12,6 +13,27 @@ service NotificationService {
       body: "*"
     };
   }
+  rpc GetAllNotifications (GetAllNotificationsReq) returns (GetAllNotificationsRes) {
+    option (google.api.http) = {
+      post: "/api/v1/notifications/get-all",
+      body: "*"
+    };
+  }
+}
+
+message GetAllNotificationsReq {
+  optional string user_id = 1;
+  optional string project_id = 2;
+  optional string sprint_id = 3;
+  optional int32 page = 4;
+  optional int32 limit = 5;
+}
+
+message GetAllNotificationsRes {
+  string status = 1;
+  string message = 2;
+  base.PaginationRes pagination = 4;
+  repeated NotificationRes data = 5;
 }
 
 message CreateNotificationReq {

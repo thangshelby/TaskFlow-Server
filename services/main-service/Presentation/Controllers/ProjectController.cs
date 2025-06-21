@@ -113,7 +113,8 @@ public class ProjectController : ProjectService.ProjectServiceBase
             Limit = request.Limit,
             Page = request.Page,
             Kw = request.Kw,
-            Sort = request.Sort
+            Sort = request.Sort,
+            ProjectIds = request.ProjectIds.ToList()
         });
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
 

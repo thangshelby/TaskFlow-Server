@@ -60,6 +60,7 @@ export interface ListIssuesReq {
   assigneeIds: string[];
   sprintIds: string[];
   keyword?: string | undefined;
+  issueIds: string[];
   page: number;
   limit: number;
 }

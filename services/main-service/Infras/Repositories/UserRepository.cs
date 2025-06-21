@@ -16,7 +16,7 @@ public static class StringExtensions
     public static string NormalizeVietnamese(this string text)
     {
         if (string.IsNullOrEmpty(text)) return text;
-        
+
         var normalized = text.Normalize(NormalizationForm.FormD);
         var sb = new StringBuilder();
 
@@ -61,11 +61,13 @@ public class UserRepository : IUserRepository
 {
     private readonly IMongoCollection<User> _users;
     private readonly IMapper _mapper;
-    public UserRepository(MongoDbService mongoDbService, IMapper mapper)
+    private readonly ILogger<UserRepository> _logger;
+    public UserRepository(MongoDbService mongoDbService, IMapper mapper, ILogger<UserRepository> logger)
     {
         var database = mongoDbService.Database;
         _users = database.GetCollection<User>("users");
         _mapper = mapper;
+        _logger = logger;
 
 
         // Indexing email 
@@ -116,17 +118,28 @@ public class UserRepository : IUserRepository
         return userDomain;
     }
 
-    public async Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(string? name, string? email, int page, int limit)
+    public async Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(SearchUserQueryParams param)
     {
+        var name = param.Name;
+        var email = param.Email;
+        var page = param.Page ?? 1;
+        var limit = param.Limit ?? 10;
+        var userIds = param.UserIds;
+
         var filterBuilder = Builders<User>.Filter;
         var filters = new List<FilterDefinition<User>>();
+
+        if (userIds != null && userIds.Any())
+        {
+            filters.Add(filterBuilder.In(x => x.Id, userIds));
+        }
 
         if (!string.IsNullOrEmpty(name))
         {
             var decodedName = Uri.UnescapeDataString(name.Replace("+", " "));
             var normalizedName = decodedName.NormalizeVietnamese();
             var searchTerms = normalizedName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            
+
             var nameFilters = new List<FilterDefinition<User>>();
             foreach (var term in searchTerms)
             {

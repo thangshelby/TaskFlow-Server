@@ -5,8 +5,6 @@ public class ListSprintsValidator : AbstractValidator<ListSprintsReq>
 {
     public ListSprintsValidator()
     {
-        RuleFor(x => x.ProjectId)
-            .NotEmpty().WithMessage("Project ID is required");
 
         RuleFor(x => x.Page)
             .GreaterThanOrEqualTo(1).WithMessage("Page must be greater than or equal to 1");

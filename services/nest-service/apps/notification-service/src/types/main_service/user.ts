@@ -95,6 +95,7 @@ export interface GetUserRes {
 export interface ListUsersReq {
   name?: string | undefined;
   email?: string | undefined;
+  userIds: string[];
   page: number;
   limit: number;
 }

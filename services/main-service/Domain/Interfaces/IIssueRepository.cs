@@ -29,6 +29,7 @@ public class GetIssuesParams
     public List<string>? ColumnIds;
     public List<string>? AssigneeIds;
     public List<string>? SprintIds;
+    public List<string>? IssueIds;
     public string? Keyword;
     public int Page = 1;
     public int Limit = 10;

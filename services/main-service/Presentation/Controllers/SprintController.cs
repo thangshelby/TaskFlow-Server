@@ -4,6 +4,7 @@ using Grpc.Core;
 using MainService.Domain.UseCases;
 using MainService.Domain.Entities;
 using TaskFlow.SprintService;
+using MainService.Domain.Interfaces;
 
 // namespace MainService.Presentation.Services;
 
@@ -101,7 +102,13 @@ public class SprintController : SprintService.SprintServiceBase
                 string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
 
-        var (sprints, totalCount) = await _sprintUseCase.ListSprints(request.ProjectId, request.Page, request.Limit);
+        var (sprints, totalCount) = await _sprintUseCase.ListSprints(new ListSprintParams
+        {
+            Limit = request.Limit,
+            Page = request.Page,
+            ProjectId = request.ProjectId,
+            SprintIds = request.SprintIds.ToList(),
+        });
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
 
         var response = new ListSprintsRes();

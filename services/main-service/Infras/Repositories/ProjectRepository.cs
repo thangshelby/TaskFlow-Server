@@ -71,24 +71,37 @@ public class ProjectRepository : IProjectRepository
 
     public async Task<(List<ProjectDomain> Projects, int TotalCount)> ListProjects(ListProjectParams query)
     {
-        // Build match filter
-        var matchFilter = new BsonDocument();
-        if (!string.IsNullOrEmpty(query.UserId))
+        var filterBuilder = Builders<Project>.Filter;
+        var filters = new List<FilterDefinition<Project>>();
+
+        // Filter by project IDs (preserving order is not supported directly with .In)
+        if (query.ProjectIds != null && query.ProjectIds.Any())
         {
-            matchFilter.Add("owner_id", query.UserId);
-        }
-        if (!string.IsNullOrEmpty(query.Kw))
-        {
-            matchFilter.Add("name", new BsonDocument("$regex", query.Kw).Add("$options", "i"));
+            filters.Add(filterBuilder.In(x => x.Id, query.ProjectIds));
         }
 
-        // Create sort document
-        var sortDoc = new BsonDocument();
+        // Filter by owner ID
+        if (!string.IsNullOrEmpty(query.UserId))
+        {
+            filters.Add(filterBuilder.Eq(x => x.OwnerId, query.UserId));
+        }
+
+        // Filter by keyword (case-insensitive search on name)
+        if (!string.IsNullOrEmpty(query.Kw))
+        {
+            filters.Add(filterBuilder.Regex(x => x.Name, new BsonRegularExpression(query.Kw, "i")));
+        }
+
+        var matchFilter = filters.Any() ? filterBuilder.And(filters) : filterBuilder.Empty;
+
+        // Sorting
+        var sortField = "created_at";
+        var sortDescending = true;
+
         if (!string.IsNullOrEmpty(query.Sort))
         {
-            var sortField = query.Sort.TrimStart('-');
-            var descending = query.Sort.StartsWith("-");
-            
+            sortField = query.Sort.TrimStart('-');
+            sortDescending = query.Sort.StartsWith("-");
             sortField = sortField.ToLower() switch
             {
                 "name" => "name",
@@ -97,17 +110,13 @@ public class ProjectRepository : IProjectRepository
                 "updated_at" => "updated_at",
                 _ => "created_at"
             };
-
-            sortDoc.Add(sortField, descending ? -1 : 1);
-        }
-        else
-        {
-            sortDoc.Add("created_at", -1);
         }
 
+        var sortDoc = new BsonDocument(sortField, sortDescending ? -1 : 1);
+
+        // Query database
         var totalCount = await _projects.CountDocumentsAsync(matchFilter);
-        var projects = await _projects
-            .Find(matchFilter)
+        var projects = await _projects.Find(matchFilter)
             .Sort(sortDoc)
             .Skip((query.Page - 1) * query.Limit)
             .Limit(query.Limit)
@@ -115,6 +124,7 @@ public class ProjectRepository : IProjectRepository
 
         return (_mapper.Map<List<ProjectDomain>>(projects), (int)totalCount);
     }
+
 
     public async Task<ProjectColumnDomain> CreateColumn(ProjectColumnDomain projectColumn)
     {
