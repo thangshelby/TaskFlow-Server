@@ -1,22 +1,30 @@
 import { Metadata } from '@grpc/grpc-js';
-import { Injectable } from '@nestjs/common';
+import { UserServiceClient } from '@nest-service/core/types/main_service/user';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { ClientGrpc } from '@nestjs/microservices';
+import { UserRes } from '@notification-service/types/main_service/user';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
-export class UserClientService {
-  async getUserById(data: { userId?: string; metadata?: Metadata }): Promise<any> {
-    let user_id = '';
+export class UserClientService implements OnModuleInit {
+  private userGrpcService: UserServiceClient;
+
+  constructor(@Inject('USER_PACKAGE') private client: ClientGrpc) {}
+
+  onModuleInit() {
+    this.userGrpcService = this.client.getService<UserServiceClient>('UserService');
+  }
+
+  async getUserById(data: { userId?: string; metadata?: Metadata }): Promise<UserRes | undefined> {
+    let user_id = data?.userId || '';
 
     if (data.metadata) {
       user_id = this.extractUserMetadata(data.metadata).userId;
     }
-    // Example: GRPC call to main-service
 
-    // Or mock it for now:
-    return {
-      id: user_id,
-      name: 'John Doe',
-      email: 'john@example.com',
-    };
+    const res = await firstValueFrom(this.userGrpcService.getById({ userId: user_id }));
+
+    return res.data;
   }
 
   extractUserMetadata(metadata: Metadata): {

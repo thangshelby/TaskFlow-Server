@@ -4,7 +4,7 @@ import { Controller, Logger } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { NotificationService } from '@notification-service/core/services/notification.service';
 import { NotificationMapper } from '@notification-service/infras/mapper';
-import { CreateNotificationReq, CreateNotificationRes } from '@notification-service/types/notification_service/notification';
+import { CreateNotificationReq, CreateNotificationRes, GetAllNotificationsReq, GetAllNotificationsRes } from '@notification-service/types/notification_service/notification';
 @Controller()
 export class NotificationGrpcController {
   constructor(
@@ -33,6 +33,25 @@ export class NotificationGrpcController {
       status: 'success',
       message: 'Notification sent!',
       data: NotificationMapper.toNotiResponse(noti),
+    };
+  }
+
+  @GrpcMethod('notification_service.NotificationService', 'GetAllNotifications')
+  async getAllNotifications(data: GetAllNotificationsReq): Promise<GetAllNotificationsRes> {
+    const noti = await this.notificationService.listNotifications({
+      ...data,
+    });
+
+    return {
+      status: 'success',
+      message: 'Get all notification success!',
+      pagination: {
+        currentPage: 1,
+        limit: 10,
+        totalItems: 100,
+        totalPages: 120,
+      },
+      data: NotificationMapper.toNotiResponseList(noti),
     };
   }
 }

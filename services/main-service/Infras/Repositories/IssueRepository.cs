@@ -276,6 +276,11 @@ public class IssueRepository : IIssueRepository
         var filterBuilder = Builders<Issue>.Filter;
         var filter = filterBuilder.Empty;
 
+        if (param.IssueIds != null && param.IssueIds.Any())
+        {
+            filter &= filterBuilder.In(i => i.Id, param.IssueIds);
+        }
+
         if (!string.IsNullOrEmpty(param.ProjectId))
         {
             filter &= filterBuilder.Eq(i => i.ProjectId, param.ProjectId);

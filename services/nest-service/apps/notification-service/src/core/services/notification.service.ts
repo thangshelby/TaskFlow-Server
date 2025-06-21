@@ -12,6 +12,13 @@ export interface CreateNotificationParams {
   isRead: boolean;
   createdAt: Date;
 }
+export interface GetAllNotificationParams {
+  userId?: string | undefined;
+  projectId?: string | undefined;
+  sprintId?: string | undefined;
+  page?: number | undefined;
+  limit?: number | undefined;
+}
 
 @Injectable()
 export class NotificationService {
@@ -19,7 +26,6 @@ export class NotificationService {
 
   async createNotification(data: CreateNotificationParams): Promise<NotificationDomain> {
     const refType = this.getReferenceTypeByNotification(data.type);
-
     return await this.notificationRepo.create({
       recipientId: data.recipientId,
       actorId: data.actorId,
@@ -30,6 +36,13 @@ export class NotificationService {
       isRead: false,
       createdAt: new Date(),
     });
+  }
+
+  async listNotifications(params: GetAllNotificationParams): Promise<NotificationDomain[]> {
+    // TODO FETCH -> Main-service get user,project,sprint and map data to return;
+    const notiDomain = await this.notificationRepo.listAll(params);
+
+    return notiDomain;
   }
 
   private getReferenceTypeByNotification(type: NotificationType): string {

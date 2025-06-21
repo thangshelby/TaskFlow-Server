@@ -59,13 +59,29 @@ public class SprintRepository : ISprintRepository
             throw new Exception("Sprint not found");
     }
 
-    public async Task<(List<SprintDomain> Sprints, int TotalCount)> ListSprints(string projectId, int page, int pageSize)
+    public async Task<(List<SprintDomain> Sprints, int TotalCount)> ListSprints(ListSprintParams param)
     {
-        var filter = Builders<Sprint>.Filter.Eq(s => s.ProjectId, projectId);
+        var filterBuilder = Builders<Sprint>.Filter;
+        var filters = new List<FilterDefinition<Sprint>>();
+
+        // Filter by ProjectId
+        if (!string.IsNullOrEmpty(param.ProjectId))
+        {
+            filters.Add(filterBuilder.Eq(s => s.ProjectId, param.ProjectId));
+        }
+
+        // Filter by SprintIds
+        if (param.SprintIds != null && param.SprintIds.Any())
+        {
+            filters.Add(filterBuilder.In(s => s.Id, param.SprintIds));
+        }
+
+        var filter = filters.Any() ? filterBuilder.And(filters) : filterBuilder.Empty;
+
         var totalCount = await _sprints.CountDocumentsAsync(filter);
         var sprints = await _sprints.Find(filter)
-            .Skip((page - 1) * pageSize)
-            .Limit(pageSize)
+            .Skip((param.Page - 1) * param.Limit)
+            .Limit(param.Limit)
             .ToListAsync();
 
         return (_mapper.Map<List<SprintDomain>>(sprints), (int)totalCount);

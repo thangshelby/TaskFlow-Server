@@ -112,8 +112,9 @@ message DeleteProjectReq {
 message ListProjectsReq {
   int32 page = 1;
   int32 limit = 2;
-  string kw = 3;     
+  string kw = 3;
   string sort = 4;
+  repeated string project_ids = 5;
 }
 
 message UserProjectsReq {

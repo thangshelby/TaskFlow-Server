@@ -156,8 +156,9 @@ message GetUserRes {
 message ListUsersReq {
   optional string name = 1;
   optional string email = 2;
-  int32 page = 3;
-  int32 limit = 4;
+  repeated string user_ids = 3;
+  int32 page = 4;
+  int32 limit = 5;
 }
 
 message ListUsersRes{

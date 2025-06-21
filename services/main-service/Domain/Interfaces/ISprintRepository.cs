@@ -10,5 +10,13 @@ public interface ISprintRepository
     Task DeleteSprint(string id);
     Task<SprintStats> GetSprintStats(string sprint_id, string project_id);
     Task<List<SprintDailyStats>> GetSprintDailyStats(string sprint_id);
-    Task<(List<SprintDomain> Sprints, int TotalCount)> ListSprints(string projectId, int page, int pageSize);
+    Task<(List<SprintDomain> Sprints, int TotalCount)> ListSprints(ListSprintParams param);
+}
+
+public class ListSprintParams
+{
+    public int Page { get; set; } = 1;
+    public int Limit { get; set; } = 10;
+    public string? ProjectId { get; set; }
+    public List<string>? SprintIds { get; set; }
 }

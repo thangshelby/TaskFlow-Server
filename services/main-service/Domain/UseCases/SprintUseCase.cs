@@ -40,7 +40,7 @@ public class SprintUseCase
             // Get all project members
             var members = await _projectMemberRepository.GetProjectMembersAsync(sprint.ProjectId, 1, int.MaxValue);
 
-            var notificationTasks = members.Select(member => 
+            var notificationTasks = members.Select(member =>
                 _publisher.EmitKafka(TopicName.NOTIFICATIONS, KafkaMessageAction.NOTIFICATIONS_CREATE_ISSUE, new INotificationMessage
                 {
                     Type = NotificationType.SPRINT_STARTED.ToString(),
@@ -99,18 +99,9 @@ public class SprintUseCase
         await _sprintRepository.DeleteSprint(id);
     }
 
-    public async Task<(List<SprintDomain> Sprints, int TotalCount)> ListSprints(string projectId, int page, int pageSize)
+    public async Task<(List<SprintDomain> Sprints, int TotalCount)> ListSprints(ListSprintParams param)
     {
-        if (string.IsNullOrEmpty(projectId))
-            throw new ArgumentException("Project ID cannot be empty");
-
-        if (page < 1)
-            throw new ArgumentException("Page number must be greater than 0");
-
-        if (pageSize < 1)
-            throw new ArgumentException("Page size must be greater than 0");
-
-        return await _sprintRepository.ListSprints(projectId, page, pageSize);
+        return await _sprintRepository.ListSprints(param);
     }
     public async Task<(SprintDomain, SprintStats, List<SprintDailyStats>)> GetStats(string sprint_id)
     {

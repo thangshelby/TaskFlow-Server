@@ -57,6 +57,7 @@ export interface ListProjectsReq {
   limit: number;
   kw: string;
   sort: string;
+  projectIds: string[];
 }
 
 export interface UserProjectsReq {

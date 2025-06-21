@@ -94,8 +94,9 @@ message ListIssuesReq {
   repeated string assignee_ids = 3;
   repeated string sprint_ids = 4;
   optional string keyword = 5;
-  int32 page = 6;
-  int32 limit = 7;
+  repeated string issue_ids = 6;
+  int32 page = 7;
+  int32 limit = 8;
 }
 
 message ListIssuesRes {

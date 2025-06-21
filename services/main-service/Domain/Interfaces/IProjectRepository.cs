@@ -1,5 +1,6 @@
 using MainService.Domain.Entities;
 namespace MainService.Domain.Interfaces;
+
 public interface IProjectRepository
 {
     Task<ProjectDomain> CreateProject(ProjectDomain project);
@@ -21,6 +22,7 @@ public class ListProjectParams
     public string? UserId { get; set; }
     public string? Kw { get; set; }
     public string? Sort { get; set; }
+    public List<string>? ProjectIds { get; set; }
 }
 public class CreateColumnParams
 {

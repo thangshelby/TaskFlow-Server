@@ -1,4 +1,5 @@
 import { NotificationDomain } from '@notification-service/core/models/notification';
+import { INotification } from '@notification-service/infras/schema/notification.schema';
 import { NotificationRes } from '@notification-service/types/notification_service/notification';
 
 export class NotificationMapper {
@@ -16,5 +17,21 @@ export class NotificationMapper {
   }
   static toNotiResponseList(domains: NotificationDomain[]): NotificationRes[] {
     return domains.map((domain) => this.toNotiResponse(domain));
+  }
+  static toDomain(entity: INotification): NotificationDomain {
+    return {
+      recipientId: entity.recipientId?.toString(),
+      actorId: entity.actorId?.toString(),
+      type: entity.type as any,
+      referenceId: entity.referenceId,
+      referenceType: entity.referenceType,
+      content: entity.content,
+      isRead: entity.isRead,
+      createdAt: new Date(entity.createdAt),
+    };
+  }
+
+  static toDomainList(entities: INotification[]): NotificationDomain[] {
+    return entities.map((entity) => this.toDomain(entity));
   }
 }

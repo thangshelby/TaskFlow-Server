@@ -198,40 +198,35 @@ public class UserController : UserService.UserServiceBase
 
     public override async Task<ListUsersRes> ListUsers(ListUsersReq request, ServerCallContext context)
     {
-        try
+        var page = request.Page <= 0 ? 1 : request.Page;
+        var limit = request.Limit <= 0 ? 10 : request.Limit;
+
+        var result = await _userUseCase.SearchUsersAsync(new SearchUserQueryParams
         {
-            // Ensure valid pagination values
-            var page = request.Page <= 0 ? 1 : request.Page;
-            var limit = request.Limit <= 0 ? 10 : request.Limit;
+            Name = request.Name,
+            Email = request.Email,
+            UserIds = request.UserIds.ToList(),
+            Page = (int)page,
+            Limit = (int)limit,
+        }
+        );
+        var users = result.Users;
+        var totalCount = result.TotalCount;
 
-            var result = await _userUseCase.SearchUsersAsync(
-                request.Name,
-                request.Email,
-                (int)page,
-                (int)limit
-            );
-            var users = result.Users;
-            var totalCount = result.TotalCount;
-
-            var response = new ListUsersRes
+        var response = new ListUsersRes
+        {
+            Status = "success",
+            Pagination = new PaginationRes
             {
-                Status = "success",
-                Pagination = new PaginationRes
-                {
-                    TotalItems = totalCount,
-                    CurrentPage = page,
-                    Limit = limit,
-                    TotalPages = (int)Math.Ceiling(totalCount / (double)request.Limit)
-                }
-            };
+                TotalItems = totalCount,
+                CurrentPage = page,
+                Limit = limit,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)limit)
+            }
+        };
 
-            response.Data.AddRange(users.Select(u => _mapper.Map<UserRes>(u)));
-            return response;
-        }
-        catch (Exception ex)
-        {
-            throw new RpcException(new Status(StatusCode.Internal, "Error searching users"));
-        }
+        response.Data.AddRange(users.Select(u => _mapper.Map<UserRes>(u)));
+        return response;
     }
 
     public override async Task<GetUserRes> GetByEmail(GetUserByEmailReq request, ServerCallContext context)

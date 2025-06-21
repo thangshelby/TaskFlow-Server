@@ -6,7 +6,7 @@ public interface IUserRepository
     Task<UserDomain?> FindUserAsync(UserQueryParams query);
 
     Task<UserDomain> UpdateUser(UserDomain user);
-    Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(string? name, string? email, int page, int limit);
+    Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(SearchUserQueryParams param);
 }
 
 public class LoginReqParams
@@ -19,4 +19,13 @@ public class UserQueryParams
 {
     public string? UserId { get; set; }
     public string? Email { get; set; }
+}
+
+public class SearchUserQueryParams
+{
+    public string? Name { get; set; }
+    public string? Email { get; set; }
+    public List<string>? UserIds { get; set; }
+    public int? Page { get; set; }
+    public int? Limit { get; set; }
 }
