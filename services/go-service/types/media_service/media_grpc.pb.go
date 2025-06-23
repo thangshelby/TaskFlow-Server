@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MediaServiceClient interface {
-	UploadImage(ctx context.Context, in *SearchTaskReq, opts ...grpc.CallOption) (*SearchTaskRes, error)
+	UploadImage(ctx context.Context, in *UploadImageReq, opts ...grpc.CallOption) (*UploadImageRes, error)
 }
 
 type mediaServiceClient struct {
@@ -37,9 +37,9 @@ func NewMediaServiceClient(cc grpc.ClientConnInterface) MediaServiceClient {
 	return &mediaServiceClient{cc}
 }
 
-func (c *mediaServiceClient) UploadImage(ctx context.Context, in *SearchTaskReq, opts ...grpc.CallOption) (*SearchTaskRes, error) {
+func (c *mediaServiceClient) UploadImage(ctx context.Context, in *UploadImageReq, opts ...grpc.CallOption) (*UploadImageRes, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SearchTaskRes)
+	out := new(UploadImageRes)
 	err := c.cc.Invoke(ctx, MediaService_UploadImage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (c *mediaServiceClient) UploadImage(ctx context.Context, in *SearchTaskReq,
 // All implementations must embed UnimplementedMediaServiceServer
 // for forward compatibility.
 type MediaServiceServer interface {
-	UploadImage(context.Context, *SearchTaskReq) (*SearchTaskRes, error)
+	UploadImage(context.Context, *UploadImageReq) (*UploadImageRes, error)
 	mustEmbedUnimplementedMediaServiceServer()
 }
 
@@ -62,7 +62,7 @@ type MediaServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedMediaServiceServer struct{}
 
-func (UnimplementedMediaServiceServer) UploadImage(context.Context, *SearchTaskReq) (*SearchTaskRes, error) {
+func (UnimplementedMediaServiceServer) UploadImage(context.Context, *UploadImageReq) (*UploadImageRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadImage not implemented")
 }
 func (UnimplementedMediaServiceServer) mustEmbedUnimplementedMediaServiceServer() {}
@@ -87,7 +87,7 @@ func RegisterMediaServiceServer(s grpc.ServiceRegistrar, srv MediaServiceServer)
 }
 
 func _MediaService_UploadImage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SearchTaskReq)
+	in := new(UploadImageReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func _MediaService_UploadImage_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: MediaService_UploadImage_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MediaServiceServer).UploadImage(ctx, req.(*SearchTaskReq))
+		return srv.(MediaServiceServer).UploadImage(ctx, req.(*UploadImageReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }

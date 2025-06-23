@@ -1,7 +1,10 @@
 media-service:
 	cd cmd/media-service && go mod tidy && go run main.go
-	
 .PHONY: media-service
+
+wire: 
+	cd internal/media-service/app && wire
+.PHONY: wire
 
 PROTO_DIR=../../protos
 PROTO_FILES=$(shell find $(PROTO_DIR) -name "*.proto" -not -path "*/google/*")
