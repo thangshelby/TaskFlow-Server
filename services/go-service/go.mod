@@ -3,6 +3,7 @@ module github.com/vudinhan2525/TaskFlow-Server/services/go-service
 go 1.24.0
 
 require (
+	github.com/google/wire v0.6.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.20.1
 	google.golang.org/genproto/googleapis/api v0.0.0-20250528174236-200df99c418a
