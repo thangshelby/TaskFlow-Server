@@ -1,0 +1,135 @@
+syntax = "proto3";
+
+package chat_service;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "base.proto";
+
+service ChatService {
+    rpc SendMessage(SendMessageReq) returns (SendMessageRes) {
+        option (google.api.http) = {
+            post: "/api/v1/chat/messages/send"
+            body: "*"
+        };
+    }
+    rpc CreateRoom(CreateRoomReq) returns (CreateRoomRes) {
+        option (google.api.http) = {
+            post: "/api/v1/chat/rooms/create"
+            body: "*"
+        };
+    }
+    rpc GetMessages(GetMessagesReq) returns (GetMessagesRes) {
+        option (google.api.http) = {
+            post: "/api/v1/chat/messages/get"
+            body: "*"
+        };
+    }
+    rpc GetUserRooms(GetUserRoomsReq) returns (GetUserRoomsRes) {
+        option (google.api.http) = {
+            get: "/api/v1/chat/rooms"
+        };
+    }
+    rpc AddMember(AddMemberReq) returns (AddMemberRes) {
+        option (google.api.http) = {
+            post: "/api/v1/chat/rooms/add-member"
+            body: "*"
+        };
+    }
+    rpc RemoveMember(RemoveMemberReq) returns (RemoveMemberRes) {
+        option (google.api.http) = {
+            post: "/api/v1/chat/rooms/remove-member"
+            body: "*"
+        };
+    }
+}
+
+message SendMessageReq {
+    string room_id = 1;
+    string content = 2;
+    string type = 3;
+    optional string reply_to_id = 4;
+}
+
+message SendMessageRes {
+    string status = 1;
+    string message = 2;
+    base.ActivityRes activity = 3;
+}
+
+message CreateRoomReq {
+    optional string name = 1;
+    string type = 2;
+    repeated string members = 3;
+}
+
+message CreateRoomRes {
+    string status = 1;
+    string message = 2;
+    RoomRes room = 3;
+}
+
+message GetMessagesReq {
+    string room_id = 1;
+    optional int32 limit = 2;
+    optional google.protobuf.Timestamp before = 3;
+}
+
+message GetMessagesRes {
+    string status = 1;
+    string message = 2;
+    base.PaginationRes pagination = 3;
+    repeated MessageRes messages = 4;
+}
+
+message GetUserRoomsReq {
+    optional string user_id = 1;
+}
+
+message GetUserRoomsRes {
+    string status = 1;
+    string message = 2;
+    repeated RoomRes rooms = 3;
+}
+
+message AddMemberReq {
+    string room_id = 1;
+    string user_id = 2;
+}
+
+message AddMemberRes {
+    string status = 1;
+    string message = 2;
+}
+
+message RemoveMemberReq {
+    string room_id = 1;
+    string user_id = 2;
+}
+
+message RemoveMemberRes {
+    string status = 1;
+    string message = 2;
+}
+
+message MessageRes {
+    string id = 1;
+    string room_id = 2;
+    string sender_id = 3;
+    string content = 4;
+    string type = 5;
+    optional string reply_to_id = 6;
+    google.protobuf.Timestamp created_at = 7;
+    optional google.protobuf.Timestamp updated_at = 8;
+}
+
+message RoomRes {
+    string id = 1;
+    optional string name = 2;
+    string type = 3;
+    repeated string members = 4;
+    optional MessageRes last_message = 5;
+    google.protobuf.Timestamp created_at = 6;
+    optional google.protobuf.Timestamp updated_at = 7;
+}

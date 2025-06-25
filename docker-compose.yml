@@ -6,6 +6,7 @@ services:
     ports:
       - "8081:8081" # HTTP (REST to gRPC)
       - "8082:8082" # HTTP (REST to gRPC)
+      - "8083:8083" # HTTP (REST to gRPC)
       - "9901:9901" # Admin Panel
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
