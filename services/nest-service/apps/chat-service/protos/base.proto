@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+option go_package = "github.com/vudinhan2525/TaskFlow-Server/services/go-service/types;base";
+option csharp_namespace = "BaseService";
+
+package base;
+
+message PaginationRes {
+    int32 total_items = 1;
+    int32 total_pages = 2;
+    int32 current_page = 3;
+    int32 limit = 4;
+}
+message ColumnRes {
+    string id = 1;
+    string name = 2;
+    string created_at = 3;
+    string updated_at = 4;
+    int32 order = 5;
+    repeated IssueRes issues = 6;
+    string project_id = 7;
+}
+
+// Common
+message IssueRes {
+    string id = 1;
+    string title = 2;
+    string project_id = 3;
+    string sprint_id = 4;
+    string assignee_id = 5;
+    string parent_id = 6;
+    string reporter_id = 7;
+    string type = 8;
+    ColumnRes column = 9;
+    string priority = 10;
+    string summary = 11;
+    string description = 12;
+    int32 story_point = 13;
+    repeated string attachments = 14;
+    string created_at = 15;
+    string updated_at = 16;
+}
+
+//Activity
+message ActivityRes{
+    string id = 1;
+    string issue_id = 2;
+    string user_id = 3;
+    string user_name = 4;
+    string action_type = 5;
+    string created_at = 6;
+    string updated_at = 7;
+    repeated ActivityChangesRes changes = 8;
+}
+
+message ActivityChangesRes {
+    string field = 1;
+    string old_value = 2;
+    string new_value = 3;
+}
+
+//Comment
+message CommentRes {
+    string id = 1;
+    string content = 2;
+    string user_id = 3;
+    string issue_id = 4;
+    string created_at = 5;
+    string updated_at = 6;
+}
+
+//Notification
+message NotificationRes {
+    string id = 1;
+    string user_id = 2;
+    string title = 3;
+    string content = 4;
+    NotificationType type = 5;
+    string reference_id = 6;
+    bool is_read = 7;
+    string created_at = 8;
+    string updated_at = 9;
+}
+
+enum NotificationType {
+    ISSUE_ASSIGNED = 0;
+    ISSUE_UPDATED = 1;
+    COMMENT_MENTION = 2;
+    SPRINT_STARTING = 3;
+    PROJECT_INVITATION = 4;
+    TEAM_MEMBER_ADDED = 5;
+}

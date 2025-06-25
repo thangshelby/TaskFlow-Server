@@ -1,81 +1,58 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { IChatRepo } from '../../core/interfaces/chat-repo.interface';
-import { MessageDomain, RoomDomain } from '../../core/models/chat';
-import { Message, Room } from '../schema/chat.schema';
+import { ChatMessageData, MessageDomain, RoomDomain } from '../../core/models/chat';
 
 @Injectable()
-export class ChatRepository implements IChatRepo {
+export class ChatRepository {
   constructor(
-    @InjectModel(Message.name) private messageModel: Model<Message>,
-    @InjectModel(Room.name) private roomModel: Model<Room>,
+    @InjectModel('Message') private readonly messageModel: Model<MessageDomain>,
+    @InjectModel('Room') private readonly roomModel: Model<RoomDomain>,
   ) {}
 
-  async createMessage(message: MessageDomain): Promise<MessageDomain> {
-    const newMessage = new this.messageModel(message);
-    return await newMessage.save();
+  async createMessage(data: ChatMessageData): Promise<MessageDomain> {
+    const message = new this.messageModel({
+      ...data,
+      createdAt: new Date(),
+    });
+    return message.save();
   }
 
-  async getMessagesByRoomId(roomId: string, limit = 50, before?: Date): Promise<MessageDomain[]> {
-    const query: any = { roomId };
+  async createRoom(data: { name?: string; type: 'DIRECT' | 'GROUP'; members: string[] }): Promise<RoomDomain> {
+    const room = new this.roomModel({
+      ...data,
+      createdAt: new Date(),
+    });
+    return room.save();
+  }
+
+  async getMessagesByRoomId(roomId: string, limit?: number, before?: Date): Promise<MessageDomain[]> {
+    const query = this.messageModel.find({ roomId });
+
     if (before) {
-      query.createdAt = { $lt: before };
+      query.where('createdAt').lt(before.getTime());
     }
 
-    return this.messageModel
-      .find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .exec();
-  }
+    if (limit) {
+      query.limit(limit);
+    }
 
-  async updateMessage(id: string, content: string): Promise<MessageDomain> {
-    return this.messageModel.findByIdAndUpdate(
-      id,
-      { content, updatedAt: new Date() },
-      { new: true }
-    ).exec();
-  }
-
-  async deleteMessage(id: string): Promise<void> {
-    await this.messageModel.findByIdAndDelete(id).exec();
-  }
-
-  async createRoom(room: RoomDomain): Promise<RoomDomain> {
-    const newRoom = new this.roomModel(room);
-    return await newRoom.save();
-  }
-
-  async getRoomById(id: string): Promise<RoomDomain> {
-    return this.roomModel.findById(id).exec();
+    return query.sort({ createdAt: -1 }).exec();
   }
 
   async getRoomsByUserId(userId: string): Promise<RoomDomain[]> {
-    return this.roomModel.find({ members: userId }).exec();
+    return this.roomModel.find({ members: userId }).sort({ updatedAt: -1 }).exec();
   }
 
-  async addMemberToRoom(roomId: string, userId: string): Promise<RoomDomain> {
-    return this.roomModel.findByIdAndUpdate(
-      roomId,
-      { $addToSet: { members: userId } },
-      { new: true }
-    ).exec();
+  async addMemberToRoom(roomId: string, userId: string): Promise<RoomDomain | null> {
+    return this.roomModel.findOneAndUpdate({ _id: roomId }, { $addToSet: { members: userId }, updatedAt: new Date() }, { new: true }).exec();
   }
 
-  async removeMemberFromRoom(roomId: string, userId: string): Promise<RoomDomain> {
-    return this.roomModel.findByIdAndUpdate(
-      roomId,
-      { $pull: { members: userId } },
-      { new: true }
-    ).exec();
+  async removeMemberFromRoom(roomId: string, userId: string): Promise<RoomDomain | null> {
+    return this.roomModel.findOneAndUpdate({ _id: roomId }, { $pull: { members: userId }, updatedAt: new Date() }, { new: true }).exec();
   }
 
-  async updateLastMessage(roomId: string, message: MessageDomain): Promise<RoomDomain> {
-    return this.roomModel.findByIdAndUpdate(
-      roomId,
-      { lastMessage: message },
-      { new: true }
-    ).exec();
+  async getRoomById(roomId: string): Promise<RoomDomain | null> {
+    return this.roomModel.findById(roomId).exec();
   }
 }
