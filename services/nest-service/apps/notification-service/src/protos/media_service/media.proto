@@ -5,15 +5,15 @@ option go_package = "github.com/vudinhan2525/TaskFlow-Server/services/go-service
 
 
 service MediaService {
-    rpc UploadImage (SearchTaskReq) returns (SearchTaskRes) {
+    rpc UploadImage (UploadImageReq) returns (UploadImageRes) {
         
     }
     
 }
 
-message SearchTaskReq {      
-	string task_id = 1;
+message UploadImageReq {      
+	string image_id = 1;
 }
-message SearchTaskRes {    
-	string data = 1;
+message UploadImageRes {    
+	string url = 1;
 }

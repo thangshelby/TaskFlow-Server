@@ -7,6 +7,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UserClientService } from './client/user-client.service';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { join } from 'path';
+import { ProjectClientService } from '@nest-service/core/client/project-client.service';
+import { SprintClientService } from '@nest-service/core/client/sprint-client.service';
+import { IssueClientService } from '@nest-service/core/client/issue-client.service';
 
 @Module({
   controllers: [],
@@ -27,7 +30,55 @@ import { join } from 'path';
             loader: {
               includeDirs: [join(__dirname, 'protos')],
             },
-            url: configService.get<string>('MAIN_SERVICE'), // use from config
+            url: configService.get<string>('MAIN_SERVICE'),
+          },
+        }),
+      },
+      {
+        name: 'PROJECT_PACKAGE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'project_service',
+            protoPath: join(__dirname, 'protos/main_service/project.proto'),
+            loader: {
+              includeDirs: [join(__dirname, 'protos')],
+            },
+            url: configService.get<string>('MAIN_SERVICE'),
+          },
+        }),
+      },
+      {
+        name: 'SPRINT_PACKAGE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'project_service',
+            protoPath: join(__dirname, 'protos/main_service/sprint.proto'),
+            loader: {
+              includeDirs: [join(__dirname, 'protos')],
+            },
+            url: configService.get<string>('MAIN_SERVICE'),
+          },
+        }),
+      },
+      {
+        name: 'ISSUE_PACKAGE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'project_service',
+            protoPath: join(__dirname, 'protos/main_service/issue.proto'),
+            loader: {
+              includeDirs: [join(__dirname, 'protos')],
+            },
+            url: configService.get<string>('MAIN_SERVICE'),
           },
         }),
       },
@@ -41,7 +92,7 @@ import { join } from 'path';
       }),
     }),
   ],
-  providers: [LogService, KafkaService, CassandraService, UserClientService],
-  exports: [LogService, KafkaService, CassandraService, UserClientService],
+  providers: [LogService, KafkaService, CassandraService, UserClientService, ProjectClientService, SprintClientService, IssueClientService],
+  exports: [LogService, KafkaService, CassandraService, UserClientService, ProjectClientService, SprintClientService, IssueClientService],
 })
 export class CoreModule {}

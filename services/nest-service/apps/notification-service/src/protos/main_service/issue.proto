@@ -12,24 +12,24 @@ import "base.proto";
 service IssueService {
   rpc CreateIssue (CreateIssueReq) returns (CreateIssueRes) {
     option (google.api.http) = {
-      post: "/api/v1/project/{project_id}/issues"
+      post: "/api/v1/issues/project/{project_id}"
       body: "*"
     };
   }
   rpc GetIssue (GetIssueReq) returns (base.IssueRes) {
     option (google.api.http) = {
-      get: "/api/v1/project/{project_id}/issues/{id}"
+      get: "/api/v1/issues/project/{project_id}/{id}"
     };
   }
   rpc UpdateIssue (UpdateIssueReq) returns (base.IssueRes) {
     option (google.api.http) = {
-      put: "/api/v1/project/{project_id}/issues/{id}"
+      put: "/api/v1/issues/project/{project_id}/{id}"
       body: "*"
     };
   }
   rpc DeleteIssue (DeleteIssueReq) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      delete: "/api/v1/project/{project_id}/issues/{id}"
+      delete: "/api/v1/issues/project/{project_id}/{id}"
     };
   }
   rpc ListIssues (ListIssuesReq) returns (ListIssuesRes) {
@@ -89,7 +89,7 @@ message UpdateIssueReq {
 
 // List All
 message ListIssuesReq {
-  string project_id = 1;
+  optional string project_id = 1;
   repeated string column_ids = 2;
   repeated string assignee_ids = 3;
   repeated string sprint_ids = 4;

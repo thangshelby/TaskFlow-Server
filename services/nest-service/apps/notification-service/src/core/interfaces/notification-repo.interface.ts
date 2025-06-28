@@ -4,4 +4,5 @@ import { GetAllNotificationParams } from '@notification-service/core/services/no
 export abstract class INotificationRepo {
   abstract create(notification: NotificationDomain): Promise<NotificationDomain>;
   abstract listAll(params: GetAllNotificationParams): Promise<NotificationDomain[]>;
+  abstract countAll(params: GetAllNotificationParams): Promise<number>;
 }

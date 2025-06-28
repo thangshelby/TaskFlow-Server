@@ -5,4 +5,7 @@ export * from './cassandra/cassandra.service';
 export * from './interceptors/globalHandleError.interceptor';
 export * from './interceptors/auth.interceptor';
 export * from './client/user-client.service';
+export * from './client/sprint-client.service';
+export * from './client/issue-client.service';
+export * from './client/project-client.service';
 export * from './common/decorators/user.decorator';

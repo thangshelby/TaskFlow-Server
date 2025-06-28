@@ -55,7 +55,7 @@ export interface UpdateIssueReq {
 
 /** List All */
 export interface ListIssuesReq {
-  projectId: string;
+  projectId?: string | undefined;
   columnIds: string[];
   assigneeIds: string[];
   sprintIds: string[];

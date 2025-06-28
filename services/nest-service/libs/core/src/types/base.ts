@@ -8,16 +8,6 @@
 
 export const protobufPackage = "base";
 
-export enum NotificationType {
-  ISSUE_ASSIGNED = 0,
-  ISSUE_UPDATED = 1,
-  COMMENT_MENTION = 2,
-  SPRINT_STARTING = 3,
-  PROJECT_INVITATION = 4,
-  TEAM_MEMBER_ADDED = 5,
-  UNRECOGNIZED = -1,
-}
-
 export interface PaginationRes {
   totalItems: number;
   totalPages: number;
@@ -83,17 +73,16 @@ export interface CommentRes {
   updatedAt: string;
 }
 
-/** Notification */
 export interface NotificationRes {
-  id: string;
-  userId: string;
-  title: string;
-  content: string;
-  type: NotificationType;
+  recipientId: string;
+  actorId: string;
+  type: string;
   referenceId: string;
+  referenceType: string;
+  content: string;
   isRead: boolean;
   createdAt: string;
-  updatedAt: string;
+  referenceData: string;
 }
 
 export const BASE_PACKAGE_NAME = "base";

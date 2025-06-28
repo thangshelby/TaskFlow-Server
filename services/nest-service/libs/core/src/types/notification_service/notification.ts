@@ -7,7 +7,7 @@
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from "@nestjs/microservices";
 import { Observable } from "rxjs";
-import { PaginationRes } from "../base";
+import { NotificationRes, PaginationRes } from "../base";
 
 export const protobufPackage = "notification_service";
 
@@ -40,17 +40,6 @@ export interface CreateNotificationRes {
   status: string;
   message: string;
   data: NotificationRes | undefined;
-}
-
-export interface NotificationRes {
-  recipientId: string;
-  actorId: string;
-  type: string;
-  referenceId: string;
-  referenceType: string;
-  content: string;
-  isRead: boolean;
-  createdAt: string;
 }
 
 export const NOTIFICATION_SERVICE_PACKAGE_NAME = "notification_service";
