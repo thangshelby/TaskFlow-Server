@@ -102,7 +102,7 @@ message DeleteSprintReq {
 }
 
 message ListSprintsReq {
-  string project_id = 1;
+  optional string project_id = 1;
   repeated string sprint_ids = 2;
   int32 page = 3;
   int32 limit = 4;

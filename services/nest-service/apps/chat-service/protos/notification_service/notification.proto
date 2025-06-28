@@ -33,7 +33,7 @@ message GetAllNotificationsRes {
   string status = 1;
   string message = 2;
   base.PaginationRes pagination = 4;
-  repeated NotificationRes data = 5;
+  repeated base.NotificationRes data = 5;
 }
 
 message CreateNotificationReq {
@@ -49,16 +49,5 @@ message CreateNotificationReq {
 message CreateNotificationRes {
   string status = 1;
   string message = 2;
-  NotificationRes data = 3;
-}
-
-message NotificationRes {
-  string recipient_id = 1;
-  string actor_id = 2;
-  string type = 3;
-  string reference_id = 4;
-  string reference_type = 5;
-  string content = 6;
-  bool is_read = 7;
-  string created_at = 8;
+  base.NotificationRes data = 3;
 }

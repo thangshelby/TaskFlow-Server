@@ -30,7 +30,7 @@ import { IssueClientService } from '@nest-service/core/client/issue-client.servi
             loader: {
               includeDirs: [join(__dirname, 'protos')],
             },
-            url: configService.get<string>('MAIN_SERVICE'),
+            url: configService.get<string>('MAIN_SERVICE') || '0.0.0.0:5001',
           },
         }),
       },

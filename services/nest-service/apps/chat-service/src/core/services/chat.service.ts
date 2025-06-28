@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { status } from '@grpc/grpc-js';
 import { IChatRepo } from '../interfaces/chat-repo.interface';
@@ -20,7 +20,10 @@ export interface CreateRoomParams {
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly chatRepo: IChatRepo) {}
+  constructor(
+    // Use string token for interface injection
+    @Inject('IChatRepo') private readonly chatRepo: IChatRepo,
+  ) {}
 
   async createMessage(params: CreateMessageParams): Promise<MessageDomain> {
     const message = await this.chatRepo.createMessage({
@@ -74,7 +77,7 @@ export class ChatService {
 
   async addMemberToRoom(roomId: string, userId: string): Promise<RoomDomain> {
     const room = await this.getRoomById(roomId);
-    
+
     if (room.type === 'DIRECT') {
       throw new RpcException({
         code: status.INVALID_ARGUMENT,
@@ -94,7 +97,7 @@ export class ChatService {
 
   async removeMemberFromRoom(roomId: string, userId: string): Promise<RoomDomain> {
     const room = await this.getRoomById(roomId);
-    
+
     if (room.type === 'DIRECT') {
       throw new RpcException({
         code: status.INVALID_ARGUMENT,
