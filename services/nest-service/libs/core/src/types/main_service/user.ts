@@ -7,6 +7,7 @@
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from "@nestjs/microservices";
 import { Observable } from "rxjs";
+import { PaginationRes, UserRes } from "../base";
 
 export const protobufPackage = "project_service";
 
@@ -106,13 +107,6 @@ export interface ListUsersRes {
   pagination: PaginationRes | undefined;
 }
 
-export interface PaginationRes {
-  totalItems: number;
-  currentPage: number;
-  limit: number;
-  totalPages: number;
-}
-
 /** Update User */
 export interface UpdateUserReq {
   userId: string;
@@ -149,17 +143,6 @@ export interface RegisterUserReq {
   email: string;
   password: string;
   passwordConfirm: string;
-}
-
-/** Common */
-export interface UserRes {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export const PROJECT_SERVICE_PACKAGE_NAME = "project_service";

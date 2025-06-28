@@ -1,3 +1,5 @@
+import { UserRes } from '@nest-service/core/types/base';
+
 export enum NotificationType {
   /**
    * Khi người dùng được gán vào một task/issue
@@ -72,6 +74,7 @@ export interface NotificationDomain {
   isRead: boolean;
   createdAt: Date;
   referenceData?: any;
+  recipient?: UserRes;
 }
 export interface NotificationMessageData {
   recipientId: string;

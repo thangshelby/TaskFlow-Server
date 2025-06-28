@@ -6,7 +6,7 @@ import { status } from '@grpc/grpc-js';
 import { IssueClientService, ProjectClientService, SprintClientService, UserClientService } from '@nest-service/core';
 import { ProjectRes } from '@nest-service/core/types/main_service/project';
 import { SprintRes } from '@nest-service/core/types/main_service/sprint';
-import { IssueRes } from '@nest-service/core/types/base';
+import { IssueRes, UserRes } from '@nest-service/core/types/base';
 export interface CreateNotificationParams {
   recipientId: string;
   actorId?: string;
@@ -66,10 +66,11 @@ export class NotificationService {
       }
     });
 
-    const [projects, sprints, issues] = await Promise.all([
+    const [projects, sprints, issues, receivers] = await Promise.all([
       this.projectClientService.getListProjects(projectIds),
       this.sprintCLientService.getListSprints(sprintIds),
       this.issueClientService.getListIssues(issueIds),
+      this.userClientService.getListUsers(notiDomain.map((noti) => noti.recipientId)),
     ]);
 
     const projectsMap = new Map<string, ProjectRes>();
@@ -85,6 +86,11 @@ export class NotificationService {
     const issuesMaps = new Map<string, IssueRes>();
     (issues || []).forEach((issue) => {
       issuesMaps.set(issue.id, issue);
+    });
+
+    const receiverMaps = new Map<string, UserRes>();
+    (receivers || []).forEach((receiver) => {
+      receiverMaps.set(receiver.id, receiver);
     });
 
     notiDomain.forEach((noti) => {
@@ -107,6 +113,10 @@ export class NotificationService {
         }
       }
       // ...
+      const receiver = receiverMaps.get(noti.recipientId);
+      if (receiver) {
+        noti.recipient = receiver;
+      }
     });
     return {
       data: notiDomain,

@@ -4,6 +4,7 @@ option go_package = "github.com/vudinhan2525/TaskFlow-Server/services/go-service
 option csharp_namespace = "TaskFlow.UserService";
 
 package project_service;
+import "base.proto";
 import "google/api/annotations.proto";
 
 // Define the gRPC service
@@ -135,7 +136,7 @@ message LoginUserReq {
 message LoginUserRes {
   string status = 1;
   string message = 2;
-  UserRes data = 3;
+  base.UserRes data = 3;
 }
 
 // Get user by email
@@ -150,7 +151,7 @@ message GetUserReq {
 
 message GetUserRes {
   string status = 1;
-  UserRes data = 2;
+  base.UserRes data = 2;
 }
 // List User
 message ListUsersReq {
@@ -163,15 +164,8 @@ message ListUsersReq {
 
 message ListUsersRes{
   string status = 1;
-  repeated UserRes data = 2;
-  PaginationRes pagination = 3;
-}
-
-message PaginationRes {
-  int32 total_items = 1;
-  int32 current_page = 2;
-  int32 limit = 3;
-  int32 total_pages = 4;
+  repeated base.UserRes data = 2;
+  base.PaginationRes pagination = 3;
 }
 
 // Update User
@@ -186,7 +180,7 @@ message UpdateUserReq {
 
 message UpdateUserRes {
   string status = 1;
-  UserRes data = 2;
+  base.UserRes data = 2;
 }
 
 // Create User
@@ -200,7 +194,7 @@ message CreateUserReq {
 
 message CreateUserRes {
   string status = 1;
-  UserRes data = 2;
+  base.UserRes data = 2;
 }
 
 // Register User
@@ -211,16 +205,3 @@ message RegisterUserReq {
   string password = 4;
   string password_confirm = 5;
 }
-
-
-// Common
-message UserRes{
-  string id = 1;
-  string first_name = 2;
-  string last_name = 3;
-  string email = 4;
-  string role = 5;
-  string created_at = 6;
-  string updated_at = 7;
-}
-  

@@ -83,6 +83,17 @@ export interface NotificationRes {
   isRead: boolean;
   createdAt: string;
   referenceData: string;
+  recipient?: UserRes | undefined;
+}
+
+export interface UserRes {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const BASE_PACKAGE_NAME = "base";

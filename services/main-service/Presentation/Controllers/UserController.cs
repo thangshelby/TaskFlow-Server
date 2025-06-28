@@ -4,6 +4,7 @@ using MainService.Domain.Entities;
 using MainService.Domain.Enums;
 using MainService.Domain.UseCases;
 using TaskFlow.UserService;
+using BaseService;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;

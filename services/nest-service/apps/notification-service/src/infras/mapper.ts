@@ -14,6 +14,7 @@ export class NotificationMapper {
       isRead: domain.isRead,
       createdAt: domain.createdAt.toISOString(),
       referenceData: JSON.stringify(domain?.referenceData),
+      recipient: domain?.recipient,
     };
   }
   static toNotiResponseList(domains: NotificationDomain[]): NotificationRes[] {
