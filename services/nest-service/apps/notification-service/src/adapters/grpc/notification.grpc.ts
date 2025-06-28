@@ -1,10 +1,10 @@
 import { Metadata } from '@grpc/grpc-js';
 import { UserClientService } from '@nest-service/core';
+import { CreateNotificationReq, CreateNotificationRes, GetAllNotificationsReq, GetAllNotificationsRes } from '@nest-service/core/types/notification_service/notification';
 import { Controller, Logger } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { NotificationService } from '@notification-service/core/services/notification.service';
 import { NotificationMapper } from '@notification-service/infras/mapper';
-import { CreateNotificationReq, CreateNotificationRes, GetAllNotificationsReq, GetAllNotificationsRes } from '@notification-service/types/notification_service/notification';
 @Controller()
 export class NotificationGrpcController {
   constructor(
@@ -38,20 +38,24 @@ export class NotificationGrpcController {
 
   @GrpcMethod('notification_service.NotificationService', 'GetAllNotifications')
   async getAllNotifications(data: GetAllNotificationsReq): Promise<GetAllNotificationsRes> {
-    const noti = await this.notificationService.listNotifications({
+    const { data: notis, totalCount } = await this.notificationService.listNotifications({
       ...data,
     });
+
+    const currentPage = data.page || 1;
+    const limit = data.limit || 10;
+    const totalPages = Math.ceil(totalCount / limit);
 
     return {
       status: 'success',
       message: 'Get all notification success!',
       pagination: {
-        currentPage: 1,
-        limit: 10,
-        totalItems: 100,
-        totalPages: 120,
+        currentPage,
+        limit,
+        totalItems: totalCount,
+        totalPages,
       },
-      data: NotificationMapper.toNotiResponseList(noti),
+      data: NotificationMapper.toNotiResponseList(notis),
     };
   }
 }

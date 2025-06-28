@@ -20,6 +20,27 @@ export class NotificationRepo implements INotificationRepo {
     await newNotification.save();
     return notification;
   }
+
+  async countAll(params?: GetAllNotificationParams): Promise<number> {
+    const filter: any = {};
+
+    if (params?.userId) {
+      filter.recipientId = params.userId;
+    }
+
+    if (params?.projectId) {
+      filter.referenceType = 'project';
+      filter.referenceId = params.projectId;
+    }
+
+    if (params?.sprintId) {
+      filter.referenceType = 'sprint';
+      filter.referenceId = params.sprintId;
+    }
+
+    return this.notificationModel.countDocuments(filter);
+  }
+
   async listAll(params: GetAllNotificationParams): Promise<NotificationDomain[]> {
     const filter: any = {};
 

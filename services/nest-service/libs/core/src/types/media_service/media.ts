@@ -10,22 +10,22 @@ import { Observable } from "rxjs";
 
 export const protobufPackage = "media_service";
 
-export interface SearchTaskReq {
-  taskId: string;
+export interface UploadImageReq {
+  imageId: string;
 }
 
-export interface SearchTaskRes {
-  data: string;
+export interface UploadImageRes {
+  url: string;
 }
 
 export const MEDIA_SERVICE_PACKAGE_NAME = "media_service";
 
 export interface MediaServiceClient {
-  uploadImage(request: SearchTaskReq): Observable<SearchTaskRes>;
+  uploadImage(request: UploadImageReq): Observable<UploadImageRes>;
 }
 
 export interface MediaServiceController {
-  uploadImage(request: SearchTaskReq): Promise<SearchTaskRes> | Observable<SearchTaskRes> | SearchTaskRes;
+  uploadImage(request: UploadImageReq): Promise<UploadImageRes> | Observable<UploadImageRes> | UploadImageRes;
 }
 
 export function MediaServiceControllerMethods() {

@@ -12,24 +12,24 @@ import "base.proto";
 service SprintService {
   rpc CreateSprint (CreateSprintReq) returns (CreateSprintRes) {
     option (google.api.http) = {
-      post: "/api/v1/project/{project_id}/sprints"
+      post: "/api/v1/sprint/project/{project_id}"
       body: "*"
     };
   }
   rpc GetSprint (GetSprintReq) returns (SprintRes) {
     option (google.api.http) = {
-      get: "/api/v1/project/{project_id}/sprints/{id}"
+      get: "/api/v1/sprint/project/{project_id}/{id}"
     };
   }
   rpc UpdateSprint (UpdateSprintReq) returns (SprintRes) {
     option (google.api.http) = {
-      put: "/api/v1/project/{project_id}/sprints/{id}"
+      put: "/api/v1/sprint/project/{project_id}/{id}"
       body: "*"
     };
   }
   rpc DeleteSprint (DeleteSprintReq) returns (Empty) {
     option (google.api.http) = {
-      delete: "/api/v1/sprints/{id}"
+      delete: "/api/v1/sprint/{id}"
     };
   }
   rpc ListSprints (ListSprintsReq) returns (ListSprintsRes) {
@@ -40,7 +40,7 @@ service SprintService {
   }
   rpc GetSprintStats (GetSrintStatsReq) returns (GetSrintStatsRes) {
     option (google.api.http) = {
-      get: "/api/v1/sprints/{sprint_id}/get-sprint-stat"
+      get: "/api/v1/sprint/project/{project_id}/{sprint_id}/stats"
     };
   }
 }
@@ -102,7 +102,7 @@ message DeleteSprintReq {
 }
 
 message ListSprintsReq {
-  string project_id = 1;
+  optional string project_id = 1;
   repeated string sprint_ids = 2;
   int32 page = 3;
   int32 limit = 4;

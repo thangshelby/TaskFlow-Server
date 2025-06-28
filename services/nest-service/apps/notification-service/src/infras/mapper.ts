@@ -1,6 +1,6 @@
+import { NotificationRes } from '@nest-service/core/types/base';
 import { NotificationDomain } from '@notification-service/core/models/notification';
 import { INotification } from '@notification-service/infras/schema/notification.schema';
-import { NotificationRes } from '@notification-service/types/notification_service/notification';
 
 export class NotificationMapper {
   static toNotiResponse(domain: NotificationDomain): NotificationRes {
@@ -13,6 +13,7 @@ export class NotificationMapper {
       content: domain.content || '',
       isRead: domain.isRead,
       createdAt: domain.createdAt.toISOString(),
+      referenceData: JSON.stringify(domain?.referenceData),
     };
   }
   static toNotiResponseList(domains: NotificationDomain[]): NotificationRes[] {
@@ -24,7 +25,7 @@ export class NotificationMapper {
       actorId: entity.actorId?.toString(),
       type: entity.type as any,
       referenceId: entity.referenceId,
-      referenceType: entity.referenceType,
+      referenceType: entity.referenceType as any,
       content: entity.content,
       isRead: entity.isRead,
       createdAt: new Date(entity.createdAt),

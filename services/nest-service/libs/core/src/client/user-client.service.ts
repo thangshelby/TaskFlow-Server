@@ -1,8 +1,7 @@
 import { Metadata } from '@grpc/grpc-js';
-import { UserServiceClient } from '@nest-service/core/types/main_service/user';
+import { UserRes, UserServiceClient } from '@nest-service/core/types/main_service/user';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
-import { UserRes } from '@notification-service/types/main_service/user';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable()
@@ -24,6 +23,11 @@ export class UserClientService implements OnModuleInit {
 
     const res = await firstValueFrom(this.userGrpcService.getById({ userId: user_id }));
 
+    return res.data;
+  }
+
+  async getListUsers(userIds: string[]): Promise<UserRes[] | undefined> {
+    const res = await firstValueFrom(this.userGrpcService.listUsers({ userIds: userIds, limit: 1000, page: 1 }));
     return res.data;
   }
 

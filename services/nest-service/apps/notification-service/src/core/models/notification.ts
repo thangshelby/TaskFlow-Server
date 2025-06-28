@@ -54,15 +54,24 @@ export enum NotificationType {
    */
   PROJECT_TEAM_ADDED = 'PROJECT_TEAM_ADDED',
 }
+export enum ReferenceType {
+  ISSUE = 'issue',
+  PROJECT = 'project',
+  COMMENT = 'comment',
+  SPRINT = 'sprint',
+  SYSTEM = 'system',
+  PROJECT_MEMBER = 'project_member',
+}
 export interface NotificationDomain {
   recipientId: string;
   actorId?: string;
   type: NotificationType;
   referenceId?: string;
-  referenceType?: string;
+  referenceType?: ReferenceType;
   content?: string;
   isRead: boolean;
   createdAt: Date;
+  referenceData?: any;
 }
 export interface NotificationMessageData {
   recipientId: string;

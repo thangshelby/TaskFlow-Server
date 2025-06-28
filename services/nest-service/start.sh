@@ -17,13 +17,7 @@ mkdir -p ./apps/$SERVICE_NAME/src/protos/
 cp -r ../../protos/* ./apps/$SERVICE_NAME/src/protos/
 
 # Generate proto types
-echo "🔧 Generating proto types for $SERVICE_NAME..."
-protoc \
-  --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto \
-  --ts_proto_out=./apps/$SERVICE_NAME/src/types \
-  --ts_proto_opt=nestJs=true,outputTypePrefix=true \
-  --proto_path=../../protos \
-  $(find ../../protos -name "*.proto")
+echo "🔧 Generating proto types for Core service"
 
 protoc \
   --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto \

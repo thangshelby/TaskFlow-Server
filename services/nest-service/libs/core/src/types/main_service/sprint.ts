@@ -71,7 +71,7 @@ export interface DeleteSprintReq {
 }
 
 export interface ListSprintsReq {
-  projectId: string;
+  projectId?: string | undefined;
   sprintIds: string[];
   page: number;
   limit: number;
