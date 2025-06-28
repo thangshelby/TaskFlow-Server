@@ -1,5 +1,6 @@
 import { Metadata } from '@grpc/grpc-js';
-import { UserRes, UserServiceClient } from '@nest-service/core/types/main_service/user';
+import { UserRes } from '@nest-service/core/types/base';
+import { UserServiceClient } from '@nest-service/core/types/main_service/user';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';

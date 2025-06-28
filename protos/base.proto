@@ -78,4 +78,15 @@ message NotificationRes {
   bool is_read = 7;
   string created_at = 8;
   string reference_data = 9;
+  optional UserRes recipient = 10;
+}
+
+message UserRes{
+  string id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string email = 4;
+  string role = 5;
+  string created_at = 6;
+  string updated_at = 7;
 }
