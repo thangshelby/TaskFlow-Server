@@ -1,35 +1,22 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CoreModule } from '@nest-service/core';
-
-// 🔧 Add missing imports:
-import { MessageSchema, RoomSchema } from './infras/schema/chat.schema';
-import { ChatRepository } from './infras/repos/chat.repo';
-import { ChatGrpcController } from './adapters/grpc/chat.grpc';
-import { ChatService } from './core/services/chat.service';
 import { ChatGateway } from './adapters/websocket/chat.gateway';
+import { ChatService } from './core/services/chat.service';
+import { ChatRepository } from './infras/repos/chat.repo';
+import { Message, MessageSchema, Room, RoomSchema } from './infras/schema/chat.schema';
+import { AuthModule } from './adapters/auth/auth.module';
+import { WsAuthAdapter } from './adapters/auth/ws-auth.adapter';
+
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: ['.env'],
-    }),
     CoreModule,
-    // Register both Message and Room schemas:
+    AuthModule,
     MongooseModule.forFeature([
-      { name: 'Message', schema: MessageSchema },
-      { name: 'Room', schema: RoomSchema },
+      { name: Message.name, schema: MessageSchema },
+      { name: Room.name, schema: RoomSchema },
     ]),
   ],
-  controllers: [ChatGrpcController],
-  providers: [
-    ChatService,
-    ChatGateway,
-    {
-      provide: 'IChatRepo',
-      useClass: ChatRepository,
-    },
-  ],
+  providers: [ChatGateway, ChatService, ChatRepository, WsAuthAdapter, { provide: 'IChatRepo', useClass: ChatRepository }],
 })
 export class ChatServiceModule {}
