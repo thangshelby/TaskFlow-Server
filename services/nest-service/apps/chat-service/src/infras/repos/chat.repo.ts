@@ -27,6 +27,9 @@ export class ChatRepository {
   }
 
   async getMessagesByRoomId(roomId: string, limit?: number, before?: Date): Promise<MessageDomain[]> {
+    // Debug log
+    console.log('Querying messages for roomId:', roomId);
+
     const query = this.messageModel.find({ roomId });
 
     if (before) {
@@ -37,7 +40,14 @@ export class ChatRepository {
       query.limit(limit);
     }
 
-    return query.sort({ createdAt: -1 }).exec();
+    const results = await query.sort({ createdAt: -1 }).exec();
+    console.log(
+      'Messages found:',
+      results.length,
+      results.map((m) => m._id?.toString()),
+    );
+
+    return results;
   }
 
   async getRoomsByUserId(userId: string): Promise<RoomDomain[]> {
@@ -54,5 +64,8 @@ export class ChatRepository {
 
   async getRoomById(roomId: string): Promise<RoomDomain | null> {
     return this.roomModel.findById(roomId).exec();
+  }
+  async updateLastMessage(roomId: string, message: MessageDomain): Promise<RoomDomain | null> {
+    return this.roomModel.findByIdAndUpdate(roomId, { lastMessage: message, updatedAt: new Date() }, { new: true }).exec();
   }
 }

@@ -89,7 +89,7 @@ message UpdateIssueReq {
 
 // List All
 message ListIssuesReq {
-  string project_id = 1;
+  optional string project_id = 1;
   repeated string column_ids = 2;
   repeated string assignee_ids = 3;
   repeated string sprint_ids = 4;

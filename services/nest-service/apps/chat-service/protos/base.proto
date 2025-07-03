@@ -68,25 +68,25 @@ message CommentRes {
     string created_at = 5;
     string updated_at = 6;
 }
-
-//Notification
 message NotificationRes {
-    string id = 1;
-    string user_id = 2;
-    string title = 3;
-    string content = 4;
-    NotificationType type = 5;
-    string reference_id = 6;
-    bool is_read = 7;
-    string created_at = 8;
-    string updated_at = 9;
+  string recipient_id = 1;
+  string actor_id = 2;
+  string type = 3;
+  string reference_id = 4;
+  string reference_type = 5;
+  string content = 6;
+  bool is_read = 7;
+  string created_at = 8;
+  string reference_data = 9;
+  optional UserRes recipient = 10;
 }
 
-enum NotificationType {
-    ISSUE_ASSIGNED = 0;
-    ISSUE_UPDATED = 1;
-    COMMENT_MENTION = 2;
-    SPRINT_STARTING = 3;
-    PROJECT_INVITATION = 4;
-    TEAM_MEMBER_ADDED = 5;
+message UserRes{
+  string id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string email = 4;
+  string role = 5;
+  string created_at = 6;
+  string updated_at = 7;
 }
