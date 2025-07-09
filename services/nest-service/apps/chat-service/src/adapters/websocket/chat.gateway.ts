@@ -97,6 +97,18 @@ export class ChatGateway {
         case 'sendMessage':
           await this.handleSendMessage(ws, message.data);
           break;
+        case 'getRooms':
+          try {
+            const userId = (ws as any).userId;
+            const rooms = await this.chatService.getRoomsByUserId(userId);
+            this.logger.log('Rooms fetched for getRooms:', JSON.stringify(rooms, null, 2));
+            const roomDomains = (rooms as any[]).map((doc) => ChatMapper.toRoomDomain(doc));
+            ws.send(JSON.stringify({ event: 'roomsList', data: roomDomains.map((room) => ChatMapper.toRoomResponse(room)) }));
+          } catch (error) {
+            this.logger.error(`Failed to fetch rooms: ${error.message}`);
+            ws.send(JSON.stringify({ event: 'error', data: { message: 'Failed to fetch rooms' } }));
+          }
+          break;
         default:
           this.logger.warn(`Unknown event: ${message.event}`);
           ws.send(JSON.stringify({ event: 'error', data: { message: 'Unknown event' } }));
