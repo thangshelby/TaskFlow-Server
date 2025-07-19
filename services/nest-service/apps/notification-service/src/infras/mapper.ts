@@ -5,6 +5,7 @@ import { INotification } from '@notification-service/infras/schema/notification.
 export class NotificationMapper {
   static toNotiResponse(domain: NotificationDomain): NotificationRes {
     return {
+      id: domain.id || '',
       recipientId: domain.recipientId,
       actorId: domain.actorId || '',
       type: domain.type,
@@ -15,6 +16,7 @@ export class NotificationMapper {
       createdAt: domain.createdAt.toISOString(),
       referenceData: JSON.stringify(domain?.referenceData),
       recipient: domain?.recipient,
+      actor: domain?.actor,
     };
   }
   static toNotiResponseList(domains: NotificationDomain[]): NotificationRes[] {
@@ -22,6 +24,7 @@ export class NotificationMapper {
   }
   static toDomain(entity: INotification): NotificationDomain {
     return {
+      id: entity._id.toString(),
       recipientId: entity.recipientId?.toString(),
       actorId: entity.actorId?.toString(),
       type: entity.type as any,

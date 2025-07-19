@@ -1,7 +1,14 @@
 {
-  "$schema": "https://json.schemastore.org/nest-cli ",
+  "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
+  "sourceRoot": "apps/notification-service/src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/notification-service/tsconfig.app.json"
+  },
   "monorepo": true,
+  "root": "apps/notification-service",
   "projects": {
     "chat-service": {
       "type": "application",
@@ -12,23 +19,8 @@
         "tsConfigPath": "apps/chat-service/tsconfig.app.json",
         "assets": [
           {
-            "include": "protos/**",
+            "include": "protos/**/*",
             "outDir": "dist/apps/chat-service"
-          }
-        ]
-      }
-    },
-    "notification-service": {
-      "type": "application",
-      "root": "apps/notification-service",
-      "entryFile": "main",
-      "sourceRoot": "apps/notification-service/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/notification-service/tsconfig.app.json",
-        "assets": [
-          {
-            "include": "protos/**",
-            "outDir": "dist/apps/notification-service"
           }
         ]
       }
@@ -40,6 +32,21 @@
       "sourceRoot": "libs/core/src",
       "compilerOptions": {
         "tsConfigPath": "libs/core/tsconfig.lib.json"
+      }
+    },
+    "notification-service": {
+      "type": "application",
+      "root": "apps/notification-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/notification-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/notification-service/tsconfig.app.json",
+        "assets": [
+          {
+            "include": "protos/**/*",
+            "outDir": "dist/apps/notification-service"
+          }
+        ]
       }
     }
   }

@@ -5,6 +5,8 @@ export type NotificationDocument = HydratedDocument<Notification>;
 
 @Schema({ timestamps: { createdAt: 'createdAt' }, collection: 'notifications' })
 export class INotification {
+  _id: string;
+
   @Prop({ required: true })
   recipientId: string;
 
