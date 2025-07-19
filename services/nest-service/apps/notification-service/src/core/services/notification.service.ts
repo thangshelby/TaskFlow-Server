@@ -7,6 +7,7 @@ import { IssueClientService, ProjectClientService, SprintClientService, UserClie
 import { ProjectRes } from '@nest-service/core/types/main_service/project';
 import { SprintRes } from '@nest-service/core/types/main_service/sprint';
 import { IssueRes, UserRes } from '@nest-service/core/types/base';
+import { NotificationsGateway } from '@notification-service/adapters/websockets/notification.gateway';
 export interface CreateNotificationParams {
   recipientId: string;
   actorId?: string;
@@ -27,6 +28,7 @@ export interface GetAllNotificationParams {
 @Injectable()
 export class NotificationService {
   constructor(
+    private gateway: NotificationsGateway,
     private readonly notificationRepo: INotificationRepo,
     private readonly projectClientService: ProjectClientService,
     private readonly sprintCLientService: SprintClientService,
@@ -36,6 +38,7 @@ export class NotificationService {
 
   async createNotification(data: CreateNotificationParams): Promise<NotificationDomain> {
     const refType = this.getReferenceTypeByNotification(data.type);
+    this.gateway.sendNotification(data.recipientId);
     return await this.notificationRepo.create({
       recipientId: data.recipientId,
       actorId: data.actorId,
@@ -53,6 +56,7 @@ export class NotificationService {
     const issueIds: string[] = [];
     const projectIds: string[] = [];
     const sprintIds: string[] = [];
+    const actorIds = notiDomain.map((noti) => noti?.actorId).filter(Boolean) as string[];
 
     notiDomain.forEach((noti) => {
       if (noti.referenceType == ReferenceType.ISSUE && noti.referenceId) {
@@ -66,11 +70,12 @@ export class NotificationService {
       }
     });
 
-    const [projects, sprints, issues, receivers] = await Promise.all([
+    const [projects, sprints, issues, receivers, actors] = await Promise.all([
       this.projectClientService.getListProjects(projectIds),
       this.sprintCLientService.getListSprints(sprintIds),
       this.issueClientService.getListIssues(issueIds),
       this.userClientService.getListUsers(notiDomain.map((noti) => noti.recipientId)),
+      this.userClientService.getListUsers(actorIds),
     ]);
 
     const projectsMap = new Map<string, ProjectRes>();
@@ -91,6 +96,11 @@ export class NotificationService {
     const receiverMaps = new Map<string, UserRes>();
     (receivers || []).forEach((receiver) => {
       receiverMaps.set(receiver.id, receiver);
+    });
+
+    const actorMaps = new Map<string, UserRes>();
+    (actors || []).forEach((actor) => {
+      actorMaps.set(actor.id, actor);
     });
 
     notiDomain.forEach((noti) => {
@@ -116,6 +126,10 @@ export class NotificationService {
       const receiver = receiverMaps.get(noti.recipientId);
       if (receiver) {
         noti.recipient = receiver;
+      }
+      if (noti.actorId) {
+        const actor = actorMaps.get(noti.actorId);
+        noti.actor = actor;
       }
     });
     return {

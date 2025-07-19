@@ -74,6 +74,7 @@ export interface CommentRes {
 }
 
 export interface NotificationRes {
+  id: string;
   recipientId: string;
   actorId: string;
   type: string;
@@ -84,6 +85,7 @@ export interface NotificationRes {
   createdAt: string;
   referenceData: string;
   recipient?: UserRes | undefined;
+  actor?: UserRes | undefined;
 }
 
 export interface UserRes {
