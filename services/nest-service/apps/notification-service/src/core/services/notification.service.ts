@@ -7,7 +7,6 @@ import { IssueClientService, ProjectClientService, SprintClientService, UserClie
 import { ProjectRes } from '@nest-service/core/types/main_service/project';
 import { SprintRes } from '@nest-service/core/types/main_service/sprint';
 import { IssueRes, UserRes } from '@nest-service/core/types/base';
-import { NotificationsGateway } from '@notification-service/adapters/websockets/notification.gateway';
 export interface CreateNotificationParams {
   recipientId: string;
   actorId?: string;
@@ -28,7 +27,6 @@ export interface GetAllNotificationParams {
 @Injectable()
 export class NotificationService {
   constructor(
-    private gateway: NotificationsGateway,
     private readonly notificationRepo: INotificationRepo,
     private readonly projectClientService: ProjectClientService,
     private readonly sprintCLientService: SprintClientService,
@@ -38,7 +36,6 @@ export class NotificationService {
 
   async createNotification(data: CreateNotificationParams): Promise<NotificationDomain> {
     const refType = this.getReferenceTypeByNotification(data.type);
-    this.gateway.sendNotification(data.recipientId);
     return await this.notificationRepo.create({
       recipientId: data.recipientId,
       actorId: data.actorId,
@@ -71,11 +68,11 @@ export class NotificationService {
     });
 
     const [projects, sprints, issues, receivers, actors] = await Promise.all([
-      this.projectClientService.getListProjects(projectIds),
-      this.sprintCLientService.getListSprints(sprintIds),
-      this.issueClientService.getListIssues(issueIds),
-      this.userClientService.getListUsers(notiDomain.map((noti) => noti.recipientId)),
-      this.userClientService.getListUsers(actorIds),
+      this.projectClientService.getListProjects({ projectIds: projectIds, limit: params.limit || 100, page: params.page || 1 }),
+      this.sprintCLientService.getListSprints({ sprintIds: sprintIds, limit: params.limit || 100, page: params.page || 1 }),
+      this.issueClientService.getListIssues({ issueIds: issueIds, limit: params.limit || 100, page: params.page || 1 }),
+      this.userClientService.getListUsers({ userIds: notiDomain.map((noti) => noti.recipientId), limit: params.limit || 100, page: params.page || 1 }),
+      this.userClientService.getListUsers({ userIds: actorIds, limit: params.limit || 100, page: params.page || 1 }),
     ]);
 
     const projectsMap = new Map<string, ProjectRes>();
