@@ -2,7 +2,11 @@ import { SprintRes, SprintServiceClient } from '@nest-service/core/types/main_se
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-
+export interface GetListSprintsClientParams {
+  sprintIds: string[];
+  limit: number;
+  page: number;
+}
 @Injectable()
 export class SprintClientService implements OnModuleInit {
   private sprintGrpcService: SprintServiceClient;
@@ -13,8 +17,8 @@ export class SprintClientService implements OnModuleInit {
     this.sprintGrpcService = this.client.getService<SprintServiceClient>('SprintService');
   }
 
-  async getListSprints(sprintIds: string[]): Promise<SprintRes[] | undefined> {
-    const res = await firstValueFrom(this.sprintGrpcService.listSprints({ sprintIds: sprintIds, limit: 100, page: 1 }));
+  async getListSprints(params: GetListSprintsClientParams): Promise<SprintRes[] | undefined> {
+    const res = await firstValueFrom(this.sprintGrpcService.listSprints({ sprintIds: params.sprintIds, limit: params.limit, page: params.page }));
     return res.data;
   }
 }

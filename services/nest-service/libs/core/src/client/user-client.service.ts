@@ -4,7 +4,11 @@ import { UserServiceClient } from '@nest-service/core/types/main_service/user';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-
+export interface GetListUsersClientParams {
+  userIds: string[];
+  limit: number;
+  page: number;
+}
 @Injectable()
 export class UserClientService implements OnModuleInit {
   private userGrpcService: UserServiceClient;
@@ -27,8 +31,8 @@ export class UserClientService implements OnModuleInit {
     return res.data;
   }
 
-  async getListUsers(userIds: string[]): Promise<UserRes[] | undefined> {
-    const res = await firstValueFrom(this.userGrpcService.listUsers({ userIds: userIds, limit: 1000, page: 1 }));
+  async getListUsers(params: GetListUsersClientParams): Promise<UserRes[] | undefined> {
+    const res = await firstValueFrom(this.userGrpcService.listUsers({ userIds: params.userIds, limit: params.limit, page: params.page }));
     return res.data;
   }
 

@@ -20,7 +20,6 @@ public class AuthenticationInterceptor : Interceptor
         UnaryServerMethod<TRequest, TResponse> continuation)
     {
         var token = GetTokenFromMetadata(context);
-
         if (string.IsNullOrEmpty(token))
         {
             return await continuation(request, context);

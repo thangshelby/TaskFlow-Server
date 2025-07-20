@@ -2,7 +2,11 @@ import { ProjectRes, ProjectServiceClient } from '@nest-service/core/types/main_
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-
+export interface GetListProjectsClientParams {
+  projectIds: string[];
+  limit: number;
+  page: number;
+}
 @Injectable()
 export class ProjectClientService implements OnModuleInit {
   private projectGrpcService: ProjectServiceClient;
@@ -13,8 +17,8 @@ export class ProjectClientService implements OnModuleInit {
     this.projectGrpcService = this.client.getService<ProjectServiceClient>('ProjectService');
   }
 
-  async getListProjects(projectIds: string[]): Promise<ProjectRes[] | undefined> {
-    const res = await firstValueFrom(this.projectGrpcService.listProjects({ projectIds: projectIds, limit: 100, page: 1, kw: '', sort: '' }));
+  async getListProjects(param: GetListProjectsClientParams): Promise<ProjectRes[] | undefined> {
+    const res = await firstValueFrom(this.projectGrpcService.listProjects({ projectIds: param.projectIds, limit: param.limit, page: param.page, kw: '', sort: '' }));
     return res.data;
   }
 }
