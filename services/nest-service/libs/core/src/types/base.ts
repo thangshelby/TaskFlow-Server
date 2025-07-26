@@ -73,21 +73,6 @@ export interface CommentRes {
   updatedAt: string;
 }
 
-export interface NotificationRes {
-  id: string;
-  recipientId: string;
-  actorId: string;
-  type: string;
-  referenceId: string;
-  referenceType: string;
-  content: string;
-  isRead: boolean;
-  createdAt: string;
-  referenceData: string;
-  recipient?: UserRes | undefined;
-  actor?: UserRes | undefined;
-}
-
 export interface UserRes {
   id: string;
   firstName: string;

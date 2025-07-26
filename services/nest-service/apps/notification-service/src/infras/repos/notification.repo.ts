@@ -63,7 +63,6 @@ export class NotificationRepo implements INotificationRepo {
     const skip = (page - 1) * limit;
 
     const notifications = await this.notificationModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean<INotification[]>();
-
     return NotificationMapper.toDomainList(notifications);
   }
 }
