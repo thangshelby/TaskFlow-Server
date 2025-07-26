@@ -25,7 +25,7 @@ export class NotificationSubscriberService implements OnModuleInit {
       const notificationMessage: KafkaMessage = value ? JSON.parse(value) : null;
 
       switch (notificationMessage.eventType) {
-        case KafkaActionType.NOTIFICATIONS_CREATE_ISSUE:
+        case KafkaActionType.NOTIFICATIONS_CREATE_NEW_NOTIFICATION:
           await this.handleCreateNotification(notificationMessage);
           break;
         default:

@@ -2,7 +2,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Module } from '@nestjs/common';
 import { LogService } from './log/log.service';
 import { KafkaService } from './queue/kafka.service';
-import { CassandraService } from './cassandra/cassandra.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserClientService } from './client/user-client.service';
 import { ClientsModule, Transport } from '@nestjs/microservices';
@@ -92,7 +91,7 @@ import { IssueClientService } from '@nest-service/core/client/issue-client.servi
       }),
     }),
   ],
-  providers: [LogService, KafkaService, CassandraService, UserClientService, ProjectClientService, SprintClientService, IssueClientService],
-  exports: [LogService, KafkaService, CassandraService, UserClientService, ProjectClientService, SprintClientService, IssueClientService],
+  providers: [LogService, KafkaService, UserClientService, ProjectClientService, SprintClientService, IssueClientService],
+  exports: [LogService, KafkaService, UserClientService, ProjectClientService, SprintClientService, IssueClientService],
 })
 export class CoreModule {}
