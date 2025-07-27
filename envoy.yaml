@@ -163,7 +163,6 @@ static_resources:
                           "project_service.IssueService",
                           "project_service.ProjectMemberService",
                           "project_service.CommentService",
-                          "project_service.NotificationService",
                         ]
                       convert_grpc_status: true
                       print_options:
@@ -182,19 +181,20 @@ static_resources:
             - name: envoy.filters.network.http_connection_manager
               typed_config:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ws_gateway
                 codec_type: AUTO
-                stat_prefix: grpc_json_transcoder
+                upgrade_configs:
+                  - upgrade_type: websocket
                 route_config:
+                  name: ws_route
                   virtual_hosts:
-                    - name: notification_service
+                    - name: ws_host
                       domains: ["*"]
                       routes:
                         - match:
-                            prefix: ""
+                            prefix: "/"
                           route:
                             cluster: notification_service
-                          decorator:
-                            operation: "transcoding"
                       typed_per_filter_config:
                         envoy.filters.http.cors:
                           "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
@@ -237,8 +237,6 @@ static_resources:
                           from_cookies:
                             - token
                       rules:
-                        # Public route
-
                         # Private route
                         - match:
                             prefix: "/"
@@ -255,26 +253,6 @@ static_resources:
                               - any: true
                             principals:
                               - any: true
-                          # "user-login-policy":
-                          #   permissions:
-                          #     - and_rules:
-                          #         rules:
-                          #           - header:
-                          #               name: ":method"
-                          #               string_match:
-                          #                 exact: "POST"
-                          #           - url_path:
-                          #               path:
-                          #                 prefix: "/api/v1/users/login"
-                          #   principals:
-                          #     - metadata:
-                          #         filter: "envoy.filters.http.jwt_authn"
-                          #         path:
-                          #           - key: "jwt_payload"
-                          #           - key: "role"
-                          #         value:
-                          #           string_match:
-                          #             exact: "user_role"
                   - name: envoy.filters.http.lua
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
@@ -285,18 +263,10 @@ static_resources:
                             response_handle:headers():add("Set-Cookie", "token=" .. token .. "; Path=/; HttpOnly; Secure; SameSite=None")
                           end
                         end
-                  - name: envoy.filters.http.grpc_json_transcoder
-                    typed_config:
-                      "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_json_transcoder.v3.GrpcJsonTranscoder
-                      proto_descriptor: "/etc/envoy/proto.pb"
-                      services: ["notification_service.NotificationService"]
-                      convert_grpc_status: true
-                      print_options:
-                        always_print_primitive_fields: true
-                        preserve_proto_field_names: true
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
     - name: listener_chat_service
       address:
         socket_address:
@@ -417,7 +387,6 @@ static_resources:
       type: LOGICAL_DNS
       connect_timeout: 5s
       lb_policy: ROUND_ROBIN
-      http2_protocol_options: {}
       load_assignment:
         cluster_name: notification_service
         endpoints:

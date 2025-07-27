@@ -73,7 +73,7 @@ export interface NotificationDomain {
   referenceType?: ReferenceType;
   content?: string;
   isRead: boolean;
-  createdAt: Date;
+  createdAt: string | Date;
   referenceData?: any;
   recipient?: UserRes;
   actor?: UserRes;

@@ -69,6 +69,21 @@ services:
       - kafka
     networks:
       - taskflow-network
+  kafka-topic-creator:
+    image: bitnami/kafka:3.8
+    depends_on:
+      - kafka
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "
+      echo '⏳ Waiting for Kafka to be available...' &&
+      while ! kafka-topics.sh --bootstrap-server kafka:9094 --list; do sleep 2; done &&
+      echo '✅ Kafka is up!' &&
+      kafka-topics.sh --bootstrap-server kafka:9094 --create --if-not-exists --topic activities --partitions 3 --replication-factor 1 && 
+      kafka-topics.sh --bootstrap-server kafka:9094 --create --if-not-exists --topic notifications --partitions 3 --replication-factor 1
+      "
+    networks:
+      - taskflow-network
   # cassandra:
   #   image: cassandra:5.0.4
   #   container_name: cassandra
@@ -99,21 +114,6 @@ services:
   #     "
   #   networks:
   #     - taskflow-network
-  kafka-topic-creator:
-    image: bitnami/kafka:3.8
-    depends_on:
-      - kafka
-    entrypoint: ["/bin/sh", "-c"]
-    command: >
-      "
-      echo '⏳ Waiting for Kafka to be available...' &&
-      while ! kafka-topics.sh --bootstrap-server kafka:9094 --list; do sleep 2; done &&
-      echo '✅ Kafka is up!' &&
-      kafka-topics.sh --bootstrap-server kafka:9094 --create --if-not-exists --topic activities --partitions 3 --replication-factor 1 && 
-      kafka-topics.sh --bootstrap-server kafka:9094 --create --if-not-exists --topic notifications --partitions 3 --replication-factor 1
-      "
-    networks:
-      - taskflow-network
 networks:
   taskflow-network:
     driver: bridge
