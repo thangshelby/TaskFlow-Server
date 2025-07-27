@@ -8,7 +8,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { INotificationRepo } from '@notification-service/core/interfaces/notification-repo.interface';
 import { INotification, NotificationSchema } from '@notification-service/infras/schema/notification.schema';
 import { NotificationController } from '@notification-service/adapters/controllers/notification.controller';
-import { NotificationGateway } from '@notification-service/adapters/websocket/notification.websocket';
+import { NotificationEmitterService, NotificationGateway } from '@notification-service/adapters/websocket/notification.websocket';
 
 @Module({
   imports: [
@@ -24,6 +24,7 @@ import { NotificationGateway } from '@notification-service/adapters/websocket/no
     NotificationGateway,
     NotificationService,
     NotificationSubscriberService,
+    NotificationEmitterService,
     {
       provide: INotificationRepo,
       useClass: NotificationRepo,

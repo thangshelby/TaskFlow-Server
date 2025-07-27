@@ -12,7 +12,7 @@ export class NotificationMapper {
       referenceType: entity.referenceType as any,
       content: entity.content,
       isRead: entity.isRead,
-      createdAt: new Date(entity.createdAt),
+      createdAt: entity.createdAt.toISOString(),
     };
   }
 

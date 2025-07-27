@@ -149,10 +149,10 @@ public class IssueUseCase
         });
 
         var notifyTask = Task.CompletedTask;
-        // Check asignee change and actor_id different with recepient_id
+        // Check asignee change and actor_id different with recipient_id
         if (oldIssue.AssigneeId != updatedIssue.AssigneeId && !string.IsNullOrEmpty(updatedIssue.AssigneeId) && updateData.CreatorId != updatedIssue.AssigneeId)
         {
-            notifyTask = _publisher.EmitKafka(TopicName.NOTIFICATIONS, KafkaMessageAction.NOTIFICATIONS_CREATE_ISSUE, new INotificationMessage
+            notifyTask = _publisher.EmitKafka(TopicName.NOTIFICATIONS, KafkaMessageAction.NOTIFICATIONS_CREATE_NEW_NOTIFICATION, new INotificationMessage
             {
                 Type = NotificationType.ASSIGNMENT.ToString(),
                 ActorId = updateData.CreatorId,

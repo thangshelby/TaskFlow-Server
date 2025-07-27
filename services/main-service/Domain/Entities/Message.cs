@@ -14,7 +14,7 @@ public enum KafkaMessageAction
     ACTIVITIES_ISSUE_CHANGED,
     ACTIVITIES_ISSUE_CREATED,
 
-    NOTIFICATIONS_CREATE_ISSUE
+    NOTIFICATIONS_CREATE_NEW_NOTIFICATION
 }
 
 public readonly record struct TopicName(string Value)
