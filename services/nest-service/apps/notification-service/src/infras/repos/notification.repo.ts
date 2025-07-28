@@ -5,7 +5,7 @@ import { Model } from 'mongoose';
 import { NotificationDomain } from '@notification-service/core/models/notification';
 import { INotificationRepo } from '@notification-service/core/interfaces/notification-repo.interface';
 import { INotification, NotificationDocument } from '@notification-service/infras/schema/notification.schema';
-import { GetAllNotificationParams } from '@notification-service/core/services/notification.service';
+import { BulkUpdateNotificationParams, GetAllNotificationParams, UpdateNotificationParams } from '@notification-service/core/services/notification.service';
 import { NotificationMapper } from '@notification-service/infras/mapper';
 
 @Injectable()
@@ -64,5 +64,23 @@ export class NotificationRepo implements INotificationRepo {
 
     const notifications = await this.notificationModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean<INotification[]>();
     return NotificationMapper.toDomainList(notifications);
+  }
+
+  async update(params: UpdateNotificationParams): Promise<NotificationDomain> {
+    const { notiId, isRead } = params;
+    const updated = await this.notificationModel.findByIdAndUpdate(notiId, { isRead: isRead }, { new: true }).lean<INotification | null>();
+    if (!updated) {
+      throw new Error(`Notification with ID ${notiId} not found.`);
+    }
+
+    return NotificationMapper.toDomain(updated);
+  }
+  async bulkUpdate(params: BulkUpdateNotificationParams): Promise<{ success: boolean }> {
+    const { userId, isRead } = params;
+    const result = await this.notificationModel.updateMany({ recipientId: userId }, { $set: { isRead: isRead } });
+    if (result.modifiedCount === 0) {
+      throw new Error(`Notification not found with this user`);
+    }
+    return { success: true };
   }
 }
