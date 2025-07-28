@@ -25,7 +25,7 @@ export class NotificationEmitterService {
       const notis = await this.notificationService.listNotifications({
         page: 1,
         limit: 100,
-        // userId: userId,
+        userId: userId,
       });
 
       this.server.to(userId).emit(
