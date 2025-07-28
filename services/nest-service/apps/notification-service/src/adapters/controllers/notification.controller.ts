@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Put, Param } from '@nestjs/common';
 import { NotificationService } from '@notification-service/core/services/notification.service';
 
 interface CreateNotificationReq {
@@ -17,6 +17,15 @@ interface GetAllNotificationsReq {
   sprintId?: string | undefined;
   page?: number | undefined;
   limit?: number | undefined;
+}
+
+interface UpdateNotificationsReq {
+  isRead: boolean;
+}
+
+interface BulkUpdateNotificationsReq {
+  isRead: boolean;
+  userId: string;
 }
 
 @Controller('/api/v1/notifications')
@@ -63,6 +72,34 @@ export class NotificationController {
         totalPages,
       },
       data: notis,
+    };
+  }
+
+  @Put(':notiId')
+  async updateNotification(@Param('notiId') notiId: string, @Body() body: UpdateNotificationsReq) {
+    const noti = await this.notificationService.updateNotification({
+      notiId: notiId,
+      isRead: body.isRead,
+    });
+
+    return {
+      status: 'success',
+      message: 'Update notification success!',
+      data: noti,
+    };
+  }
+
+  @Post('/update-all')
+  async bulkUpdateNotification(@Body() body: BulkUpdateNotificationsReq) {
+    const res = await this.notificationService.bulkUpdateNotification({
+      isRead: body.isRead,
+      userId: body.userId,
+    });
+
+    return {
+      status: 'success',
+      message: 'Update notification success!',
+      data: res,
     };
   }
 }

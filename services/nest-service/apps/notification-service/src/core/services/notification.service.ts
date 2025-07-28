@@ -25,6 +25,16 @@ export interface GetAllNotificationParams {
   limit?: number | undefined;
 }
 
+export interface UpdateNotificationParams {
+  isRead?: boolean;
+  notiId: string;
+}
+
+export interface BulkUpdateNotificationParams {
+  userId?: string;
+  isRead?: boolean;
+}
+
 @Injectable()
 export class NotificationService {
   constructor(
@@ -140,6 +150,15 @@ export class NotificationService {
       data: notiDomain,
       totalCount: totalCount,
     };
+  }
+
+  async updateNotification(data: UpdateNotificationParams): Promise<NotificationDomain> {
+    const noti = await this.notificationRepo.update(data);
+    return noti;
+  }
+
+  async bulkUpdateNotification(data: BulkUpdateNotificationParams): Promise<{ success: boolean }> {
+    return await this.notificationRepo.bulkUpdate(data);
   }
 
   private getReferenceTypeByNotification(type: NotificationType): ReferenceType {
