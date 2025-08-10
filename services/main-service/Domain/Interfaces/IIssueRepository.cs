@@ -26,6 +26,10 @@ public class CreateIssueParams
 public class GetIssuesParams
 {
     public string? ProjectId;
+    public string? DueDateFrom;
+    public string? DueDateTo;
+    public string? CreatedAtFrom;
+    public string? CreatedAtTo;
     public List<string>? ColumnIds;
     public List<string>? AssigneeIds;
     public List<string>? SprintIds;
