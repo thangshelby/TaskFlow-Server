@@ -185,7 +185,11 @@ public class IssueController : IssueService.IssueServiceBase
             Keyword = request.Keyword,
             SprintIds = sprintIds,
             ColumnIds = columnIds,
-            IssueIds = request.IssueIds.ToList()
+            CreatedAtFrom = request.CreatedAtFrom,
+            CreatedAtTo = request.CreatedAtTo,
+            DueDateFrom = request.DueDateFrom,
+            DueDateTo = request.DueDateTo,
+            IssueIds = request.IssueIds.ToList(),
         });
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
         var response = new ListIssuesRes();

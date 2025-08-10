@@ -311,6 +311,28 @@ public class IssueRepository : IIssueRepository
             );
             filter &= keywordFilter;
         }
+        // if (!string.IsNullOrEmpty(param.DueDateFrom) && DateTime.TryParse(param.DueDateFrom, out var dueFrom))
+        // {
+        //     filter &= filterBuilder.Gte(i => i.DueDate, dueFrom);
+        // }
+
+        // if (!string.IsNullOrEmpty(param.DueDateTo) && DateTime.TryParse(param.DueDateTo, out var dueTo))
+        // {
+        //     // If you want the end date to be inclusive for the whole day:
+        //     dueTo = dueTo.Date.AddDays(1).AddTicks(-1);
+        //     filter &= filterBuilder.Lte(i => i.DueDate, dueTo);
+        // }
+
+        if (!string.IsNullOrEmpty(param.CreatedAtFrom) && DateTime.TryParse(param.CreatedAtFrom, out var createdFrom))
+        {
+            filter &= filterBuilder.Gte(i => i.CreatedAt, createdFrom);
+        }
+
+        if (!string.IsNullOrEmpty(param.CreatedAtTo) && DateTime.TryParse(param.CreatedAtTo, out var createdTo))
+        {
+            createdTo = createdTo.Date.AddDays(1).AddTicks(-1);
+            filter &= filterBuilder.Lte(i => i.CreatedAt, createdTo);
+        }
 
         var totalCount = await _issues.CountDocumentsAsync(filter);
         var renderedFilter = filter.Render(new RenderArgs<Issue>(
