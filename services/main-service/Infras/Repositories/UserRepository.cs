@@ -70,11 +70,17 @@ public class UserRepository : IUserRepository
         _logger = logger;
 
 
-        // Indexing email 
-        var indexKeys = Builders<User>.IndexKeys.Ascending(u => u.Email);
-        var indexOptions = new CreateIndexOptions { Unique = true };
-        var indexModel = new CreateIndexModel<User>(indexKeys, indexOptions);
-        _users.Indexes.CreateOne(indexModel);
+        // Indexing email (unique)
+        var emailKeys = Builders<User>.IndexKeys.Ascending(u => u.Email);
+        var emailOptions = new CreateIndexOptions { Unique = true };
+        var emailModel = new CreateIndexModel<User>(emailKeys, emailOptions);
+        _users.Indexes.CreateOne(emailModel);
+
+        // TTL index for ExpireAt
+        var ttlKeys = Builders<User>.IndexKeys.Ascending(u => u.ExpiredAt);
+        var ttlOptions = new CreateIndexOptions { ExpireAfter = TimeSpan.Zero };
+        var ttlModel = new CreateIndexModel<User>(ttlKeys, ttlOptions);
+        _users.Indexes.CreateOne(ttlModel);
     }
 
     public async Task<UserDomain> CreateUserAsync(UserDomain userDomain)
@@ -109,13 +115,35 @@ public class UserRepository : IUserRepository
 
         return userEntity == null ? null : _mapper.Map<UserDomain>(userEntity);
     }
-    public async Task<UserDomain> UpdateUser(UserDomain userDomain)
+    public async Task<UserDomain> UpdateUserAsync(UpdateUserParams param)
     {
-        var userEntity = _mapper.Map<User>(userDomain);
-        var result = await _users.ReplaceOneAsync(i => i.Id == userDomain.Id, userEntity);
+        var updateDef = new List<UpdateDefinition<User>>();
+        var builder = Builders<User>.Update;
+
+        if (param.FirstName != null) updateDef.Add(builder.Set(u => u.FirstName, param.FirstName));
+        if (param.LastName != null) updateDef.Add(builder.Set(u => u.LastName, param.LastName));
+        if (param.Email != null) updateDef.Add(builder.Set(u => u.Email, param.Email));
+        if (param.Password != null) updateDef.Add(builder.Set(u => u.Password, param.Password));
+        if (param.Avatar != null) updateDef.Add(builder.Set(u => u.Avatar, param.Avatar));
+        if (param.IsVerified != null) updateDef.Add(builder.Set(u => u.IsVerified, param.IsVerified));
+        if (param.Role.HasValue) updateDef.Add(builder.Set(u => u.Role, param.Role.Value));
+
+        updateDef.Add(builder.Set(u => u.UpdatedAt, DateTime.UtcNow));
+
+        var update = builder.Combine(updateDef);
+
+        var result = await _users.UpdateOneAsync(
+            u => u.Id == param.Id,
+            update
+        );
+
         if (result.MatchedCount == 0)
+        {
             throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
-        return userDomain;
+        }
+
+        var updatedUser = await _users.Find(u => u.Id == param.Id).FirstOrDefaultAsync();
+        return _mapper.Map<UserDomain>(updatedUser);
     }
 
     public async Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(SearchUserQueryParams param)

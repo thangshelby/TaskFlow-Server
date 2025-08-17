@@ -8,22 +8,30 @@ public class KafkaMessage<T>
     [System.Text.Json.Serialization.JsonExtensionData]
     public Dictionary<string, object>? extra { get; set; }
 }
-
+// [TOPIC NAME]_[ACTION]
 public enum KafkaMessageAction
 {
     ACTIVITIES_ISSUE_CHANGED,
     ACTIVITIES_ISSUE_CREATED,
 
-    NOTIFICATIONS_CREATE_NEW_NOTIFICATION
+    NOTIFICATIONS_CREATE_NEW_NOTIFICATION,
+
+    MAILS_SEND_VERIFY_OTP_USER,
 }
 
 public readonly record struct TopicName(string Value)
 {
     public static readonly TopicName NOTIFICATIONS = new("notifications");
     public static readonly TopicName ACTIVITIES = new("activities");
+    public static readonly TopicName MAILS = new("mails");
 
     public override string ToString() => Value;
 }
+public class IMailMessage
+{   
+    public object? Data { get; set; }
+    public required string UserId { get; set; }
+};
 public class IActivitiesMessage
 {
     public IssueDomain? OldIssue { get; set; }

@@ -30,6 +30,12 @@ public class User
     [BsonElement("password")]
     public string Password { get; set; } = null!;
 
+    [BsonElement("avatar")]
+    public string Avatar { get; set; } = null!;
+
+    [BsonElement("is_verified")]
+    public bool IsVerified { get; set; } = false;
+
     [BsonElement("created_at")]
     [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -37,6 +43,10 @@ public class User
     [BsonElement("updated_at")]
     [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    [BsonElement("expired_at")]
+    [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
+    public DateTime? ExpiredAt { get; set; }
 
     [BsonElement("role")]
     [BsonRepresentation(BsonType.String)]
