@@ -54,7 +54,7 @@ public class UserController : UserService.UserServiceBase
             throw new RpcException(new Status(StatusCode.InvalidArgument, string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))));
         }
 
-        var updatedUser = await _userUseCase.UpdateUser(new UserDomain
+        var updatedUser = await _userUseCase.UpdateUserAsync(new UpdateUserParams
         {
             Id = request.UserId,
             FirstName = request.FirstName,
@@ -140,7 +140,7 @@ public class UserController : UserService.UserServiceBase
         };
     }
 
-    public override async Task<CreateUserRes> Register(RegisterUserReq request, ServerCallContext context)
+    public override async Task<RegisterUserRes> Register(RegisterUserReq request, ServerCallContext context)
     {
         var validationResult = await _registerUserValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
@@ -155,17 +155,32 @@ public class UserController : UserService.UserServiceBase
             Email = request.Email,
             Password = request.Password,
             Role = UserRole.User,
+            IsVerified = false,
+            Avatar = "",
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
+            ExpiredAt = DateTime.UtcNow.AddMinutes(5), // TTL field
         });
 
-        if (user.Id == null) throw new Exception("Can't happen");
-        await SetJwtToken(user.Id, user.Role, request.Email, context);
+        var userResponse = _mapper.Map<UserRes>(user);
+        return new RegisterUserRes
+        {
+            Status = "success",
+            Message = "Send mail verify successfully!"
+        };
+    }
+    public override async Task<VerifyOTPRes> VerifyOTP(VerifyOTPReq request, ServerCallContext context)
+    {
+        var user = await _userUseCase.VerifyUser(request.Otp, request.Email);
 
         var userResponse = _mapper.Map<UserRes>(user);
-        return new CreateUserRes
+
+        if (user.Id != null) await SetJwtToken(user.Id, user.Role, request.Email, context);
+
+        return new VerifyOTPRes
         {
-            Status = "User created successfully",
+            Status = "success",
+            Message = "Send mail verify successfully!",
             Data = userResponse
         };
     }
@@ -207,6 +222,7 @@ public class UserController : UserService.UserServiceBase
             Name = request.Name,
             Email = request.Email,
             UserIds = request.UserIds.ToList(),
+            ProjectId = request.ProjectId,
             Page = (int)page,
             Limit = (int)limit,
         }
