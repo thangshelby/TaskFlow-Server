@@ -183,6 +183,7 @@ message UpdateUserReq {
   optional string email = 4;
   optional string password = 5;
   optional string role = 6;
+  optional string avatar=7;
 }
 
 message UpdateUserRes {

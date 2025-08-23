@@ -120,11 +120,13 @@ public class UserRepository : IUserRepository
         var updateDef = new List<UpdateDefinition<User>>();
         var builder = Builders<User>.Update;
 
-        if (param.FirstName != null) updateDef.Add(builder.Set(u => u.FirstName, param.FirstName));
-        if (param.LastName != null) updateDef.Add(builder.Set(u => u.LastName, param.LastName));
-        if (param.Email != null) updateDef.Add(builder.Set(u => u.Email, param.Email));
-        if (param.Password != null) updateDef.Add(builder.Set(u => u.Password, param.Password));
-        if (param.Avatar != null) updateDef.Add(builder.Set(u => u.Avatar, param.Avatar));
+
+
+        if (param.FirstName != null && param.FirstName != "") updateDef.Add(builder.Set(u => u.FirstName, param.FirstName));
+        if (param.LastName != null && param.LastName != "") updateDef.Add(builder.Set(u => u.LastName, param.LastName));
+        if (param.Email != null && param.Email != "") updateDef.Add(builder.Set(u => u.Email, param.Email));
+        if (param.Password != null && param.Password != "") updateDef.Add(builder.Set(u => u.Password, param.Password));
+        if (param.Avatar != null && param.Avatar != "") updateDef.Add(builder.Set(u => u.Avatar, param.Avatar));
         if (param.IsVerified != null) updateDef.Add(builder.Set(u => u.IsVerified, param.IsVerified));
         if (param.Role.HasValue) updateDef.Add(builder.Set(u => u.Role, param.Role.Value));
 
@@ -133,7 +135,7 @@ public class UserRepository : IUserRepository
         var update = builder.Combine(updateDef);
 
         var result = await _users.UpdateOneAsync(
-            u => u.Id == param.Id,
+            u => u.Id == param.Id,  
             update
         );
 
