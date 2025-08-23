@@ -61,6 +61,7 @@ public class UserController : UserService.UserServiceBase
             LastName = request.LastName,
             Email = request.Email,
             Password = request.Password,
+            Avatar= request.Avatar,
         });
 
         var userResponse = _mapper.Map<UserRes>(updatedUser);
