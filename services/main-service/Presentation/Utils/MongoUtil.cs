@@ -1,6 +1,8 @@
+using Google.Api;
 using MongoDB.Bson;
+using MongoDB.Driver;
 using System.Text.Json;
-public static class MongoDocumentLogUtil
+public static class MongoUtils
 {
     public static void LogObject(ILogger logger, dynamic data)
     {
@@ -58,5 +60,37 @@ public static class MongoDocumentLogUtil
         }
 
         return dict;
+    }
+
+    public static UpdateDefinition<T> MakeMongoDataUpdate<T>(MongoUpdateInput input)
+    {
+        var data = ConverterUtils.MakeDataUpdate(new ConverterUtils.DataUpdateInput
+        {
+            Data = input.Data,
+            RemoveFields = input.RemoveFields,
+            RemoveValues = input.RemoveValues,
+        });
+        var updates = new List<UpdateDefinition<T>>();
+        var builder = Builders<T>.Update;
+
+        foreach (var kv in data)
+        {
+            updates.Add(builder.Set(kv.Key, kv.Value));
+        }
+
+        if (input.IsUpdatedAt)
+        {
+            updates.Add(builder.Set("UpdatedAt", DateTime.UtcNow));
+        }
+
+        return builder.Combine(updates);
+    }
+
+    public class MongoUpdateInput
+    {
+        public object Data { get; set; } = default!;
+        public List<object?>? RemoveValues { get; set; } = null;
+        public List<string>? RemoveFields { get; set; } = null;
+        public bool IsUpdatedAt { get; set; } = true;
     }
 }

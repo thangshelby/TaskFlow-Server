@@ -323,7 +323,6 @@ public class IssueUseCase
         Compare("Description", oldIssue.Description, newIssue.Description);
         Compare("Priority", oldIssue.Priority, newIssue.Priority);
         Compare("Type", oldIssue.Type, newIssue.Type);
-        Compare("Priority", oldIssue.Priority, newIssue.Priority);
         Compare("Summary", oldIssue.Summary, newIssue.Summary);
         Compare<int?>("StoryPoint", oldIssue.StoryPoint, newIssue.StoryPoint);
 

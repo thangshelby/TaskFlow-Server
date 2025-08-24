@@ -105,6 +105,11 @@ public class UserUseCase
     }
     public async Task<UserDomain> UpdateUserAsync(UpdateUserParams param)
     {
+        if (param.Id == null)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "User ID invalid!"));
+        }
+
         return await _userRepository.UpdateUserAsync(param);
     }
     public async Task<UserStats> GetStats(string id, bool isSprintId)

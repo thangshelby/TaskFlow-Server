@@ -57,8 +57,6 @@ public class UpdateUserValidator : AbstractValidator<UpdateUserReq>
 {
     public UpdateUserValidator()
     {
-        RuleFor(x => x.UserId)
-            .NotEmpty().WithMessage("User ID is required.");
 
         RuleFor(x => x.FirstName).ValidName().When(x => !string.IsNullOrEmpty(x.FirstName));
         RuleFor(x => x.LastName).ValidName().When(x => !string.IsNullOrEmpty(x.LastName));
