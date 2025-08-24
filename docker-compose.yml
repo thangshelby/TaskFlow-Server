@@ -69,36 +69,6 @@ services:
       - kafka
     networks:
       - taskflow-network
-  cassandra:
-    image: cassandra:5.0.4
-    container_name: cassandra
-    environment:
-      - CASSANDRA_CLUSTER_NAME=my-cluster
-      - CASSANDRA_BROADCAST_ADDRESS=auto
-      - CASSANDRA_LISTEN_ADDRESS=auto
-    ports:
-      - "9042:9042"
-    volumes:
-      - cassandra-data:/var/lib/cassandra
-    networks:
-      - taskflow-network
-  cassandra-init:
-    image: cassandra:5.0.4
-    depends_on:
-      - cassandra
-    entrypoint: ["/bin/sh", "-c"]
-    command: >
-      "
-      echo '⏳ Waiting for Cassandra to be available...' &&
-      while ! cqlsh cassandra -e 'describe keyspaces'; do sleep 2; done &&
-      echo '✅ Cassandra is up!' &&
-      cqlsh cassandra -e \"
-        CREATE KEYSPACE IF NOT EXISTS taskflow
-        WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
-      \"
-      "
-    networks:
-      - taskflow-network
   kafka-topic-creator:
     image: bitnami/kafka:3.8
     depends_on:
@@ -114,6 +84,36 @@ services:
       "
     networks:
       - taskflow-network
+  # cassandra:
+  #   image: cassandra:5.0.4
+  #   container_name: cassandra
+  #   environment:
+  #     - CASSANDRA_CLUSTER_NAME=my-cluster
+  #     - CASSANDRA_BROADCAST_ADDRESS=auto
+  #     - CASSANDRA_LISTEN_ADDRESS=auto
+  #   ports:
+  #     - "9042:9042"
+  #   volumes:
+  #     - cassandra-data:/var/lib/cassandra
+  #   networks:
+  #     - taskflow-network
+  # cassandra-init:
+  #   image: cassandra:5.0.4
+  #   depends_on:
+  #     - cassandra
+  #   entrypoint: ["/bin/sh", "-c"]
+  #   command: >
+  #     "
+  #     echo '⏳ Waiting for Cassandra to be available...' &&
+  #     while ! cqlsh cassandra -e 'describe keyspaces'; do sleep 2; done &&
+  #     echo '✅ Cassandra is up!' &&
+  #     cqlsh cassandra -e \"
+  #       CREATE KEYSPACE IF NOT EXISTS taskflow
+  #       WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+  #     \"
+  #     "
+  #   networks:
+  #     - taskflow-network
 networks:
   taskflow-network:
     driver: bridge

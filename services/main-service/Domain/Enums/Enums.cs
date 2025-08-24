@@ -26,8 +26,10 @@ public enum IssueType
 
 public enum IssuePriority
 {
+    Lowest,
     Low,
     Medium,
     High,
-    Critical
+    Highest
+
 }

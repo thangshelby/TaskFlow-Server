@@ -68,18 +68,6 @@ message CommentRes {
     string created_at = 5;
     string updated_at = 6;
 }
-message NotificationRes {
-  string recipient_id = 1;
-  string actor_id = 2;
-  string type = 3;
-  string reference_id = 4;
-  string reference_type = 5;
-  string content = 6;
-  bool is_read = 7;
-  string created_at = 8;
-  string reference_data = 9;
-  optional UserRes recipient = 10;
-}
 
 message UserRes{
   string id = 1;
@@ -89,4 +77,5 @@ message UserRes{
   string role = 5;
   string created_at = 6;
   string updated_at = 7;
+  string avatar = 8;
 }

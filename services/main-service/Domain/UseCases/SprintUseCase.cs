@@ -41,7 +41,7 @@ public class SprintUseCase
             var members = await _projectMemberRepository.GetProjectMembersAsync(sprint.ProjectId, 1, int.MaxValue);
 
             var notificationTasks = members.Select(member =>
-                _publisher.EmitKafka(TopicName.NOTIFICATIONS, KafkaMessageAction.NOTIFICATIONS_CREATE_ISSUE, new INotificationMessage
+                _publisher.EmitKafka(TopicName.NOTIFICATIONS, KafkaMessageAction.NOTIFICATIONS_CREATE_NEW_NOTIFICATION, new INotificationMessage
                 {
                     Type = NotificationType.SPRINT_STARTED.ToString(),
                     RecipientId = member.Id

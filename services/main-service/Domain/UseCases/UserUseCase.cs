@@ -2,6 +2,7 @@ using Grpc.Core;
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using MainService.Domain.Packages;
+using MainService.Infras.Entities;
 using Microsoft.Extensions.Logging;
 using TaskFlow.UserService;
 
@@ -11,29 +12,58 @@ public class UserUseCase
 {
     private readonly IUserRepository _userRepository;
     private readonly IIssueRepository _issueRepository;
+    private readonly OtpTokenUseCase _otpTokenUseCase;
+    private readonly IProjectMemberRepository _projectMemberRepository;
     private readonly ILogger<UserUseCase> _logger;
+    private readonly IPublisherService _publisher;
 
-    public UserUseCase(IUserRepository userRepository, IIssueRepository issueRepository, ILogger<UserUseCase> logger)
+    public UserUseCase(OtpTokenUseCase otpTokenUseCase, IUserRepository userRepository, IIssueRepository issueRepository, ILogger<UserUseCase> logger, IPublisherService publisher)
     {
         _userRepository = userRepository;
         _issueRepository = issueRepository;
+        _otpTokenUseCase = otpTokenUseCase;
         _logger = logger;
+        _publisher = publisher;
     }
 
     public async Task<UserDomain> CreateUser(UserDomain userBody)
     {
+        userBody.Password = PasswordHasher.HashPassword(userBody.Password);
+        var user = await _userRepository.CreateUserAsync(userBody);
+
+        if (user.Id == null) throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
+
+        await _otpTokenUseCase.GenerateOtpAsync(user);
+
+        return user;
+    }
+
+    public async Task<UserDomain> VerifyUser(string otp, string email)
+    {
         var user = await _userRepository.FindUserAsync(new UserQueryParams
         {
-            Email = userBody.Email
+            Email = email,
         });
 
-        if (user != null)
+        if (user == null || string.IsNullOrEmpty(user.Id))
         {
-            throw new RpcException(new Status(StatusCode.AlreadyExists, "Email has been used!!"));
+            throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
         }
 
-        userBody.Password = PasswordHasher.HashPassword(userBody.Password);
-        return await _userRepository.CreateUserAsync(userBody);
+        var isValidOtp = await _otpTokenUseCase.VerifyOtpAsync(user.Id, otp);
+
+        if (!isValidOtp)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid OTP code"));
+        }
+
+        await _userRepository.UpdateUserAsync(new UpdateUserParams
+        {
+            Id = user.Id,
+            IsVerified = true,
+        });
+
+        return user;
     }
 
     public async Task<UserDomain?> FindUserAsync(UserQueryParams queryParams)
@@ -73,37 +103,14 @@ public class UserUseCase
 
         return user;
     }
-    public async Task<UserDomain> UpdateUser(UserDomain user)
+    public async Task<UserDomain> UpdateUserAsync(UpdateUserParams param)
     {
-        if (string.IsNullOrEmpty(user.Id))
+        if (param.Id == null)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, "userId not found!!"));
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "User ID invalid!"));
         }
 
-        var existingUser = await _userRepository.FindUserAsync(new UserQueryParams
-        {
-            UserId = user.Id
-        });
-
-        if (existingUser == null)
-            throw new RpcException(new Status(StatusCode.NotFound, $"User with ID {user.Id} not found"));
-
-
-        if (!string.IsNullOrEmpty(user.FirstName))
-            existingUser.FirstName = user.FirstName;
-
-        if (!string.IsNullOrEmpty(user.LastName))
-            existingUser.LastName = user.LastName;
-
-        if (!string.IsNullOrEmpty(user.Email))
-            existingUser.Email = user.Email;
-
-        if (!string.IsNullOrEmpty(user.Password))
-            existingUser.Password = PasswordHasher.HashPassword(user.Password);
-
-        existingUser.UpdatedAt = DateTime.UtcNow;
-
-        return await _userRepository.UpdateUser(existingUser);
+        return await _userRepository.UpdateUserAsync(param);
     }
     public async Task<UserStats> GetStats(string id, bool isSprintId)
     {
@@ -111,7 +118,13 @@ public class UserUseCase
     }
     public async Task<(IEnumerable<UserDomain> Users, int TotalCount)> SearchUsersAsync(SearchUserQueryParams param)
     {
-        return await _userRepository.SearchUsersAsync(param);
+        // if (param.ProjectId != null)
+        // {
+        //     var user_ids = await _projectMemberRepository.
+        // }
+        var users = await _userRepository.SearchUsersAsync(param);
+
+        return users;
     }
 
     public async Task ChangePassword(string userId, string oldPassword, string newPassword)
@@ -121,15 +134,18 @@ public class UserUseCase
             UserId = userId
         });
 
-        if (user == null)
+        if (user == null || string.IsNullOrWhiteSpace(user.Id))
             throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
 
         if (!PasswordHasher.ValidatePassword(oldPassword, user.Password))
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Current password is incorrect"));
 
-        user.Password = PasswordHasher.HashPassword(newPassword);
-        user.UpdatedAt = DateTime.UtcNow;
+        var newPasswordHashed = PasswordHasher.HashPassword(newPassword);
 
-        await _userRepository.UpdateUser(user);
+        await _userRepository.UpdateUserAsync(new UpdateUserParams
+        {
+            Id = user.Id,
+            Password = newPasswordHashed,
+        });
     }
 }

@@ -30,6 +30,7 @@ public class AutoMapperProfiles : Profile
         CreateMap<User, UserDomain>().ReverseMap();
         CreateMap<Sprint, SprintDomain>().ReverseMap();
         CreateMap<ProjectMember, ProjectMemberDomain>().ReverseMap();
+        CreateMap<OtpToken, OtpTokenDomain>().ReverseMap();
 
         CreateMap<CreateSprintReq, SprintDomain>();
         CreateMap<UpdateSprintReq, SprintDomain>();

@@ -134,22 +134,23 @@ public class ProjectUseCase
         var (projects, totalCount) = await _projectRepository.ListProjects(param);
 
         // Get project members for each project
-        foreach (var project in projects)
-        {
-            var members = await _projectMemberRepository.GetProjectMembersAsync(project.Id!, 1, 100);
-            var membersList = members.ToList();
+        // TODO: Fix performance
+        // foreach (var project in projects)
+        // {
+        //     var members = await _projectMemberRepository.GetProjectMembersAsync(project.Id!, 1, 100);
+        //     var membersList = members.ToList();
 
-            foreach (var member in membersList)
-            {
-                var user = await _userRepository.FindUserAsync(new UserQueryParams { UserId = member.UserId });
-                if (user != null)
-                {
-                    member.User = user;
-                }
-            }
+        //     foreach (var member in membersList)
+        //     {
+        //         var user = await _userRepository.FindUserAsync(new UserQueryParams { UserId = member.UserId });
+        //         if (user != null)
+        //         {
+        //             member.User = user;
+        //         }
+        //     }
 
-            project.ProjectMembers = membersList;
-        }
+        //     project.ProjectMembers = membersList;
+        // }
 
         return (projects, totalCount);
     }

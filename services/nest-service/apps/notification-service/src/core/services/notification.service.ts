@@ -7,6 +7,7 @@ import { IssueClientService, ProjectClientService, SprintClientService, UserClie
 import { ProjectRes } from '@nest-service/core/types/main_service/project';
 import { SprintRes } from '@nest-service/core/types/main_service/sprint';
 import { IssueRes, UserRes } from '@nest-service/core/types/base';
+import { NotificationEmitterService } from '@notification-service/adapters/websocket/notification.websocket';
 export interface CreateNotificationParams {
   recipientId: string;
   actorId?: string;
@@ -24,6 +25,16 @@ export interface GetAllNotificationParams {
   limit?: number | undefined;
 }
 
+export interface UpdateNotificationParams {
+  isRead?: boolean;
+  notiId: string;
+}
+
+export interface BulkUpdateNotificationParams {
+  userId?: string;
+  isRead?: boolean;
+}
+
 @Injectable()
 export class NotificationService {
   constructor(
@@ -32,11 +43,13 @@ export class NotificationService {
     private readonly sprintCLientService: SprintClientService,
     private readonly issueClientService: IssueClientService,
     private readonly userClientService: UserClientService,
+    private readonly notiEmitter: NotificationEmitterService,
   ) {}
 
   async createNotification(data: CreateNotificationParams): Promise<NotificationDomain> {
     const refType = this.getReferenceTypeByNotification(data.type);
-    return await this.notificationRepo.create({
+
+    const noti = await this.notificationRepo.create({
       recipientId: data.recipientId,
       actorId: data.actorId,
       type: data.type,
@@ -46,6 +59,10 @@ export class NotificationService {
       isRead: false,
       createdAt: new Date(),
     });
+
+    await this.notiEmitter.sendToUser(data.recipientId);
+
+    return noti;
   }
 
   async listNotifications(params: GetAllNotificationParams): Promise<{ data: NotificationDomain[]; totalCount: number }> {
@@ -53,6 +70,7 @@ export class NotificationService {
     const issueIds: string[] = [];
     const projectIds: string[] = [];
     const sprintIds: string[] = [];
+    const actorIds = notiDomain.map((noti) => noti?.actorId).filter(Boolean) as string[];
 
     notiDomain.forEach((noti) => {
       if (noti.referenceType == ReferenceType.ISSUE && noti.referenceId) {
@@ -66,11 +84,12 @@ export class NotificationService {
       }
     });
 
-    const [projects, sprints, issues, receivers] = await Promise.all([
-      this.projectClientService.getListProjects(projectIds),
-      this.sprintCLientService.getListSprints(sprintIds),
-      this.issueClientService.getListIssues(issueIds),
-      this.userClientService.getListUsers(notiDomain.map((noti) => noti.recipientId)),
+    const [projects, sprints, issues, receivers, actors] = await Promise.all([
+      this.projectClientService.getListProjects({ projectIds: projectIds, limit: params.limit || 100, page: params.page || 1 }),
+      this.sprintCLientService.getListSprints({ sprintIds: sprintIds, limit: params.limit || 100, page: params.page || 1 }),
+      this.issueClientService.getListIssues({ issueIds: issueIds, limit: params.limit || 100, page: params.page || 1 }),
+      this.userClientService.getListUsers({ userIds: notiDomain.map((noti) => noti.recipientId), limit: params.limit || 100, page: params.page || 1 }),
+      this.userClientService.getListUsers({ userIds: actorIds, limit: params.limit || 100, page: params.page || 1 }),
     ]);
 
     const projectsMap = new Map<string, ProjectRes>();
@@ -91,6 +110,11 @@ export class NotificationService {
     const receiverMaps = new Map<string, UserRes>();
     (receivers || []).forEach((receiver) => {
       receiverMaps.set(receiver.id, receiver);
+    });
+
+    const actorMaps = new Map<string, UserRes>();
+    (actors || []).forEach((actor) => {
+      actorMaps.set(actor.id, actor);
     });
 
     notiDomain.forEach((noti) => {
@@ -117,11 +141,24 @@ export class NotificationService {
       if (receiver) {
         noti.recipient = receiver;
       }
+      if (noti.actorId) {
+        const actor = actorMaps.get(noti.actorId);
+        noti.actor = actor;
+      }
     });
     return {
       data: notiDomain,
       totalCount: totalCount,
     };
+  }
+
+  async updateNotification(data: UpdateNotificationParams): Promise<NotificationDomain> {
+    const noti = await this.notificationRepo.update(data);
+    return noti;
+  }
+
+  async bulkUpdateNotification(data: BulkUpdateNotificationParams): Promise<{ success: boolean }> {
+    return await this.notificationRepo.bulkUpdate(data);
   }
 
   private getReferenceTypeByNotification(type: NotificationType): ReferenceType {

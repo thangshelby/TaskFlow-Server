@@ -19,6 +19,9 @@ cp -r ../../protos/* ./apps/$SERVICE_NAME/src/protos/
 # Generate proto types
 echo "🔧 Generating proto types for Core service"
 
+rm -rf ./libs/core/src/types
+mkdir -p ./libs/core/src/types
+
 protoc \
   --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto \
   --ts_proto_out=./libs/core/src/types \

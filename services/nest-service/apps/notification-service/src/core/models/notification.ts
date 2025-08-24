@@ -65,6 +65,7 @@ export enum ReferenceType {
   PROJECT_MEMBER = 'project_member',
 }
 export interface NotificationDomain {
+  id?: string;
   recipientId: string;
   actorId?: string;
   type: NotificationType;
@@ -72,9 +73,10 @@ export interface NotificationDomain {
   referenceType?: ReferenceType;
   content?: string;
   isRead: boolean;
-  createdAt: Date;
+  createdAt: string | Date;
   referenceData?: any;
   recipient?: UserRes;
+  actor?: UserRes;
 }
 export interface NotificationMessageData {
   recipientId: string;

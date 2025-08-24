@@ -95,8 +95,12 @@ message ListIssuesReq {
   repeated string sprint_ids = 4;
   optional string keyword = 5;
   repeated string issue_ids = 6;
-  int32 page = 7;
-  int32 limit = 8;
+  optional string due_date_from = 7;
+  optional string due_date_to = 8;
+  optional string created_at_from = 9;
+  optional string created_at_to = 10;
+  int32 page = 11;
+  int32 limit = 12;
 }
 
 message ListIssuesRes {
