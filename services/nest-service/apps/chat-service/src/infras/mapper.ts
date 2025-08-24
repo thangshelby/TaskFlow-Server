@@ -17,23 +17,62 @@ export class ChatMapper {
   }
 
   static toRoomDomain(doc: RoomDocument): RoomDomain {
+    let lastMessage: MessageDomain | undefined = undefined;
+
+    if (doc.lastMessage) {
+      const messageDoc = doc.lastMessage as any as MessageDocument;
+
+      if (messageDoc._id) {
+        lastMessage = {
+          id: messageDoc._id.toString(),
+          roomId: messageDoc.roomId,
+          senderId: messageDoc.senderId,
+          content: messageDoc.content,
+          type: messageDoc.type as MessageType,
+          replyToId: messageDoc.replyToId ?? undefined,
+          createdAt: messageDoc.createdAt instanceof Date ? messageDoc.createdAt : new Date(messageDoc.createdAt),
+          updatedAt: messageDoc.updatedAt ? (messageDoc.updatedAt instanceof Date ? messageDoc.updatedAt : new Date(messageDoc.updatedAt)) : undefined,
+        };
+      }
+    }
+
     return {
       id: doc._id.toString(),
       name: doc.name,
       type: doc.type as 'DIRECT' | 'GROUP',
       members: doc.members,
-      lastMessage: doc.lastMessage ? this.toMessageDomain(doc.lastMessage as MessageDocument) : undefined,
+      lastMessage,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     };
   }
 
   static toMessageResponse(message: MessageDomain): MessageResponse {
-    if (!message.id || !message.createdAt) {
-      throw new Error('Message must have an id and createdAt timestamp');
+    // Defensive: ensure id exists
+    const id = message.id || (message as any)._id?.toString();
+    if (!id) {
+      console.warn('No ID found for message, generating temporary one');
+      return {
+        id: `temp-${Date.now()}`,
+        roomId: message.roomId,
+        senderId: message.senderId,
+        content: '[Unknown]',
+        type: message.type || 'TEXT',
+        replyToId: message.replyToId,
+        createdAt: new Date().toISOString(),
+      };
     }
+
+    if (!message.createdAt) {
+      console.warn('Missing createdAt in message', id);
+      message.createdAt = new Date();
+    } else if (!(message.createdAt instanceof Date)) {
+      const d = new Date(message.createdAt);
+      message.createdAt = isNaN(d.getTime()) ? new Date() : d;
+    }
+
     return {
-      id: message.id,
+      id,
       roomId: message.roomId,
       senderId: message.senderId,
       content: message.content,

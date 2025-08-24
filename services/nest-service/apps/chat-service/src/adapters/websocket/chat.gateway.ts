@@ -140,6 +140,7 @@ export class ChatGateway {
             const rooms = await this.chatService.getRoomsByUserId(userId);
             this.logger.log('Rooms fetched for getRooms:', JSON.stringify(rooms, null, 2));
             const roomDomains = (rooms as any[]).map((doc) => ChatMapper.toRoomDomain(doc));
+
             const roomResponses = roomDomains.map((room) => ChatMapper.toRoomResponse(room));
 
             ws.send(
@@ -207,10 +208,15 @@ export class ChatGateway {
 
       (ws as any).roomIds.add(data.roomId);
 
-      // Now that access is validated, get messages and map them
+      //Map Messages
       const messages = await this.chatService.getMessagesByRoomId(data.roomId, 50);
       this.logger.log(`Found ${messages.length} messages for room ${data.roomId}`);
-
+      if (existingRoom.lastMessage) {
+        this.logger.log('LastMessage id:', existingRoom.lastMessage.id);
+        this.logger.log('LastMessage createdAt:', existingRoom.lastMessage.createdAt);
+        this.logger.log('Is createdAt a Date?', existingRoom.lastMessage.createdAt instanceof Date);
+        this.logger.log('Is createdAt valid?', !isNaN(existingRoom.lastMessage.createdAt.getTime()));
+      }
       const roomResponse = ChatMapper.toRoomResponse(existingRoom);
       const messageResponses = messages.map((msg) => ({
         id: msg.id,

@@ -5,6 +5,7 @@ import { ChatMessageData, MessageDomain, RoomDomain } from '../../core/models/ch
 
 @Injectable()
 export class ChatRepository {
+  logger: any;
   constructor(
     @InjectModel('Message') private readonly messageModel: Model<MessageDomain>,
     @InjectModel('Room') private readonly roomModel: Model<RoomDomain>,
@@ -27,13 +28,12 @@ export class ChatRepository {
   }
 
   async getMessagesByRoomId(roomId: string, limit?: number, before?: Date): Promise<MessageDomain[]> {
-    // Debug log
     console.log('Querying messages for roomId:', roomId);
 
     const query = this.messageModel.find({ roomId });
 
     if (before) {
-      query.where('createdAt').lt(before.getTime());
+      query.where('createdAt').lt(before.getTime()); // ✅ Date -> number
     }
 
     if (limit) {
@@ -42,18 +42,36 @@ export class ChatRepository {
 
     const results = await query.sort({ createdAt: -1 }).lean().exec();
 
-    // Transform the documents to include id instead of _id
-    const messages = results.map((doc) => ({
-      id: doc._id.toString(),
-      roomId: doc.roomId,
-      senderId: doc.senderId,
-      content: doc.content,
-      type: doc.type,
-      replyToId: doc.replyToId,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-    }));
+    // Step 1: Map and validate — only return MessageDomain or null
+    const candidates = results.map((doc): MessageDomain | null => {
+      const id = doc._id?.toString();
+      const createdAt = doc.createdAt ? new Date(doc.createdAt) : null;
 
+      // ✅ Validate required fields
+      if (!id || !createdAt || isNaN(createdAt.getTime())) {
+        console.warn('Invalid message skipped:', { _id: doc._id, createdAt: doc.createdAt });
+        return null;
+      }
+
+      // ✅ Construct object that *exactly* matches MessageDomain
+      const message: MessageDomain = {
+        id,
+        roomId: doc.roomId,
+        senderId: doc.senderId,
+        content: doc.content,
+        type: doc.type,
+        replyToId: doc.replyToId ?? undefined,
+        createdAt,
+        updatedAt: doc.updatedAt ? new Date(doc.updatedAt) : undefined,
+      };
+
+      return message;
+    });
+
+    // Step 2: Filter out nulls with correct type guard
+    const messages = candidates.filter((msg): msg is MessageDomain => msg !== null);
+
+    // Step 3: Safe to use .map(m => m.id)
     console.log(
       'Messages found:',
       messages.length,
