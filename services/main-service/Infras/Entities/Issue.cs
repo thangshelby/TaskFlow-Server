@@ -4,7 +4,6 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace MainService.Infras.Entities;
-
 public class Issue
 {
     [BsonId]

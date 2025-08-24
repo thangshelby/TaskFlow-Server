@@ -48,6 +48,13 @@ public class UserController : UserService.UserServiceBase
 
     public override async Task<UpdateUserRes> UpdateUser(UpdateUserReq request, ServerCallContext context)
     {
+        var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User is not authenticated."));
+        }
+
         var validationResult = await _updateUserValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
         {
@@ -56,12 +63,12 @@ public class UserController : UserService.UserServiceBase
 
         var updatedUser = await _userUseCase.UpdateUserAsync(new UpdateUserParams
         {
-            Id = request.UserId,
+            Id = userId,
             FirstName = request.FirstName,
             LastName = request.LastName,
             Email = request.Email,
             Password = request.Password,
-            Avatar= request.Avatar,
+            Avatar = request.Avatar,
         });
 
         var userResponse = _mapper.Map<UserRes>(updatedUser);
