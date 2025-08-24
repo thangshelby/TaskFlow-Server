@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package media_service;
+option go_package = "github.com/vudinhan2525/TaskFlow-Server/services/go-service/types/media_service;media_service";
+
+
+service MediaService {
+    rpc UploadImage (UploadImageReq) returns (UploadImageRes) {
+        
+    }
+    
+}
+
+message UploadImageReq {      
+	string image_id = 1;
+}
+message UploadImageRes {    
+	string url = 1;
+}

@@ -40,14 +40,27 @@ export class ChatRepository {
       query.limit(limit);
     }
 
-    const results = await query.sort({ createdAt: -1 }).exec();
+    const results = await query.sort({ createdAt: -1 }).lean().exec();
+
+    // Transform the documents to include id instead of _id
+    const messages = results.map((doc) => ({
+      id: doc._id.toString(),
+      roomId: doc.roomId,
+      senderId: doc.senderId,
+      content: doc.content,
+      type: doc.type,
+      replyToId: doc.replyToId,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    }));
+
     console.log(
       'Messages found:',
-      results.length,
-      results.map((m) => m._id?.toString()),
+      messages.length,
+      messages.map((m) => m.id),
     );
 
-    return results;
+    return messages;
   }
 
   async getRoomsByUserId(userId: string): Promise<RoomDomain[]> {
