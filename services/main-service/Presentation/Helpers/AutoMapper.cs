@@ -65,6 +65,9 @@ public class AutoMapperProfiles : Profile
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("o")))
             .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("o")))
+            .ForMember(dest => dest.CompletedAt, opt => opt.MapFrom(src => src.CompletedAt == DateTime.MinValue ? DateTime.MinValue.ToString("o") : src.CompletedAt.ToString("o")))
+            .ForMember(dest => dest.DueDateFrom, opt => opt.MapFrom(src => src.DueDateFrom == DateTime.MinValue ? string.Empty : src.DueDateFrom.ToString("o")))
+            .ForMember(dest => dest.DueDateTo, opt => opt.MapFrom(src => src.DueDateTo == DateTime.MinValue ? string.Empty : src.DueDateTo.ToString("o")))
             .ForMember(dest => dest.SprintId, opt => opt.MapFrom(src => src.SprintId ?? string.Empty))
             .ForMember(dest => dest.AssigneeId, opt => opt.MapFrom(src => src.AssigneeId ?? string.Empty))
             .ForMember(dest => dest.Column, opt => opt.MapFrom(src => src.Column));

@@ -55,5 +55,7 @@ public class UpdateIssueParams
     public IssueType? Type;
     public IssuePriority? Priority;
     public List<string>? Attachments;
-    public DateTime? DueDate { get; set; }
+
+    public string? DueDateFrom { get; set; }
+    public string? DueDateTo { get; set; }
 }

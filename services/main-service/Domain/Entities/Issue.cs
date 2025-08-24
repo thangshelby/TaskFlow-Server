@@ -22,6 +22,8 @@ public class IssueDomain
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime CompletedAt { get; set; } = DateTime.MinValue;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime DueDateFrom { get; set; } = DateTime.MinValue;
+    public DateTime DueDateTo { get; set; } = DateTime.MinValue;
     public void AssignToSprint(string? sprintId)
     {
         SprintId = sprintId;

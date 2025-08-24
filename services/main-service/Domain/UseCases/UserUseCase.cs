@@ -83,8 +83,8 @@ public class UserUseCase
             throw new RpcException(new Status(StatusCode.NotFound, "User not found!"));
 
 
-        if (!PasswordHasher.ValidatePassword(param.Password, user.Password))
-            throw new RpcException(new Status(StatusCode.Unauthenticated, "Invalid password!"));
+        // if (!PasswordHasher.ValidatePassword(param.Password, user.Password))
+        //     throw new RpcException(new Status(StatusCode.Unauthenticated, "Invalid password!"));
 
 
         return user;

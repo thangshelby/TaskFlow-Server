@@ -17,6 +17,15 @@ public class IssueRepository : IIssueRepository
 
     private readonly IMapper _mapper;
 
+    private static DateTime ParseToUtc(string dateString)
+    {
+        if (DateTime.TryParse(dateString, out var date))
+        {
+            return date.Kind == DateTimeKind.Utc ? date : date.ToUniversalTime();
+        }
+        return DateTime.MinValue;
+    }
+
     public IssueRepository(MongoDbService mongoDbService, IMapper mapper, IProjectRepository projectRepository, ILogger<IssueRepository> logger)
     {
         var database = mongoDbService.Database;
@@ -96,10 +105,17 @@ public class IssueRepository : IIssueRepository
         if (body.Priority.HasValue) existingIssue.Priority = body.Priority;
         if (body.Attachments != null && body.Attachments.Count > 0)
         {
-            _logger.LogInformation("Attachments: {@Attachments} repository", body.Attachments);
             existingIssue.Attachments = body.Attachments;
         }
+        if (!string.IsNullOrEmpty(body.DueDateFrom))
+        {
+            existingIssue.DueDateFrom = ParseToUtc(body.DueDateFrom);
+        }
 
+        if (!string.IsNullOrEmpty(body.DueDateTo))
+        {
+            existingIssue.DueDateTo = ParseToUtc(body.DueDateTo);
+        }
 
         existingIssue.UpdatedAt = DateTime.UtcNow;
         await _issues.ReplaceOneAsync(i => i.Id == body.IssueId, existingIssue);
@@ -311,17 +327,25 @@ public class IssueRepository : IIssueRepository
             );
             filter &= keywordFilter;
         }
-        // if (!string.IsNullOrEmpty(param.DueDateFrom) && DateTime.TryParse(param.DueDateFrom, out var dueFrom))
-        // {
-        //     filter &= filterBuilder.Gte(i => i.DueDate, dueFrom);
-        // }
+        if (!string.IsNullOrEmpty(param.DueDateFrom))
+        {
+            var dueFrom = ParseToUtc(param.DueDateFrom);
+            if (dueFrom != DateTime.MinValue)
+            {
+                filter &= filterBuilder.Gte(i => i.DueDateFrom, dueFrom);
+            }
+        }
 
-        // if (!string.IsNullOrEmpty(param.DueDateTo) && DateTime.TryParse(param.DueDateTo, out var dueTo))
-        // {
-        //     // If you want the end date to be inclusive for the whole day:
-        //     dueTo = dueTo.Date.AddDays(1).AddTicks(-1);
-        //     filter &= filterBuilder.Lte(i => i.DueDate, dueTo);
-        // }
+        if (!string.IsNullOrEmpty(param.DueDateTo))
+        {
+            var dueTo = ParseToUtc(param.DueDateTo);
+            if (dueTo != DateTime.MinValue)
+            {
+                // If you want the end date to be inclusive for the whole day:
+                dueTo = dueTo.Date.AddDays(1).AddTicks(-1);
+                filter &= filterBuilder.Lte(i => i.DueDateTo, dueTo);
+            }
+        }
 
         if (!string.IsNullOrEmpty(param.CreatedAtFrom) && DateTime.TryParse(param.CreatedAtFrom, out var createdFrom))
         {
