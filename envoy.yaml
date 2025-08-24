@@ -388,7 +388,7 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 172.17.0.1
+                      address: 172.18.0.1
                       port_value: 5001
     - name: notification_service
       type: LOGICAL_DNS
@@ -401,8 +401,8 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 172.17.0.1
-                      port_value: 5002
+                      address: 172.18.0.1
+                      port_value: 5002  
     - name: chat_service
       type: LOGICAL_DNS
       connect_timeout: 5s
@@ -415,5 +415,5 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 172.17.0.1
+                      address: 172.18.0.1
                       port_value: 5003

@@ -18,6 +18,8 @@ mysql:
 	docker start mysql-container
 main-service:
 	cd services/main-service && dotnet watch
+noti-service:
+	cd services/nest-service && npm run start notification-service
 
 gen-protobuf-main-service:
 	protoc -I ./protos --include_imports --include_source_info \

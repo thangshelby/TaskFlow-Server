@@ -64,6 +64,12 @@ public class Issue
     [BsonElement("updated_at")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    [BsonElement("due_date_to")]
+    public DateTime DueDateTo { get; set; } = DateTime.MinValue;
+
+    [BsonElement("due_date_from")]
+    public DateTime DueDateFrom { get; set; } = DateTime.MinValue;
+
     public static Issue FromDomain(IssueDomain domain)
     {
         return new Issue
@@ -85,6 +91,9 @@ public class Issue
             CreatedAt = domain.CreatedAt,
             CompletedAt = domain.CompletedAt,
             UpdatedAt = domain.UpdatedAt,
+            DueDateTo = domain.DueDateTo,
+            DueDateFrom = domain.DueDateFrom,
+
         };
     }
 
@@ -106,6 +115,7 @@ public class Issue
             ReporterId = ReporterId,
             CreatedAt = CreatedAt,
             UpdatedAt = UpdatedAt,
+            CompletedAt = CompletedAt,
 
         };
 
