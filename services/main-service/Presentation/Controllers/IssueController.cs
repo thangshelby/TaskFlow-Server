@@ -185,6 +185,8 @@ public class IssueController : IssueService.IssueServiceBase
             AssigneeIds = assigneeIds,
             Keyword = request.Keyword,
             SprintIds = sprintIds,
+            Types = request.Types_.ToList(),
+            Priorities = request.Priorities.ToList(),
             ColumnIds = columnIds,
             CreatedAtFrom = request.CreatedAtFrom,
             CreatedAtTo = request.CreatedAtTo,

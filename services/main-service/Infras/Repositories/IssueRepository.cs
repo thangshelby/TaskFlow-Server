@@ -317,6 +317,15 @@ public class IssueRepository : IIssueRepository
             filter &= filterBuilder.In(i => i.SprintId, param.SprintIds);
         }
 
+        if (param.Priorities!=null && param.Priorities.Any())
+        {
+            filter &= filterBuilder.In("priority", param.Priorities);
+        }
+        if (param.Types!=null && param.Types.Any())
+        {
+            filter &= filterBuilder.In("type", param.Types);
+        }
+
         if (!string.IsNullOrEmpty(param.Keyword))
         {
             var decodedKeyword = Uri.UnescapeDataString(param.Keyword.Replace("+", " "));
