@@ -29,6 +29,7 @@ export interface ClientToServerEvents {
   // Room events
   joinRoom: (roomId: string) => void;
   leaveRoom: (roomId: string) => void;
+  getRooms: () => void; // NEW: fetch all rooms for the user
 
   // Message events
   sendMessage: (data: { roomId: string; content: string; type: string; replyToId?: string }) => void;
@@ -53,6 +54,7 @@ export interface ServerToClientEvents {
   roomCreated: (room: RoomResponse) => void;
   memberAdded: (data: { roomId: string; userId: string }) => void;
   memberRemoved: (data: { roomId: string; userId: string }) => void;
+  roomsList: (rooms: RoomResponse[]) => void; // NEW: response for getRooms
 
   // Typing events
   userStartedTyping: (data: { roomId: string; userId: string }) => void;
