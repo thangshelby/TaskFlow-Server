@@ -22,13 +22,13 @@ public static class DependencyInjectionExtensions
         services.AddScoped<OtpTokenUseCase>();
 
         // Repositories
-        services.AddScoped<ITransactionRepo, MongoTransactionRepo>();
-        services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<IProjectRepository, ProjectRepository>();
-        services.AddScoped<ISprintRepository, SprintRepository>();
-        services.AddScoped<IIssueRepository, IssueRepository>();
-        services.AddScoped<IActivitiesRepository, ActivitiesRepository>();
-        services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
+        services.AddSingleton<ITransactionRepo, MongoTransactionRepo>();
+        services.AddSingleton<IUserRepository, UserRepository>();
+        services.AddSingleton<IProjectRepository, ProjectRepository>();
+        services.AddSingleton<ISprintRepository, SprintRepository>();
+        services.AddSingleton<IIssueRepository, IssueRepository>();
+        services.AddSingleton<IActivitiesRepository, ActivitiesRepository>();
+        services.AddSingleton<IProjectMemberRepository, ProjectMemberRepository>();
         services.AddSingleton<ICommentsRepository, CommentsRepository>();
         services.AddSingleton<IOtpTokenRepository, OtpTokenRepository>();
         services.AddSingleton<IPublisherService, KafkaPublisher>();
