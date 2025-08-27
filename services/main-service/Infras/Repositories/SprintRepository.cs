@@ -25,6 +25,11 @@ public class SprintRepository : ISprintRepository
         _logger = logger;
         _projectRepository = projectRepository;
         _issueRepository = issueRepository;
+
+        var projectIdKeys = Builders<Sprint>.IndexKeys.Ascending(s => s.ProjectId);
+        var projectIdModel = new CreateIndexModel<Sprint>(projectIdKeys);
+        _sprints.Indexes.CreateOne(projectIdModel);
+
     }
 
     public async Task<SprintDomain> CreateSprint(SprintDomain sprintDomain)

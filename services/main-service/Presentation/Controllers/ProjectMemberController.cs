@@ -173,6 +173,7 @@ public class ProjectMemberController : ProjectMemberService.ProjectMemberService
                 }
             };
 
+            // TODO: REFACTOR GET PROJECT BY UserIds -> Map data back
             foreach (var member in projects)
             {
                 var project = await _projectUseCase.GetProject(member.ProjectId);
