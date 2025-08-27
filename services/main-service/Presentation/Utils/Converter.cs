@@ -19,7 +19,7 @@ public static class ConverterUtils
     {
         if (input.Data == null) throw new ArgumentNullException(nameof(input.Data));
 
-        // mặc định loại bỏ: null
+        // mặc định loại bỏ: null, chuoi rong
         input.RemoveValues ??= new List<object?> { null, "" };
 
         var result = new Dictionary<string, object?>();
@@ -78,7 +78,7 @@ public static class ConverterUtils
     {
         public object Data { get; set; } = default!;
 
-        // Giá trị cần bỏ (mặc định: null)
+        // Giá trị cần bỏ (mặc định: null, "")
         public List<object?>? RemoveValues { get; set; } = null;
 
         // Các field (property name) cần bỏ
