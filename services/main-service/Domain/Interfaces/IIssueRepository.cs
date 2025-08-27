@@ -34,6 +34,8 @@ public class GetIssuesParams
     public List<string>? AssigneeIds;
     public List<string>? SprintIds;
     public List<string>? IssueIds;
+    public List<string>? Types;
+    public List<string>? Priorities;
     public string? Keyword;
     public int Page = 1;
     public int Limit = 10;
@@ -55,5 +57,7 @@ public class UpdateIssueParams
     public IssueType? Type;
     public IssuePriority? Priority;
     public List<string>? Attachments;
-    public DateTime? DueDate { get; set; }
+
+    public string? DueDateFrom { get; set; }
+    public string? DueDateTo { get; set; }
 }

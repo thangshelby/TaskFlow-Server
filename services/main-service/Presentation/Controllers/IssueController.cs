@@ -146,9 +146,10 @@ public class IssueController : IssueService.IssueServiceBase
             ParentId = request.ParentId,
             Priority = System.Enum.TryParse<IssuePriority>(request.Priority, true, out var priorityEnum) ? priorityEnum : null,
             Type = System.Enum.TryParse<IssueType>(request.Type, true, out var typeEnum) ? typeEnum : null,
-            Attachments = request.Attachments.ToList()
+            Attachments = request.Attachments.ToList(),
+            DueDateFrom = request.DueDateFrom,
+            DueDateTo = request.DueDateTo
         });
-        _logger.LogInformation("Attachments: {@Attachments} controller", request.Attachments);
         return _mapper.Map<IssueRes>(result);
     }
 
@@ -184,6 +185,8 @@ public class IssueController : IssueService.IssueServiceBase
             AssigneeIds = assigneeIds,
             Keyword = request.Keyword,
             SprintIds = sprintIds,
+            Types = request.Types_.ToList(),
+            Priorities = request.Priorities.ToList(),
             ColumnIds = columnIds,
             CreatedAtFrom = request.CreatedAtFrom,
             CreatedAtTo = request.CreatedAtTo,
