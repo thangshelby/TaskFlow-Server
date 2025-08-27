@@ -34,6 +34,8 @@ public class GetIssuesParams
     public List<string>? AssigneeIds;
     public List<string>? SprintIds;
     public List<string>? IssueIds;
+    public List<string>? Types;
+    public List<string>? Priorities;
     public string? Keyword;
     public int Page = 1;
     public int Limit = 10;
