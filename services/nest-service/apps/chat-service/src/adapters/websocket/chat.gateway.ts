@@ -135,41 +135,42 @@ export class ChatGateway {
           await this.handleSendMessage(ws, message.data);
           break;
         case 'getRooms':
-          try {
-            const userId = (ws as any).userId;
-            const rooms = await this.chatService.getRoomsByUserId(userId);
-            this.logger.log('Rooms fetched for getRooms:', JSON.stringify(rooms, null, 2));
-            const roomDomains = (rooms as any[]).map((doc) => ChatMapper.toRoomDomain(doc));
+          await this.handleGetRooms(ws);
+          // try {
+          //   const userId = (ws as any).userId;
+          //   const rooms = await this.chatService.getRoomsByUserId(userId);
+          //   this.logger.log('Rooms fetched for getRooms:', JSON.stringify(rooms, null, 2));
+          //   const roomDomains = (rooms as any[]).map((doc) => ChatMapper.toRoomDomain(doc));
 
-            const roomResponses = roomDomains.map((room) => ChatMapper.toRoomResponse(room));
+          //   const roomResponses = roomDomains.map((room) => ChatMapper.toRoomResponse(room));
 
-            ws.send(
-              JSON.stringify({
-                event: 'roomsList',
-                data: {
-                  rooms: roomResponses,
-                  timestamp: new Date().toISOString(),
-                  totalCount: roomResponses.length,
-                  userId,
-                },
-              }),
-            );
-          } catch (error) {
-            this.logger.error(`Failed to fetch rooms: ${error.message}`);
-            ws.send(
-              JSON.stringify({
-                event: 'error',
-                data: {
-                  code: 'ROOMS_FETCH_FAILED',
-                  message: 'Failed to fetch rooms',
-                  details: {
-                    userId: (ws as any).userId,
-                    error: error.message,
-                  },
-                },
-              }),
-            );
-          }
+          //   ws.send(
+          //     JSON.stringify({
+          //       event: 'roomsList',
+          //       data: {
+          //         rooms: roomResponses,
+          //         timestamp: new Date().toISOString(),
+          //         totalCount: roomResponses.length,
+          //         userId,
+          //       },
+          //     }),
+          //   );
+          // } catch (error) {
+          //   this.logger.error(`Failed to fetch rooms: ${error.message}`);
+          //   ws.send(
+          //     JSON.stringify({
+          //       event: 'error',
+          //       data: {
+          //         code: 'ROOMS_FETCH_FAILED',
+          //         message: 'Failed to fetch rooms',
+          //         details: {
+          //           userId: (ws as any).userId,
+          //           error: error.message,
+          //         },
+          //       },
+          //     }),
+          //   );
+          // }
           break;
         default:
           this.logger.warn(`Unknown event: ${message.event}`);
@@ -314,6 +315,43 @@ export class ChatGateway {
             message: 'Failed to send message',
             details: {
               roomId: data.roomId,
+              error: error.message,
+            },
+          },
+        }),
+      );
+    }
+  }
+  private async handleGetRooms(ws: WebSocket) {
+    try {
+      const userId = (ws as any).userId;
+      const rooms = await this.chatService.getRoomsByUserId(userId);
+      this.logger.log('Rooms fetched for getRooms:', JSON.stringify(rooms, null, 2));
+      const roomDomains = (rooms as any[]).map((doc) => ChatMapper.toRoomDomain(doc));
+
+      const roomResponses = roomDomains.map((room) => ChatMapper.toRoomResponse(room));
+
+      ws.send(
+        JSON.stringify({
+          event: 'roomsList',
+          data: {
+            rooms: roomResponses,
+            timestamp: new Date().toISOString(),
+            totalCount: roomResponses.length,
+            userId,
+          },
+        }),
+      );
+    } catch (error) {
+      this.logger.error(`Failed to fetch rooms: ${error.message}`);
+      ws.send(
+        JSON.stringify({
+          event: 'error',
+          data: {
+            code: 'ROOMS_FETCH_FAILED',
+            message: 'Failed to fetch rooms',
+            details: {
+              userId: (ws as any).userId,
               error: error.message,
             },
           },
