@@ -151,8 +151,17 @@ public class ProjectRepository : IProjectRepository
                 {
                     "$lookup", new BsonDocument {
                         { "from", "issues" },
-                        { "localField", "issue_ids" },
-                        { "foreignField", "_id" },
+                        { "let", new BsonDocument("issueIds", "$issue_ids") },
+                        { "pipeline", new BsonArray {
+                            new BsonDocument {
+                                { "$match", new BsonDocument {
+                                    { "$expr", new BsonDocument("$in", new BsonArray { "$_id", "$$issueIds" }) }
+                                }}
+                            },
+                            new BsonDocument {
+                                { "$sort", new BsonDocument("created_at", 1) }
+                            }
+                        }},
                         { "as", "issues" }
                     }
                 }

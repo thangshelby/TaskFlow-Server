@@ -1,7 +1,8 @@
+import { Metadata } from '@grpc/grpc-js';
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export const UserMetadata = createParamDecorator((_: unknown, ctx: ExecutionContext) => {
-  const metadata = ctx.switchToRpc().getContext();
+  const metadata = ctx.switchToRpc().getContext<Metadata>();
   const userId = metadata.get('userId')?.[0];
   const userRole = metadata.get('userRole')?.[0];
   return {

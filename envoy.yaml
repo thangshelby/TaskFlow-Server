@@ -96,6 +96,14 @@ static_resources:
                                 string_match:
                                   exact: "POST"
                           requires: {}
+                        
+                        - match:
+                            path: "/api/v1/users/resend-otp"
+                            headers:
+                              - name: ":method"
+                                string_match:
+                                  exact: "POST"
+                          requires: {}
 
                         - match:
                             path: "/api/v1/users/logout"

@@ -17,3 +17,11 @@ public class OtpTokenDomain
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
 
+public enum OtpVerifyResult
+{
+    Success,
+    Invalid,
+    Expired,
+    Locked,
+    NotFound
+}

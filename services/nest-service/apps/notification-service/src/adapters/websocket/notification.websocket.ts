@@ -2,7 +2,7 @@ import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
 import { NotificationService } from '@notification-service/core/services/notification.service';
 import { Server, Socket } from 'socket.io';
-import convert from '@notification-service/utils/convert';
+import convert from '@notification-service/utils/convert.utils';
 
 @Injectable()
 export class NotificationEmitterService {

@@ -13,13 +13,14 @@ export interface KafkaMessage {
 
 export enum KafkaActionType {
   NOTIFICATIONS_CREATE_NEW_NOTIFICATION = 'NOTIFICATIONS_CREATE_NEW_NOTIFICATION',
+  MAILS_SEND_VERIFY_OTP_USER = 'MAILS_SEND_VERIFY_OTP_USER',
 }
 
 @Injectable()
 export class KafkaService implements OnModuleInit, OnModuleDestroy {
   private readonly kafka: Kafka;
   private producer: Producer;
-  private consumer: Consumer;
+  private consumers: Consumer[] = [];
 
   constructor(
     private readonly logService: LogService,
@@ -27,7 +28,6 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
   ) {
     const clientId = this.configService.get<string>('KAFKA_CLIENT_ID', 'taskflow-client');
     const brokers = this.configService.get<string>('KAFKA_BROKERS', 'localhost:9092').split(',');
-    const groupId = this.configService.get<string>('KAFKA_GROUP_ID', 'taskflow-group');
 
     this.kafka = new Kafka({
       clientId,
@@ -36,19 +36,18 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     this.producer = this.kafka.producer({
       createPartitioner: Partitioners.LegacyPartitioner,
     });
-    this.consumer = this.kafka.consumer({ groupId });
   }
 
   async onModuleInit() {
     await this.producer.connect();
     this.logService.log('Kafka Producer connected');
-    await this.consumer.connect();
-    this.logService.log('Kafka Consumer connected');
   }
 
   async onModuleDestroy() {
+    for (const consumer of this.consumers) {
+      await consumer.disconnect();
+    }
     await this.producer.disconnect();
-    await this.consumer.disconnect();
     this.logService.log('Kafka disconnected');
   }
 
@@ -79,9 +78,13 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
   }
 
   async subscribe(topic: string, callback: (message: EachMessagePayload) => Promise<void>): Promise<void> {
-    await this.consumer.subscribe({ topic, fromBeginning: true });
+    const baseGroupId = this.configService.get<string>('KAFKA_GROUP_ID', 'taskflow-group');
+    const consumer = this.kafka.consumer({ groupId: `${baseGroupId}-${topic}` });
 
-    await this.consumer.run({
+    await consumer.connect();
+    await consumer.subscribe({ topic, fromBeginning: true });
+
+    await consumer.run({
       eachMessage: async (payload) => {
         try {
           await callback(payload);
@@ -92,6 +95,7 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
       },
     });
 
+    this.consumers.push(consumer);
     this.logService.log(`Subscribed to topic: ${topic}`);
   }
 
