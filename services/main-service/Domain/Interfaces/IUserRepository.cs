@@ -42,5 +42,6 @@ public class UpdateUserParams
     public string? Password { get; set; }
     public string? Avatar { get; set; }
     public bool? IsVerified { get; set; }
+    public DateTime? ExpiredAt { get; set; }
     public UserRole? Role { get; set; }
 }

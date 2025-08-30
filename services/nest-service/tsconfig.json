@@ -21,6 +21,7 @@
       "@nest-service/core": ["libs/core/src"],
       "@nest-service/core/*": ["libs/core/src/*"],
       "@notification-service/*": ["apps/notification-service/src/*"]
-    }
+    },
+    "types": ["node"]
   }
 }

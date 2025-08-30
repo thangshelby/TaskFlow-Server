@@ -1,3 +1,4 @@
+using Grpc.Core;
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using System.Security.Cryptography;
@@ -56,23 +57,67 @@ public class OtpTokenUseCase
                 Data = new
                 {
                     OTP = otp,
-                    FullName = $"{user.FirstName} {user.LastName}"
                 }
             }
         );
 
-        _logger.LogInformation("Generated OTP for user {UserId}", user.Id);
         return savedToken;
     }
 
-    public async Task<bool> VerifyOtpAsync(string userId, string otp)
+    public async Task<bool> ResendOtpAsync(string userId)
     {
-        var token = await _otpTokenRepository.GetByUserIdAsync(userId);
+        var token = await GetTokenOtp(userId);
+        if (token == null)
+            throw new RpcException(new Status(StatusCode.NotFound, "OTP token not found"));
 
-        if (token == null || token.ExpiresAt < DateTime.UtcNow)
+        if (token.ResendCount >= token.MaxAttempts)
+            throw new RpcException(new Status(StatusCode.PermissionDenied, "Max resend attempts reached"));
+
+        if (DateTime.UtcNow < token.CanResendAfter)
+            throw new RpcException(new Status(StatusCode.ResourceExhausted, "Please wait before resending OTP"));
+
+        var newOtp = GenerateNumericOtp(6);
+        var salt = Guid.NewGuid().ToString("N");
+        token.OtpHash = HashOtp(newOtp, salt);
+
+        var updatedToken = await _otpTokenRepository.UpdateAsync(new OtpTokenUpdateParams
         {
-            return false; // OTP hết hạn hoặc không tồn tại
-        }
+            Id = token.Id!,
+            Salt = salt,
+            OtpHash = token.OtpHash,
+            CanResendAfter = DateTime.UtcNow.AddMinutes(1),
+            ResendCount = token.ResendCount + 1,
+        });
+
+        await _publisher.EmitKafka(
+            TopicName.MAILS,
+            KafkaMessageAction.MAILS_SEND_VERIFY_OTP_USER,
+            new IMailMessage
+            {
+                UserId = userId,
+                Data = new
+                {
+                    OTP = newOtp,
+                }
+            }
+        );
+
+        return true;
+    }
+
+    public async Task<OtpTokenDomain?> GetTokenOtp(string userId)
+    {
+        return await _otpTokenRepository.GetByUserIdAsync(userId);
+    }
+
+    public async Task<OtpVerifyResult> VerifyOtpAsync(UserDomain user, string otp)
+    {
+        if (user.Id == null) return OtpVerifyResult.NotFound;
+        var token = await _otpTokenRepository.GetByUserIdAsync(user.Id);
+
+        if (token == null || token.Id == null) return OtpVerifyResult.NotFound;
+        if (token.ExpiresAt < DateTime.UtcNow) return OtpVerifyResult.Expired;
+        if (token.AttemptCount >= token.MaxAttempts) return OtpVerifyResult.Locked;
 
         var otpHash = HashOtp(otp, token.Salt);
 
@@ -81,12 +126,14 @@ public class OtpTokenUseCase
             await _otpTokenRepository.UpdateAsync(new OtpTokenUpdateParams
             {
                 Id = token.Id,
-                AttemptCount = token.AttemptCount + 1
+                AttemptCount = token.AttemptCount + 1,
             });
-            return false; // Sai OTP
+            return OtpVerifyResult.Invalid;
         }
 
-        return true;
+        await _otpTokenRepository.MarkUsedAsync(token.Id);
+
+        return OtpVerifyResult.Success;
     }
 
     private static string GenerateNumericOtp(int length)

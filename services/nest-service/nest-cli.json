@@ -43,6 +43,10 @@
         "tsConfigPath": "apps/notification-service/tsconfig.app.json",
         "assets": [
           {
+            "include": "public/**/*",
+            "outDir": "dist/apps/notification-service"
+          },
+          {
             "include": "protos/**/*",
             "outDir": "dist/apps/notification-service"
           }

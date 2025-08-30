@@ -2,8 +2,6 @@ using Grpc.Core;
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using MainService.Domain.Packages;
-using MainService.Infras.Entities;
-using Microsoft.Extensions.Logging;
 using TaskFlow.UserService;
 
 namespace MainService.Domain.UseCases;
@@ -50,9 +48,9 @@ public class UserUseCase
             throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
         }
 
-        var isValidOtp = await _otpTokenUseCase.VerifyOtpAsync(user.Id, otp);
+        var result = await _otpTokenUseCase.VerifyOtpAsync(user, otp);
 
-        if (!isValidOtp)
+        if (result != OtpVerifyResult.Success)
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid OTP code"));
         }
@@ -61,9 +59,26 @@ public class UserUseCase
         {
             Id = user.Id,
             IsVerified = true,
+            ExpiredAt = DateTime.MaxValue,
         });
 
         return user;
+    }
+
+    public async Task<bool> ResendOTP(string email)
+    {
+        var user = await _userRepository.FindUserAsync(new UserQueryParams
+        {
+            Email = email,
+        });
+
+        if (user == null || string.IsNullOrEmpty(user.Id))
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
+        }
+
+        var isSuccess = await _otpTokenUseCase.ResendOtpAsync(user.Id);
+        return isSuccess;
     }
 
     public async Task<UserDomain?> FindUserAsync(UserQueryParams queryParams)

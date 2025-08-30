@@ -38,21 +38,29 @@ public class OtpTokenRepository : IOtpTokenRepository
         return entity == null ? null : _mapper.Map<OtpTokenDomain>(entity);
     }
 
-    public async Task UpdateAsync(OtpTokenUpdateParams updateParams)
+    public async Task<OtpTokenDomain> UpdateAsync(OtpTokenUpdateParams updateParams)
     {
-        var update = Builders<OtpToken>.Update
-            .Set(t => t.AttemptCount, updateParams.AttemptCount)
-            .Set(t => t.ResendCount, updateParams.ResendCount)
-            .Set(t => t.UpdatedAt, DateTime.UtcNow);
-
-        if (updateParams.CanResendAfter != null)
+        var update = MongoUtils.MakeMongoDataUpdate<OtpToken>(new MongoUtils.MongoUpdateInput
         {
-            update = update.Set(t => t.CanResendAfter, updateParams.CanResendAfter.Value);
-        }
+            Data = updateParams,
+        });
 
         await _otpTokens.UpdateOneAsync(
             x => x.Id == updateParams.Id,
             update
         );
+
+        var updatedToken = await _otpTokens.Find(token => token.Id == updateParams.Id).FirstOrDefaultAsync();
+        return _mapper.Map<OtpTokenDomain>(updatedToken);
+    }
+
+    public async Task MarkUsedAsync(string tokenId)
+    {
+        var update = Builders<OtpToken>.Update
+            .Set(t => t.ExpiresAt, DateTime.UtcNow)
+            .Set(t => t.UpdatedAt, DateTime.UtcNow);
+
+        await _otpTokens.UpdateOneAsync(t => t.Id == tokenId, update);
+        _logger.LogInformation("OTP token {TokenId} marked as used", tokenId);
     }
 }

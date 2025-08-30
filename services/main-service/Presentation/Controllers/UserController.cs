@@ -193,6 +193,17 @@ public class UserController : UserService.UserServiceBase
         };
     }
 
+    public override async Task<ResendOTPRes> ResendOTP(ResendOTPReq request, ServerCallContext context)
+    {
+        await _userUseCase.ResendOTP(request.Email);
+
+        return new ResendOTPRes
+        {
+            Status = "success",
+            Message = "Resend mail verify successfully!",
+        };
+    }
+
     public override async Task<LoginUserRes> Login(LoginUserReq request, ServerCallContext context)
     {
         var validationResult = await _loginUserValidator.ValidateAsync(request);

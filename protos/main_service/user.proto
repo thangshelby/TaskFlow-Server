@@ -33,6 +33,12 @@ service UserService {
       body: "*"
     };
   }
+  rpc ResendOTP (ResendOTPReq) returns (ResendOTPRes) {
+    option (google.api.http) = {
+      post: "/api/v1/users/resend-otp"
+      body: "*"
+    };
+  }
   rpc UpdateUser (UpdateUserReq) returns (UpdateUserRes) {
     option (google.api.http) = {
       put: "/api/v1/users"
@@ -226,4 +232,13 @@ message VerifyOTPRes {
   string status = 1;
   string message = 2;
   base.UserRes data = 3;
+}
+
+// Resend OTP User
+message ResendOTPReq {
+  string email = 1;
+}
+message ResendOTPRes {
+  string status = 1;
+  string message = 2;
 }

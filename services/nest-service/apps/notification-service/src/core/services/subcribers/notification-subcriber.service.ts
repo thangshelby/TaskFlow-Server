@@ -2,6 +2,7 @@ import { KafkaActionType, KafkaMessage, KafkaService } from '@nest-service/core'
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { NotificationMessageData } from '@notification-service/core/models/notification';
 import { CreateNotificationParams, NotificationService } from '@notification-service/core/services/notification.service';
+import validator from '@notification-service/utils/validate.utils';
 import { EachMessagePayload } from 'kafkajs';
 
 export const NOTIFICATION_KAFKA_TOPIC = 'notifications';
@@ -29,16 +30,16 @@ export class NotificationSubscriberService implements OnModuleInit {
           await this.handleCreateNotification(notificationMessage);
           break;
         default:
-          console.error('❌ Unknown event type:', notificationMessage.eventType);
+          console.error('❌ [NOTIFICATION_TOPIC] Unknown event type:', notificationMessage.eventType);
           break;
       }
     } catch (err) {
-      console.error('❌ Failed to process notification message:', err);
+      console.error('❌ [NOTIFICATION_TOPIC] Failed to process notification message:', err);
     }
   }
 
   private async handleCreateNotification(kafkaMessage: KafkaMessage): Promise<void> {
-    const { isValid, message, data } = this.validateRequiredFields<NotificationMessageData>(kafkaMessage);
+    const { isValid, message, data } = validator.validateRequiredFields<NotificationMessageData>(kafkaMessage);
     if (!isValid || !data) {
       console.error('❌ Missing field:', message);
       return;
@@ -56,39 +57,5 @@ export class NotificationSubscriberService implements OnModuleInit {
     };
 
     await this.notificationService.createNotification(notification);
-  }
-
-  private validateRequiredFields<T>(message: KafkaMessage): {
-    isValid: boolean;
-    message: string;
-    data?: T;
-    missingFields?: string[];
-  } {
-    if (!message.data) {
-      return {
-        isValid: false,
-        message: `Missing data for ${message.id} event`,
-      };
-    }
-
-    const requiredFields = Object.keys(message.data) as (keyof T)[];
-    const missingFields = requiredFields.filter((field) => {
-      const value = (message.data as T)[field];
-      return value === undefined || value === null;
-    });
-
-    if (missingFields.length > 0) {
-      return {
-        isValid: false,
-        message: `Missing required fields for ${message.id} event: ${missingFields.join(', ')}`,
-        missingFields: missingFields as string[],
-      };
-    }
-
-    return {
-      isValid: true,
-      message: 'valid',
-      data: message.data as T,
-    };
   }
 }

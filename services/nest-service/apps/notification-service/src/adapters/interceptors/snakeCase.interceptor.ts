@@ -1,6 +1,6 @@
 // interceptors/transform-response.interceptor.ts
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
-import convert from '@notification-service/utils/convert';
+import convert from '@notification-service/utils/convert.utils';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
