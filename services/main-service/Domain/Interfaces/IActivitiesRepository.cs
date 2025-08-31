@@ -14,6 +14,7 @@ public interface IActivitiesRepository
 public class GetActivityParams
 {
     public string? IssueId;
+    public string? ProjectId;
     public int Page;
     public int Limit;
 }

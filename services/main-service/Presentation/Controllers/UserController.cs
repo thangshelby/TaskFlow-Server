@@ -183,7 +183,7 @@ public class UserController : UserService.UserServiceBase
 
         var userResponse = _mapper.Map<UserRes>(user);
 
-        if (user.Id != null) await SetJwtToken(user.Id, user.Role, request.Email, context);
+        if (user.Id != null) await SetJwtToken(user, context);
 
         return new VerifyOTPRes
         {
@@ -219,7 +219,7 @@ public class UserController : UserService.UserServiceBase
         });
 
         if (user.Id == null) throw new Exception("Can't happen");
-        await SetJwtToken(user.Id, user.Role, request.Email, context);
+        await SetJwtToken(user, context);
 
         var userResponse = _mapper.Map<UserRes>(user);
 
@@ -383,7 +383,7 @@ public class UserController : UserService.UserServiceBase
         }
     }
 
-    private async Task SetJwtToken(string userId, UserRole role, string email, ServerCallContext context)
+    private async Task SetJwtToken(UserDomain user, ServerCallContext context)
     {
         string? privateKeyPem = _configuration["JWT_SECRET"];
         if (string.IsNullOrEmpty(privateKeyPem))
@@ -391,7 +391,7 @@ public class UserController : UserService.UserServiceBase
             throw new Exception("Private key not found in configuration.");
         }
 
-        string jwtToken = CreateJwtToken(userId, role, email, privateKeyPem);
+        string jwtToken = CreateJwtToken(user, privateKeyPem);
 
         var metadata = new Metadata
         {
@@ -400,7 +400,7 @@ public class UserController : UserService.UserServiceBase
         await context.WriteResponseHeadersAsync(metadata);
     }
 
-    private static string CreateJwtToken(string userId, UserRole role, string email, string privateKeyPem)
+    private static string CreateJwtToken(UserDomain user, string privateKeyPem)
     {
         var rsa = RSA.Create();
         rsa.ImportFromPem(privateKeyPem.ToCharArray());
@@ -410,13 +410,14 @@ public class UserController : UserService.UserServiceBase
 
         var claims = new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, userId),
-            new Claim(JwtRegisteredClaimNames.Name, email),
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id!),
+            new Claim(JwtRegisteredClaimNames.Name, user.Email),
             new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
             new Claim(JwtRegisteredClaimNames.Exp, DateTimeOffset.UtcNow.AddHours(24).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
             new Claim(JwtRegisteredClaimNames.Iss, "127.0.0.1"),
-            new Claim("role", role.ToString()),
-            new Claim("userId", userId)
+            new Claim("role", user.Role.ToString()),
+            new Claim("userId", user.Id!),
+            new Claim("isVerified", user.IsVerified.ToString().ToLower()),
         };
 
         var tokenDescriptor = new SecurityTokenDescriptor

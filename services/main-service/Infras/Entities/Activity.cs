@@ -27,6 +27,9 @@ public class Activity
     [BsonElement("user_id")]
     public string? UserId { get; set; }
 
+    [BsonElement("project_id")]
+    public required string ProjectId { get; set; }
+
     [BsonElement("user_name")]
     public string? UserName { get; set; }
 
@@ -50,6 +53,7 @@ public class Activity
             IssueId = domain.IssueId,
             UserId = domain.UserId,
             ActionType = domain.ActionType,
+            ProjectId = domain.ProjectId,
             Changes = domain.Changes?.Select(change => new ActivityChangeEntity
             {
                 Field = change.Field,

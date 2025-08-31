@@ -18,22 +18,19 @@ public class ActivitiesRepository : IActivitiesRepository
         _mapper = mapper;
         var database = mongoDbService.Database;
         _activities = database.GetCollection<Activity>("activities");
+
+        var indexKeys = Builders<Activity>.IndexKeys.Ascending(a => a.ProjectId);
+        var indexModel = new CreateIndexModel<Activity>(indexKeys);
+
+        _activities.Indexes.CreateOne(indexModel);
     }
 
     public async Task<ActivityDomain> CreateActivity(ActivityDomain activityDomain)
     {
-        try
-        {
-            var entity = _mapper.Map<Activity>(activityDomain);
-            await _activities.InsertOneAsync(entity);
-            activityDomain.Id = entity.Id;
-            return activityDomain;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to insert activity");
-            throw;
-        }
+        var entity = _mapper.Map<Activity>(activityDomain);
+        await _activities.InsertOneAsync(entity);
+        activityDomain.Id = entity.Id;
+        return activityDomain;
     }
 
     public async Task<ActivityDomain> GetActivity(string id)
@@ -52,6 +49,11 @@ public class ActivitiesRepository : IActivitiesRepository
         if (!string.IsNullOrEmpty(param.IssueId))
         {
             filter = Builders<Activity>.Filter.Eq(a => a.IssueId, param.IssueId);
+        }
+
+        if (!string.IsNullOrEmpty(param.ProjectId))
+        {
+            filter = Builders<Activity>.Filter.Eq(a => a.ProjectId, param.ProjectId);
         }
 
         var totalCount = (int)await _activities.CountDocumentsAsync(filter);
