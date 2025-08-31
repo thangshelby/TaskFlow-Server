@@ -213,6 +213,7 @@ public class IssueUseCase
                 IssueId = newIssue.Id!,
                 UserId = data.UserId,
                 UserName = user?.FullName ?? "Unknown",
+                ProjectId = newIssue.ProjectId,
                 ActionType = ActivityAction.ISSUE_CREATED,
                 Changes = []
             };
@@ -228,10 +229,10 @@ public class IssueUseCase
             IssueId = newIssue.Id!,
             UserId = data.UserId,
             UserName = user?.FullName ?? "Unknown",
+            ProjectId = newIssue.ProjectId,
             ActionType = ActivityAction.ISSUE_UPDATED,
             Changes = changes
         };
-        _logger.LogInformation("create");
         await _activitiesRepository.CreateActivity(activity);
     }
 

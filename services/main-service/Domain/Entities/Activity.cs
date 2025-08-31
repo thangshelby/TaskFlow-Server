@@ -9,6 +9,7 @@ public class ActivityChange
 public class ActivityDomain
 {
     public string? Id { get; set; }
+    public required string ProjectId { get; set; }
     public required string IssueId { get; set; }
     public string? UserId { get; set; }
     public string? UserName { get; set; }
