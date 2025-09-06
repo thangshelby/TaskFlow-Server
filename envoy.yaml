@@ -93,7 +93,7 @@ static_resources:
                                 string_match:
                                   exact: "POST"
                           requires: {}
-                        
+
                         - match:
                             path: "/api/v1/users/resend-otp"
                             headers:
@@ -365,39 +365,40 @@ static_resources:
               typed_config:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                 codec_type: AUTO
-                stat_prefix: ingress_http
+                stat_prefix: chat_service
                 stream_idle_timeout: 0s
                 upgrade_configs:
                   - upgrade_type: websocket
                     enabled: true
-                  - upgrade_type: "GET"
-                    enabled: true
-#                websocket_config:
-#                  idle_timeout: 0s
-#                  max_connect_attempts: 5
+
                 route_config:
+                  name: chat_routes
                   virtual_hosts:
                     - name: chat_service
                       domains: ["*"]
                       routes:
+                        # Route 1: REST/gRPC - No WebSocket upgrade
                         - match:
-                            prefix: "/"
+                            prefix: "/api"
                           route:
                             cluster: chat_service
                             timeout: 0s
-                            upgrade_configs:
-                              - upgrade_type: websocket
-                                enabled: true
-                              - upgrade_type: "GET"
-                                enabled: true
+                          # No upgrade_configs → treat as normal HTTP
+
+                        # Route 2: WebSocket - Enable upgrade only on /ws
+                        - match:
+                            path: "/ws"
+                          route:
+                            cluster: chat_service
+                            timeout: 0s
+
                       typed_per_filter_config:
                         envoy.filters.http.cors:
                           "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
                           allow_origin_string_match:
                             - prefix: "*"
-                          allow_headers: "content-type,authorization,upgrade,connection,sec-websocket-key,sec-websocket-version,sec-websocket-extensions,cookie,sid"
+                          allow_headers: "content-type,authorization,upgrade,connection,sec-websocket-key,sec-websocket-version,sec-websocket-extensions,cookie"
                           allow_methods: "GET,POST,OPTIONS"
-                          allow_methods: "GET,POST"
                           expose_headers: "authorization"
                           allow_credentials: true
                 http_filters:
@@ -428,7 +429,6 @@ static_resources:
                           from_cookies:
                             - token
                       rules:
-                        # Private route
                         - match:
                             prefix: "/"
                           requires:
@@ -466,7 +466,6 @@ static_resources:
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-
   clusters:
     - name: main_service
       type: LOGICAL_DNS
@@ -480,7 +479,7 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 192.168.88.4
+                      address: 192.168.2.163
                       port_value: 5001
     - name: notification_service
       type: LOGICAL_DNS
@@ -493,11 +492,11 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 192.168.88.4
+                      address: 192.168.2.163
                       port_value: 5002
     - name: chat_service
       type: LOGICAL_DNS
-      connect_timeout: 30s
+      connect_timeout: 5s
       lb_policy: ROUND_ROBIN
       http_protocol_options: {}
       circuit_breakers:
@@ -512,5 +511,5 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 192.168.88.4
+                      address: 192.168.2.163
                       port_value: 5003

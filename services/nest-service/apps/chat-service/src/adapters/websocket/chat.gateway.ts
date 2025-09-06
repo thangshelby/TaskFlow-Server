@@ -9,7 +9,7 @@ import { WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
 import * as jwt from 'jsonwebtoken';
 @Injectable()
-@WebSocketGateway(5003, { cors: true })
+@WebSocketGateway({ cors: true, path: '/ws' })
 export class ChatGateway {
   @WebSocketServer() server: WebSocket.Server; // Access the WebSocket server instance
   private connectedUsers = new Map<string, Set<WebSocket>>(); // Store WebSocket instances
@@ -39,6 +39,7 @@ export class ChatGateway {
             },
           }),
         );
+
         ws.close();
         return;
       }
@@ -63,7 +64,12 @@ export class ChatGateway {
         ws.close();
         return;
       }
-
+      ws.send(
+        JSON.stringify({
+          event: 'connection_ack',
+          data: { status: 'connected', userId: user.id },
+        }),
+      );
       // Store userId and roomIds on the WebSocket instance
       (ws as any).userId = user.id;
       (ws as any).roomIds = new Set<string>();
@@ -137,54 +143,69 @@ export class ChatGateway {
     const userId = (ws as any).userId;
     if (!userId) return;
 
+    // Validate event
+    if (!message.event) {
+      ws.send(
+        JSON.stringify({
+          event: 'error',
+          data: { message: 'Missing event type' },
+        }),
+      );
+      return;
+    }
+
     try {
       switch (message.event) {
-        case 'joinRoom':
-          await this.handleJoinRoom(ws, { roomId: message.data });
+        case 'joinRoom': {
+          const { roomId } = message.data || {};
+          if (!roomId) {
+            ws.send(
+              JSON.stringify({
+                event: 'error',
+                data: { message: 'roomId is required to join room' },
+              }),
+            );
+            return;
+          }
+          await this.handleJoinRoom(ws, { roomId });
           break;
-        case 'sendMessage':
-          await this.handleSendMessage(ws, message.data);
+        }
+
+        case 'sendMessage': {
+          const { roomId, content, type, replyToId } = message.data || {};
+          if (!roomId || !content) {
+            ws.send(
+              JSON.stringify({
+                event: 'error',
+                data: { message: 'roomId and content are required' },
+              }),
+            );
+            return;
+          }
+          await this.handleSendMessage(ws, { roomId, content, type, replyToId });
           break;
-        case 'getRooms':
+        }
+
+        case 'getRooms': {
           await this.handleGetRooms(ws);
-        // try {
-        //   const userId = (ws as any).userId;
-        //   const rooms = await this.chatService.getRoomsByUserId(userId);
-        //   this.logger.log('Rooms fetched for getRooms:', JSON.stringify(rooms, null, 2));
-        //   const roomDomains = (rooms as any[]).map((doc) => ChatMapper.toRoomDomain(doc));
-
-        //   const roomResponses = roomDomains.map((room) => ChatMapper.toRoomResponse(room));
-
-        //   ws.send(
-        //     JSON.stringify({
-        //       event: 'roomsList',
-        //       data: {
-        //         rooms: roomResponses,
-        //         timestamp: new Date().toISOString(),
-        //         totalCount: roomResponses.length,
-        //         userId,
-        //       },
-        //     }),
-        //   );
-        // } catch (error) {
-        //   this.logger.error(`Failed to fetch rooms: ${error.message}`);
-        //   ws.send(
-        //     JSON.stringify({
-        //       event: 'error',
-        //       data: {
-        //         code: 'ROOMS_FETCH_FAILED',
-        //         message: 'Failed to fetch rooms',
-        //         details: {
-        //           userId: (ws as any).userId,
-        //           error: error.message,
-        //         },
-        //       },
-        //     }),
-        //   );
-        // }
-        case 'getMessageHistory':
-          await this.handleGetMessageHistory(ws, message.data);
           break;
+        }
+
+        case 'getMessageHistory': {
+          const { roomId, before, limit } = message.data || {};
+          if (!roomId) {
+            ws.send(
+              JSON.stringify({
+                event: 'error',
+                data: { message: 'roomId is required for message history' },
+              }),
+            );
+            return;
+          }
+          await this.handleGetMessageHistory(ws, { roomId, before, limit });
+          break;
+        }
+
         default:
           this.logger.warn(`Unknown event: ${message.event}`);
           ws.send(
@@ -195,6 +216,7 @@ export class ChatGateway {
           );
       }
     } catch (error) {
+      // ✅ Now this won't fire due to destructuring
       this.logger.error(`Error handling event ${message.event}: ${error.message}`);
       ws.send(
         JSON.stringify({
@@ -206,6 +228,7 @@ export class ChatGateway {
   }
 
   private async handleJoinRoom(ws: WebSocket, data: { roomId: string }) {
+    const { roomId } = data;
     try {
       const userId = (ws as any).userId;
 
@@ -357,7 +380,12 @@ export class ChatGateway {
       ws.send(
         JSON.stringify({
           event: 'roomsList',
-          roomResponses,
+          data: {
+            rooms: roomResponses,
+            timestamp: new Date().toISOString(),
+            totalCount: roomResponses.length,
+            userId,
+          },
         }),
       );
     } catch (error) {
