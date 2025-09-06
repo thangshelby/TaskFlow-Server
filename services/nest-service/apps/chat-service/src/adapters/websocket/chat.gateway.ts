@@ -7,9 +7,9 @@ import { WsAuthAdapter } from '../auth/ws-auth.adapter';
 import { ChatMapper } from '../../infras/mapper';
 import { WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
-
+import * as jwt from 'jsonwebtoken';
 @Injectable()
-@WebSocketGateway(5003, { cors: true })
+@WebSocketGateway({ cors: true, path: '/ws' })
 export class ChatGateway {
   @WebSocketServer() server: WebSocket.Server; // Access the WebSocket server instance
   private connectedUsers = new Map<string, Set<WebSocket>>(); // Store WebSocket instances
@@ -39,6 +39,7 @@ export class ChatGateway {
             },
           }),
         );
+
         ws.close();
         return;
       }
@@ -63,7 +64,12 @@ export class ChatGateway {
         ws.close();
         return;
       }
-
+      ws.send(
+        JSON.stringify({
+          event: 'connection_ack',
+          data: { status: 'connected', userId: user.id },
+        }),
+      );
       // Store userId and roomIds on the WebSocket instance
       (ws as any).userId = user.id;
       (ws as any).roomIds = new Set<string>();
@@ -76,31 +82,42 @@ export class ChatGateway {
       ws.on('message', (data: Buffer) => {
         try {
           const message = JSON.parse(data.toString());
+
+          // Handle authentication
+          if (message.event === 'authenticate') {
+            const token = message.data?.token;
+            if (!token) {
+              ws.send(JSON.stringify({ event: 'error', data: { message: 'Auth token required' } }));
+              ws.close();
+              return;
+            }
+
+            try {
+              const decoded = jwt.verify(token, 'your-secret') as any;
+              (ws as any).userId = decoded.userId;
+              ws.send(JSON.stringify({ event: 'connection_ack', data: { status: 'connected' } }));
+            } catch (err) {
+              ws.send(JSON.stringify({ event: 'error', data: { message: 'Invalid token' } }));
+              ws.close();
+            }
+            return;
+          }
+
+          // Only proceed if authenticated
+          if (!(ws as any).userId) {
+            ws.send(JSON.stringify({ event: 'error', data: { message: 'Authenticate first' } }));
+            return;
+          }
+
+          // Handle other events
           this.handleMessage(ws, message);
-        } catch {
-          this.logger.error('Invalid message format');
-          ws.send(JSON.stringify({ event: 'error', data: { message: 'Invalid message format' } }));
+        } catch (err) {
+          ws.send(JSON.stringify({ event: 'error', data: { message: 'Invalid message' } }));
         }
       });
 
       ws.on('close', () => this.handleDisconnect(ws));
 
-      ws.send(
-        JSON.stringify({
-          event: 'connection_ack',
-          data: {
-            status: 'connected',
-            user: {
-              id: user.id,
-              firstName: user.firstName,
-              lastName: user.lastName,
-              email: user.email,
-              role: user.role,
-              connectionId: request.headers['sec-websocket-key'],
-            },
-          },
-        }),
-      );
       this.logger.log(`User ${user.id} connected`);
     } catch (error) {
       this.logger.error(`Connection error: ${error.message}`);
@@ -126,63 +143,92 @@ export class ChatGateway {
     const userId = (ws as any).userId;
     if (!userId) return;
 
+    // Validate event
+    if (!message.event) {
+      ws.send(
+        JSON.stringify({
+          event: 'error',
+          data: { message: 'Missing event type' },
+        }),
+      );
+      return;
+    }
+
     try {
       switch (message.event) {
-        case 'joinRoom':
-          await this.handleJoinRoom(ws, { roomId: message.data });
+        case 'joinRoom': {
+          const { roomId } = message.data || {};
+          if (!roomId) {
+            ws.send(
+              JSON.stringify({
+                event: 'error',
+                data: { message: 'roomId is required to join room' },
+              }),
+            );
+            return;
+          }
+          await this.handleJoinRoom(ws, { roomId });
           break;
-        case 'sendMessage':
-          await this.handleSendMessage(ws, message.data);
+        }
+
+        case 'sendMessage': {
+          const { roomId, content, type, replyToId } = message.data || {};
+          if (!roomId || !content) {
+            ws.send(
+              JSON.stringify({
+                event: 'error',
+                data: { message: 'roomId and content are required' },
+              }),
+            );
+            return;
+          }
+          await this.handleSendMessage(ws, { roomId, content, type, replyToId });
           break;
-        case 'getRooms':
+        }
+
+        case 'getRooms': {
           await this.handleGetRooms(ws);
-          // try {
-          //   const userId = (ws as any).userId;
-          //   const rooms = await this.chatService.getRoomsByUserId(userId);
-          //   this.logger.log('Rooms fetched for getRooms:', JSON.stringify(rooms, null, 2));
-          //   const roomDomains = (rooms as any[]).map((doc) => ChatMapper.toRoomDomain(doc));
-
-          //   const roomResponses = roomDomains.map((room) => ChatMapper.toRoomResponse(room));
-
-          //   ws.send(
-          //     JSON.stringify({
-          //       event: 'roomsList',
-          //       data: {
-          //         rooms: roomResponses,
-          //         timestamp: new Date().toISOString(),
-          //         totalCount: roomResponses.length,
-          //         userId,
-          //       },
-          //     }),
-          //   );
-          // } catch (error) {
-          //   this.logger.error(`Failed to fetch rooms: ${error.message}`);
-          //   ws.send(
-          //     JSON.stringify({
-          //       event: 'error',
-          //       data: {
-          //         code: 'ROOMS_FETCH_FAILED',
-          //         message: 'Failed to fetch rooms',
-          //         details: {
-          //           userId: (ws as any).userId,
-          //           error: error.message,
-          //         },
-          //       },
-          //     }),
-          //   );
-          // }
           break;
+        }
+
+        case 'getMessageHistory': {
+          const { roomId, before, limit } = message.data || {};
+          if (!roomId) {
+            ws.send(
+              JSON.stringify({
+                event: 'error',
+                data: { message: 'roomId is required for message history' },
+              }),
+            );
+            return;
+          }
+          await this.handleGetMessageHistory(ws, { roomId, before, limit });
+          break;
+        }
+
         default:
           this.logger.warn(`Unknown event: ${message.event}`);
-          ws.send(JSON.stringify({ event: 'error', data: { message: 'Unknown event' } }));
+          ws.send(
+            JSON.stringify({
+              event: 'error',
+              data: { message: `Unknown event: ${message.event}` },
+            }),
+          );
       }
     } catch (error) {
-      this.logger.error(`Message processing error: ${error.message}`);
-      ws.send(JSON.stringify({ event: 'error', data: { message: 'Failed to process message' } }));
+      // ✅ Now this won't fire due to destructuring
+      this.logger.error(`Error handling event ${message.event}: ${error.message}`);
+      ws.send(
+        JSON.stringify({
+          event: 'error',
+          data: { message: 'Internal server error' },
+        }),
+      );
     }
   }
 
   private async handleJoinRoom(ws: WebSocket, data: { roomId: string }) {
+    const { roomId } = data;
     try {
       const userId = (ws as any).userId;
 
@@ -355,6 +401,65 @@ export class ChatGateway {
               error: error.message,
             },
           },
+        }),
+      );
+    }
+  }
+  private async handleGetMessageHistory(ws: WebSocket, data: { roomId: string; before?: string; limit?: number }) {
+    const userId = (ws as any).userId;
+    const { roomId, before, limit = 30 } = data;
+
+    try {
+      // Verify user is member of room
+      const room = await this.chatService.getRoomById(roomId);
+      if (!room || !room.members.includes(userId)) {
+        return ws.send(
+          JSON.stringify({
+            event: 'error',
+            data: { message: 'Access denied to room' },
+          }),
+        );
+      }
+
+      // ✅ Convert 'before' string to Date object if provided
+      const beforeDate: Date | undefined = before ? new Date(before) : undefined;
+
+      // Validate date if provided
+      if (before && (isNaN(beforeDate!.getTime()) || beforeDate!.toString() === 'Invalid Date')) {
+        return ws.send(
+          JSON.stringify({
+            event: 'error',
+            data: { message: 'Invalid "before" timestamp' },
+          }),
+        );
+      }
+
+      // Fetch messages
+      const messages = await this.chatService.getMessagesByRoomId(roomId, limit, beforeDate);
+      const messageResponses = messages.map((msg) => ({
+        id: msg.id,
+        roomId: msg.roomId,
+        senderId: msg.senderId,
+        content: msg.content,
+        type: msg.type,
+        replyToId: msg.replyToId,
+        createdAt: msg.createdAt.toISOString(),
+      }));
+
+      ws.send(
+        JSON.stringify({
+          event: 'messageHistory',
+          data: {
+            roomId,
+            messages: messageResponses,
+          },
+        }),
+      );
+    } catch (error) {
+      ws.send(
+        JSON.stringify({
+          event: 'error',
+          data: { message: 'Failed to load message history' },
         }),
       );
     }

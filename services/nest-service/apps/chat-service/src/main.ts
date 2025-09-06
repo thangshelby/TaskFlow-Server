@@ -4,30 +4,23 @@ import { ChatServiceModule } from './chat-service.module';
 import { WsAdapter } from '@nestjs/platform-ws';
 
 async function bootstrap() {
+  let serverInstance = null;
+
+  if (serverInstance) return;
+
   try {
-    const start = Date.now();
-    Logger.log(`[BOOT] Starting bootstrap at ${new Date().toISOString()}`);
-
-    // Create a NestJS application without an HTTP server
-    const beforeCreate = Date.now();
-    Logger.log(`[BOOT] Before NestFactory.create: ${beforeCreate - start}ms since start`);
     const app = await NestFactory.create(ChatServiceModule, { cors: true });
-    Logger.log(`[BOOT] After NestFactory.create: ${Date.now() - start}ms since start`);
+    app.setGlobalPrefix('api/v1');
+    app.useWebSocketAdapter(new WsAdapter(app)); // ← Must be called before listen()
 
-    // Use the native WebSocket adapter
-    app.useWebSocketAdapter(new WsAdapter(app));
+    const port = 5003;
+    serverInstance = await app.listen(port);
 
-    // Initialize the WebSocket server (ChatGateway will use port 5003)
-    const beforeInit = Date.now();
-    Logger.log(`[BOOT] Before app.init: ${beforeInit - start}ms since start`);
-    await app.init();
-    Logger.log(`[BOOT] After app.init: ${Date.now() - start}ms since start`);
-
-    Logger.log(`🚀 WebSocket server running on ws://localhost:5003`);
+    Logger.log(`🚀 Server running on http://localhost:${port}`);
+    Logger.log(`💡 WebSocket available at ws://localhost:${port}/ws`);
   } catch (error) {
-    Logger.error(`Failed to start WebSocket server: ${error.message}`);
+    Logger.error(`Failed to start: ${error.message}`, error.stack);
     process.exit(1);
   }
 }
-
 bootstrap();
