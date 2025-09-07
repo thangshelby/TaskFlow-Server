@@ -42,21 +42,21 @@ public class GetIssuesParams
 }
 public class UpdateIssueParams
 {
-    public required string IssueId;
-    public required string CreatorId;
-    public string? Title;
-    public string? ProjectId;
-    public string? SprintId;
-    public string? AssigneeId;
-    public string? Description;
-    public string? Summary;
-    public int? StoryPoint;
-    public string? ReporterId;
-    public string? ColumnId;
-    public string? ParentId;
-    public IssueType? Type;
-    public IssuePriority? Priority;
-    public List<string>? Attachments;
+    public required string Id { get; set; }
+    public string? CreatorId { get; set; }
+    public string? Title { get; set; }
+    public string? ProjectId { get; set; }
+    public string? SprintId { get; set; }
+    public string? AssigneeId { get; set; }
+    public string? Description { get; set; }
+    public string? Summary { get; set; }
+    public int? StoryPoint { get; set; }
+    public string? ReporterId { get; set; }
+    public string? ColumnId { get; set; }
+    public string? ParentId { get; set; }
+    public IssueType? Type { get; set; }
+    public IssuePriority? Priority { get; set; }
+    public List<string>? Attachments { get; set; }
 
     public string? DueDateFrom { get; set; }
     public string? DueDateTo { get; set; }

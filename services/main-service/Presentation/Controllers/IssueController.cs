@@ -132,7 +132,7 @@ public class IssueController : IssueService.IssueServiceBase
         }
         var result = await _issueUseCase.UpdateIssue(new UpdateIssueParams
         {
-            IssueId = request.Id,
+            Id = request.Id,
             CreatorId = userId,
             AssigneeId = request.AssigneeId,
             Description = request.Description,

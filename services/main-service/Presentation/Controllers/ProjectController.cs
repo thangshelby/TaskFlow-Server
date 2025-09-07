@@ -174,7 +174,7 @@ public class ProjectController : ProjectService.ProjectServiceBase
             throw new RpcException(new Status(StatusCode.InvalidArgument, "ProjectId is required"));
         }
 
-        var projectColumns = await _projectUseCase.GetAllColumns(request.ProjectId);
+        var projectColumns = await _projectUseCase.GetAllColumns(new ListProjectColumnsParams { ProjectId = request.ProjectId });
 
         var response = new GetColumnsRes();
         response.Data.AddRange(_mapper.Map<List<ColumnRes>>(projectColumns));

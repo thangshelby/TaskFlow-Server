@@ -4,6 +4,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace MainService.Infras.Entities;
+
 public class Issue
 {
     [BsonId]
@@ -15,6 +16,9 @@ public class Issue
 
     [BsonElement("project_id")]
     public string ProjectId { get; set; } = string.Empty;
+
+    [BsonElement("creator_id")]
+    public string CreatorId { get; set; } = string.Empty;
 
     [BsonElement("sprint_id")]
     public string? SprintId { get; set; }
@@ -75,6 +79,7 @@ public class Issue
         return new Issue
         {
             Id = domain.Id,
+            CreatorId = domain.CreatorId,
             Title = domain.Title,
             ProjectId = domain.ProjectId,
             SprintId = domain.SprintId,
@@ -102,6 +107,7 @@ public class Issue
         var domain = new IssueDomain()
         {
             Id = Id,
+            CreatorId = CreatorId,
             Title = Title,
             ParentId = ParentId,
             Type = Type,

@@ -71,59 +71,17 @@ public class IssueRepository : IIssueRepository
 
     public async Task<IssueDomain> UpdateIssue(UpdateIssueParams body)
     {
-
-        var existingIssue = await _issues.Find(i => i.Id == body.IssueId).FirstOrDefaultAsync();
-        if (existingIssue == null)
-            throw new Exception("Issue not found");
-
-        var columns = await _projectRepository.FindColumnsByProjectId(existingIssue.ProjectId);
-        string? lastColId = columns.Count > 0 ? columns[^1].Id : null;
-
-        if (!string.IsNullOrEmpty(body.Title)) existingIssue.Title = body.Title;
-        if (!string.IsNullOrEmpty(body.ProjectId)) existingIssue.ProjectId = body.ProjectId;
-        if (!string.IsNullOrEmpty(body.SprintId)) existingIssue.SprintId = body.SprintId;
-        if (body.SprintId == "null") existingIssue.SprintId = "";
-        if (!string.IsNullOrEmpty(body.AssigneeId)) existingIssue.AssigneeId = body.AssigneeId;
-        if (!string.IsNullOrEmpty(body.Description)) existingIssue.Description = body.Description;
-        if (!string.IsNullOrEmpty(body.Summary)) existingIssue.Summary = body.Summary;
-        if (body.StoryPoint.HasValue) existingIssue.StoryPoint = body.StoryPoint.Value;
-        if (!string.IsNullOrEmpty(body.ReporterId)) existingIssue.ReporterId = body.ReporterId;
-        if (!string.IsNullOrEmpty(body.ColumnId))
+        var update = MongoUtils.MakeMongoDataUpdate<Issue>(new MongoUtils.MongoUpdateInput
         {
-            existingIssue.ColumnId = body.ColumnId;
-            if (existingIssue.ColumnId == lastColId)
-            {
-                existingIssue.CompletedAt = DateTime.UtcNow;
-            }
-            else
-            {
-                existingIssue.CompletedAt = DateTime.MinValue;
-            }
-        }
-        if (!string.IsNullOrEmpty(body.ParentId)) existingIssue.ParentId = body.ParentId;
-        if (body.Type.HasValue) existingIssue.Type = body.Type;
-        if (body.Priority.HasValue) existingIssue.Priority = body.Priority;
-        if (body.Attachments != null && body.Attachments.Count > 0)
-        {
-            existingIssue.Attachments = body.Attachments;
-        }
-        if (!string.IsNullOrEmpty(body.DueDateFrom))
-        {
-            existingIssue.DueDateFrom = ParseToUtc(body.DueDateFrom);
-        }
+            Data = body,
+        });
 
-        if (!string.IsNullOrEmpty(body.DueDateTo))
-        {
-            existingIssue.DueDateTo = ParseToUtc(body.DueDateTo);
-        }
-
-        existingIssue.UpdatedAt = DateTime.UtcNow;
-        await _issues.ReplaceOneAsync(i => i.Id == body.IssueId, existingIssue);
+        await _issues.UpdateOneAsync(i => i.Id == body.Id, update);
 
         // Fetch the updated issue with column information
         var pipeline = new[]
         {
-            new BsonDocument("$match", new BsonDocument("_id", ObjectId.Parse(body.IssueId))),
+            new BsonDocument("$match", new BsonDocument("_id", ObjectId.Parse(body.Id))),
             new BsonDocument("$lookup", new BsonDocument
             {
                 { "from", "project_column" },
@@ -317,11 +275,11 @@ public class IssueRepository : IIssueRepository
             filter &= filterBuilder.In(i => i.SprintId, param.SprintIds);
         }
 
-        if (param.Priorities!=null && param.Priorities.Any())
+        if (param.Priorities != null && param.Priorities.Any())
         {
             filter &= filterBuilder.In("priority", param.Priorities);
         }
-        if (param.Types!=null && param.Types.Any())
+        if (param.Types != null && param.Types.Any())
         {
             filter &= filterBuilder.In("type", param.Types);
         }

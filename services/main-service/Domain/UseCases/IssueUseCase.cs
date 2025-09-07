@@ -106,7 +106,7 @@ public class IssueUseCase
 
     public async Task<IssueDomain> UpdateIssue(UpdateIssueParams updateData)
     {
-        if (string.IsNullOrEmpty(updateData.IssueId))
+        if (string.IsNullOrEmpty(updateData.Id))
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Issue ID cannot be empty"));
 
         IssueDomain existingIssue = null!;
@@ -114,7 +114,7 @@ public class IssueUseCase
 
         var updatedIssue = await _transactionRepo.ExecuteAsync(async session =>
         {
-            existingIssue = await _issueRepository.GetIssue(updateData.IssueId);
+            existingIssue = await _issueRepository.GetIssue(updateData.Id);
             oldIssue = existingIssue;
             if (!string.IsNullOrEmpty(updateData.ColumnId) && updateData.ColumnId != existingIssue.ColumnId)
             {
@@ -136,7 +136,7 @@ public class IssueUseCase
 
                 await _projectRepository.UpdateColumn(new UpdateColumnParams
                 {
-                    AddIssueId = updateData.IssueId,
+                    AddIssueId = updateData.Id,
                     ColumnId = newColumn.Id,
                 });
                 await _projectRepository.UpdateColumn(new UpdateColumnParams

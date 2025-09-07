@@ -7,6 +7,7 @@ public class IssueDomain
     public string Title { get; set; } = string.Empty;
     public string ProjectId { get; set; } = string.Empty;
     public string? SprintId { get; set; }
+    public string? CreatorId { get; set; }
     public string? AssigneeId { get; set; }
     public string ParentId { get; set; } = string.Empty;
     public string ReporterId { get; set; } = string.Empty;

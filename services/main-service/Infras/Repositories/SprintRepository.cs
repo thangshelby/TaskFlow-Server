@@ -93,7 +93,7 @@ public class SprintRepository : ISprintRepository
     }
     public async Task<SprintStats> GetSprintStats(string sprint_id, string project_id)
     {
-        var columns = await _projectRepository.FindColumnsByProjectId(project_id);
+        var columns = await _projectRepository.FindColumnsByProjectId(new ListProjectColumnsParams { ProjectId = project_id });
         string? lastColId = columns.Count > 0 ? columns[^1].Id : null;
         var pipeline = new[]
         {
