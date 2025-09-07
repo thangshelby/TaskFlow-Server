@@ -135,14 +135,14 @@ public class ProjectRepository : IProjectRepository
         return projectColumn;
     }
 
-    public async Task<List<ProjectColumnDomain>> FindColumnsByProjectId(string projectId)
+    public async Task<List<ProjectColumnDomain>> FindColumnsByProjectId(ListProjectColumnsParams param)
     {
         var pipeline = new[]
         {
             new BsonDocument {
                 {
                     "$match", new BsonDocument {
-                        { "project_id", new ObjectId(projectId) }
+                        { "project_id", new ObjectId(param.ProjectId) }
                     }
                 }
             },

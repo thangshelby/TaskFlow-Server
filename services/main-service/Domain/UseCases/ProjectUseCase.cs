@@ -11,17 +11,20 @@ public class ProjectUseCase
     private readonly IProjectRepository _projectRepository;
     private readonly IProjectMemberRepository _projectMemberRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IssueUseCase _issueUseCase;
 
     public ProjectUseCase(
         IProjectRepository projectRepository,
         ITransactionRepo transactionRepo,
         IProjectMemberRepository projectMemberRepository,
+        IssueUseCase issueUseCase,
         IUserRepository userRepository)
     {
         _projectRepository = projectRepository;
         _transactionRepo = transactionRepo;
         _projectMemberRepository = projectMemberRepository;
         _userRepository = userRepository;
+        _issueUseCase = issueUseCase;
     }
 
     public async Task<ProjectDomain> CreateProject(ProjectDomain project)
@@ -40,7 +43,7 @@ public class ProjectUseCase
         ProjectDomain createdProject = null!;
         ProjectMemberDomain ownerMember = null!;
 
-        await _transactionRepo.ExecuteAsync(async session => 
+        await _transactionRepo.ExecuteAsync(async session =>
         {
             // Create the project first
             createdProject = await _projectRepository.CreateProject(project);
@@ -90,7 +93,7 @@ public class ProjectUseCase
         project.ProjectMembers = membersList;
         return project;
     }
-    
+
     public async Task<ProjectDomain> UpdateProject(ProjectDomain project)
     {
         if (string.IsNullOrEmpty(project.Id))
@@ -158,7 +161,7 @@ public class ProjectUseCase
     public async Task<ProjectColumnDomain> CreateColumn(CreateColumnParams param)
     {
         // TODO : FIX CORCUR
-        var existingColumns = await _projectRepository.FindColumnsByProjectId(param.ProjectId);
+        var existingColumns = await _projectRepository.FindColumnsByProjectId(new ListProjectColumnsParams { ProjectId = param.ProjectId });
 
         var highestOrder = existingColumns.Count != 0 ? existingColumns.Max(c => c.Order) : 0;
 
@@ -176,9 +179,9 @@ public class ProjectUseCase
         return await _projectRepository.CreateColumn(projectColumnDomain);
     }
 
-    public async Task<List<ProjectColumnDomain>> GetAllColumns(string projectId)
+    public async Task<List<ProjectColumnDomain>> GetAllColumns(ListProjectColumnsParams param)
     {
-        return await _projectRepository.FindColumnsByProjectId(projectId);
+        return await _projectRepository.FindColumnsByProjectId(param);
     }
 
     public async Task<List<ProjectColumnDomain>> UpdateColumnsOrder(UpdateColumnOrdersParams param)
@@ -194,7 +197,7 @@ public class ProjectUseCase
             }
         });
 
-        var updatedColumns = await _projectRepository.FindColumnsByProjectId(param.ProjectId);
+        var updatedColumns = await _projectRepository.FindColumnsByProjectId(new ListProjectColumnsParams { ProjectId = param.ProjectId });
         return updatedColumns;
     }
 
@@ -205,7 +208,8 @@ public class ProjectUseCase
 
     public async Task DeleteColumn(DeleteColumnParams param)
     {
-        var col = await _projectRepository.FindColumn(new GetColumnParams{
+        var col = await _projectRepository.FindColumn(new GetColumnParams
+        {
             ColumnId = param.ColumnId
         });
         if (col == null)
