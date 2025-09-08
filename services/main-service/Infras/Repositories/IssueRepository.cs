@@ -47,22 +47,37 @@ public class IssueRepository : IIssueRepository
     {
         var pipeline = new[]
         {
-            new BsonDocument("$match", new BsonDocument("_id", ObjectId.Parse(id))),
+            new BsonDocument("$match", new BsonDocument("_id", ObjectId.Parse(id))),    
             new BsonDocument("$lookup", new BsonDocument
             {
                 { "from", "project_column" },
-                { "localField", "column_id" },
-                { "foreignField", "_id" },
+                { "let", new BsonDocument("colId", "$column_id") },
+                { "pipeline", new BsonArray
+                    {
+                        new BsonDocument("$match", new BsonDocument("$expr",
+                            new BsonDocument("$eq", new BsonArray
+                            {
+                                "$_id",
+                                // Nếu column_id là string thì dùng $toObjectId
+                                new BsonDocument("$toObjectId", "$$colId")
+                            }))
+                        )
+                    }
+                },
                 { "as", "column" }
             }),
             new BsonDocument("$unwind", new BsonDocument
             {
                 { "path", "$column" },
                 { "preserveNullAndEmptyArrays", true }
-            })
+            }),
+        
         };
+      
+        
 
         var result = await _issues.Aggregate<Issue>(pipeline).FirstOrDefaultAsync();
+        _logger.LogInformation($"GetIssue result: {result}");
         if (result == null)
             throw new Exception("Issue not found");
 
@@ -305,15 +320,8 @@ public class IssueRepository : IIssueRepository
 
         if (!string.IsNullOrEmpty(param.DueDateTo))
         {
-            var dueTo = ParseToUtc(param.DueDateTo);
-            if (dueTo != DateTime.MinValue)
-            {
-                // If you want the end date to be inclusive for the whole day:
-                dueTo = dueTo.Date.AddDays(1).AddTicks(-1);
-                filter &= filterBuilder.Lte(i => i.DueDateTo, dueTo);
-            }
+             filter &= BuildDueDateFilter(param.DueDateTo, filterBuilder);
         }
-
         if (!string.IsNullOrEmpty(param.CreatedAtFrom) && DateTime.TryParse(param.CreatedAtFrom, out var createdFrom))
         {
             filter &= filterBuilder.Gte(i => i.CreatedAt, createdFrom);
@@ -365,4 +373,39 @@ public class IssueRepository : IIssueRepository
 
         return (_mapper.Map<List<IssueDomain>>(issues), (int)totalCount);
     }
+    
+    private static FilterDefinition<Issue> BuildDueDateFilter(string dueDateParam, FilterDefinitionBuilder<Issue> filterBuilder)
+{
+    if (string.IsNullOrWhiteSpace(dueDateParam))
+        return FilterDefinition<Issue>.Empty;
+
+    var param = dueDateParam.Trim().ToLower();
+
+    // Case 1: unassigned → DueDateTo == null hoặc DateTime.MinValue
+    if (param == "unassigned")
+    {
+        return filterBuilder.Or(
+            // filterBuilder.Eq(i => i.DueDateTo, null),
+            filterBuilder.Eq(i => i.DueDateTo, DateTime.MinValue)
+        );
+    }
+
+    // Case 2: assigned → DueDateTo != null và != MinValue
+    if (param == "assigned")
+    {
+        return filterBuilder.And(
+            // filterBuilder.Ne(i => i.DueDateTo, null),
+            filterBuilder.Ne(i => i.DueDateTo, DateTime.MinValue)
+        );
+    }
+
+    // Case 3: cụ thể due date
+    var dueTo = ParseToUtc(dueDateParam);
+    if (dueTo == DateTime.MinValue)
+        return FilterDefinition<Issue>.Empty;
+
+    var inclusiveEnd = dueTo.Date.AddDays(1).AddTicks(-1);
+    return filterBuilder.Lte(i => i.DueDateTo, inclusiveEnd);
+}
+
 }
