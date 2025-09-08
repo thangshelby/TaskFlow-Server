@@ -7,6 +7,7 @@ using BaseService;
 using DomainProjectMemberRole = MainService.Domain.Enums.TeamMemberRole;
 using GrpcProjectMemberRole = TaskFlow.ProjectMemberService.ProjectMemberRole;
 using AutoMapper;
+using MainService.Domain.Interfaces;
 
 public class ProjectMemberController : ProjectMemberService.ProjectMemberServiceBase
 {
@@ -156,7 +157,7 @@ public class ProjectMemberController : ProjectMemberService.ProjectMemberService
             }
 
             _logger.LogInformation("Getting projects for user {UserId}", request.UserId);
-            var (projects, totalCount) = await _projectMemberUseCase.GetUserProjectsAsync(
+            var (project_members, totalCount) = await _projectMemberUseCase.GetUserProjectsAsync(
                 request.UserId,
                 (int)request.Page,
                 (int)request.Limit
@@ -173,10 +174,16 @@ public class ProjectMemberController : ProjectMemberService.ProjectMemberService
                 }
             };
 
-            // TODO: REFACTOR GET PROJECT BY UserIds -> Map data back
-            foreach (var member in projects)
+            var projectIds = project_members.Select(pm => pm.ProjectId).Distinct().ToList();
+            var projects = await _projectUseCase.ListProjects(new ListProjectParams
             {
-                var project = await _projectUseCase.GetProject(member.ProjectId);
+                ProjectIds = projectIds
+            });
+
+            foreach (var member in project_members)
+            {
+                var project = projects.Projects.FirstOrDefault(p => p.Id == member.ProjectId);
+                _logger.LogInformation("Mapping project member {MemberId} to project {ProjectId}", member.Id, member.ProjectId);
                 var userMembership = new UserMembershipRes
                 {
                     Id = member.Id ?? string.Empty,
