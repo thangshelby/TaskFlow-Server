@@ -138,31 +138,31 @@ public class ProjectRepository : IProjectRepository
     public async Task<List<ProjectColumnDomain>> FindColumnsByProjectId(ListProjectColumnsParams param)
     {
 
-        var exprList = MongoUtils.BuildExprMongo(param, new Dictionary<string, (string field, string op)>
+        var issueQuery = MongoUtils.BuildExprMongo(param, new Dictionary<string, (string field, string op, string? extra)>
         {
-            { "DueDateFrom", ("due_date_from", "$gte") },
-            { "DueDateTo", ("due_date_to", "$lte") },
-            { "CreatedAtFrom", ("created_at", "$gte") },
-            { "CreatedAtTo", ("created_at", "$lte") },
-            { "AssigneeIds", ("assignee_id", "$in") },
-            { "SprintIds", ("sprint_id", "$in") },
-            { "Types", ("type", "$in") },
-            { "Priorities", ("priority", "$in") },
-            { "Title", ("title", "$regex") }
-        }, excludeProps: ["ProjectId"]);
+            { "DueDateFrom", ("due_date_from", "$gte", null) },
+            { "DueDateTo", ("due_date_to", "$lte", null) },
+            { "CreatedAtFrom", ("created_at", "$gte", null) },
+            { "CreatedAtTo", ("created_at", "$lte", null) },
+            { "AssigneeIds", ("assignee_id", "$in", null) },
+            { "SprintIds", ("sprint_id", "$in", null) },
+            { "Types", ("type", "$in", null) },
+            { "Priorities", ("priority", "$in", null) },
+            { "Keyword", ("title", "$regex", null) }
+        }, excludeProps: ["ProjectId", "ColumnIds"]);
+        issueQuery.Insert(0, new BsonDocument("$in", new BsonArray { "$_id", "$$issueIds" }));
+        var issueMatch = new BsonDocument("$match", new BsonDocument("$expr", new BsonDocument("$and", issueQuery)));
 
-        exprList.Insert(0, new BsonDocument("$in", new BsonArray { "$_id", "$$issueIds" }));
-        var issueMatch = new BsonDocument("$match", new BsonDocument("$expr", new BsonDocument("$and", exprList)));
+        var columnQuery = MongoUtils.BuildExprMongo(param, new Dictionary<string, (string field, string op, string? extra)>
+        {
+            { "ColumnIds", ("_id", "$in", "is_object_id") },
+            { "ProjectId", ("project_id", "$eq", "is_object_id") },
+        }, excludeProps: ["Keyword", "DueDateFrom", "DueDateTo", "CreatedAtFrom", "CreatedAtTo", "AssigneeIds", "SprintIds", "Types", "Priorities"]);
+        var columnMatch = new BsonDocument("$match", new BsonDocument("$expr", new BsonDocument("$and", columnQuery)));
 
         var pipeline = new[]
         {
-            new BsonDocument {
-                {
-                    "$match", new BsonDocument {
-                        { "project_id", new ObjectId(param.ProjectId) }
-                    }
-                }
-            },
+            columnMatch,
             new BsonDocument { { "$sort", new BsonDocument { { "order", 1 } } } },
             new BsonDocument {
                 {
@@ -186,17 +186,8 @@ public class ProjectRepository : IProjectRepository
 
         foreach (var bsonDoc in rawResult)
         {
-            try
-            {
-                var column = BsonSerializer.Deserialize<ProjectColumn>(bsonDoc);
-                columnsEntity.Add(column);
-            }
-            catch (Exception ex)
-            {
-                // Log the problematic document for debugging
-                _logger.LogError($"Failed to deserialize ProjectColumn document: {bsonDoc.ToJson()}. Error: {ex.Message}");
-                throw;
-            }
+            var column = BsonSerializer.Deserialize<ProjectColumn>(bsonDoc);
+            columnsEntity.Add(column);
         }
 
         var columnsDomain = _mapper.Map<List<ProjectColumnDomain>>(columnsEntity);

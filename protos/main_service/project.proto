@@ -170,9 +170,10 @@ message GetColumnsReq {
   repeated string sprint_ids = 5;
   repeated string types = 6;
   repeated string priorities = 7;
-  optional string title = 8;
+  optional string keyword = 8;
   optional string created_at_from = 9;
   optional string created_at_to = 10;
+  repeated string column_ids = 11;
 }
 message GetColumnsRes {
   string status = 1;                  

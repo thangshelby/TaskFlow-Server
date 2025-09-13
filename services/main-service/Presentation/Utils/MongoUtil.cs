@@ -1,6 +1,7 @@
 using Google.Api;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using System.Collections;
 using System.Text.Json;
 public static class MongoUtils
 {
@@ -63,9 +64,9 @@ public static class MongoUtils
     }
 
     public static BsonArray BuildExprMongo(
-    object source,
-    Dictionary<string, (string field, string op)> opMap,
-    IEnumerable<string>? excludeProps = null)
+     object source,
+     Dictionary<string, (string field, string op, string? extra)> opMap,
+     IEnumerable<string>? excludeProps = null)
     {
         var exprList = new BsonArray();
         var type = source.GetType();
@@ -82,32 +83,54 @@ public static class MongoUtils
             var value = prop.GetValue(source);
             if (value == null) continue;
             if (value is string s && string.IsNullOrWhiteSpace(s)) continue;
-            if (value is System.Collections.IEnumerable e && value is not string)
+            if (value is IEnumerable e && value is not string)
             {
                 bool any = false; foreach (var _ in e) { any = true; break; }
                 if (!any) continue;
             }
 
-            // lấy op + fieldName
+            // lấy op + fieldName + extra
             opMap.TryGetValue(propName, out var opField);
             var op = string.IsNullOrEmpty(opField.op) ? "$eq" : opField.op;
             var fieldName = string.IsNullOrEmpty(opField.field)
-                ? propName // không convert nữa
+                ? propName
                 : opField.field;
+            var extra = opField.extra;
 
-            if (op == "$in" && value is IEnumerable<string> strList)
+            // Xử lý extra = is_object_id
+            if (extra == "is_object_id")
             {
+                if (value is string strVal)
+                {
+                    value = ObjectId.Parse(strVal);
+                }
+                else if (value is IEnumerable<string> strListVal)
+                {
+                    value = strListVal.Select(ObjectId.Parse).ToList();
+                }
+            }
+
+            if (op == "$in" && value is IEnumerable enumerableVal)
+            {
+                // build $in
+                var bsonArr = new BsonArray();
+                foreach (var item in enumerableVal)
+                {
+                    bsonArr.Add(BsonValue.Create(item));
+                }
+
                 exprList.Add(new BsonDocument("$in",
-                    new BsonArray { $"${fieldName}", new BsonArray(strList) }));
+                    new BsonArray { $"${fieldName}", bsonArr }));
+
             }
             else if (op == "$regex" && value is string pattern)
             {
                 exprList.Add(new BsonDocument("$regexMatch", new BsonDocument
-            {
-                { "input", $"${fieldName}" },
-                { "regex", pattern },
-                { "options", "i" }
-            }));
+                {
+                    { "input", $"${fieldName}" },
+                    { "regex", pattern },
+                    { "options", "i" }
+                }));
             }
             else if (op == "$lte" || op == "$gte" || op == "$eq")
             {
@@ -118,6 +141,7 @@ public static class MongoUtils
 
         return exprList;
     }
+
 
     public static UpdateDefinition<T> MakeMongoDataUpdate<T>(MongoUpdateInput input)
     {

@@ -177,7 +177,7 @@ public class ProjectController : ProjectService.ProjectServiceBase
         var projectColumns = await _projectUseCase.GetAllColumns(new ListProjectColumnsParams
         {
             ProjectId = request.ProjectId,
-            Title = request.Title,
+            Keyword = request.Keyword,
             CreatedAtFrom = ConverterUtils.ParseIsoDateTime(request.CreatedAtFrom),
             CreatedAtTo = ConverterUtils.ParseIsoDateTime(request.CreatedAtTo),
             DueDateFrom = ConverterUtils.ParseIsoDateTime(request.DueDateFrom),
@@ -186,6 +186,7 @@ public class ProjectController : ProjectService.ProjectServiceBase
             SprintIds = request.SprintIds.ToList(),
             Types = request.Types_.ToList(),
             Priorities = request.Priorities.ToList(),
+            ColumnIds = request.ColumnIds.ToList(),
         });
 
         var response = new GetColumnsRes();
