@@ -29,7 +29,7 @@ public class ListProjectColumnsParams
 {
     public required string ProjectId { get; set; }
 
-    public string? Title { get; set; }
+    public string? Keyword { get; set; }
     public DateTime? DueDateFrom { get; set; }
     public DateTime? DueDateTo { get; set; }
     public DateTime? CreatedAtFrom { get; set; }
@@ -39,6 +39,7 @@ public class ListProjectColumnsParams
     public List<string>? IssueIds { get; set; }
     public List<string>? Types { get; set; }
     public List<string>? Priorities { get; set; }
+    public List<string>? ColumnIds { get; set; }
 }
 
 public class CreateColumnParams

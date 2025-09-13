@@ -39,6 +39,10 @@ message IssueRes {
     repeated string attachments = 14;
     string created_at = 15;
     string updated_at = 16;
+    string completed_at= 17;
+    string due_date_from= 18;
+    string due_date_to = 19;
+    string key = 20;
 }
 
 //Activity
@@ -77,4 +81,5 @@ message UserRes{
   string role = 5;
   string created_at = 6;
   string updated_at = 7;
+  string avatar = 8;
 }
