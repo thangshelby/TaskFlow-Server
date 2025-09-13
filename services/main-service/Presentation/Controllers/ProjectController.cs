@@ -174,7 +174,19 @@ public class ProjectController : ProjectService.ProjectServiceBase
             throw new RpcException(new Status(StatusCode.InvalidArgument, "ProjectId is required"));
         }
 
-        var projectColumns = await _projectUseCase.GetAllColumns(new ListProjectColumnsParams { ProjectId = request.ProjectId });
+        var projectColumns = await _projectUseCase.GetAllColumns(new ListProjectColumnsParams
+        {
+            ProjectId = request.ProjectId,
+            Title = request.Title,
+            CreatedAtFrom = ConverterUtils.ParseIsoDateTime(request.CreatedAtFrom),
+            CreatedAtTo = ConverterUtils.ParseIsoDateTime(request.CreatedAtTo),
+            DueDateFrom = ConverterUtils.ParseIsoDateTime(request.DueDateFrom),
+            DueDateTo = ConverterUtils.ParseIsoDateTime(request.DueDateTo),
+            AssigneeIds = request.AssigneeIds.ToList(),
+            SprintIds = request.SprintIds.ToList(),
+            Types = request.Types_.ToList(),
+            Priorities = request.Priorities.ToList(),
+        });
 
         var response = new GetColumnsRes();
         response.Data.AddRange(_mapper.Map<List<ColumnRes>>(projectColumns));
