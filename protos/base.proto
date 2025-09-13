@@ -42,6 +42,7 @@ message IssueRes {
     string completed_at= 17;
     string due_date_from= 18;
     string due_date_to = 19;
+    string key = 20;
 }
 
 //Activity

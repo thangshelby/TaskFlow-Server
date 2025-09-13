@@ -34,6 +34,7 @@ public class Project
     public List<ProjectMember>? ProjectMembers { get; set; } = new List<ProjectMember>();
 }
 
+[BsonIgnoreExtraElements]
 public class ProjectColumn
 {
     [BsonId]

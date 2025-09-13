@@ -21,7 +21,7 @@ service UserService {
       body: "*"
     };
   }
-  rpc Register (RegisterUserReq) returns (RegisterUserRes) {
+  rpc Register (RegisterUserReq) returns (RegisterUserRes) {  
     option (google.api.http) = {
       post: "/api/v1/users/register"
       body: "*"
