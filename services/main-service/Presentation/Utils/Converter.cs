@@ -73,7 +73,11 @@ public static class ConverterUtils
 
         return result;
     }
-
+    public static DateTime? ParseIsoDateTime(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return null;
+        return DateTime.Parse(input, null, System.Globalization.DateTimeStyles.RoundtripKind);
+    }
     public class DataUpdateInput
     {
         public object Data { get; set; } = default!;

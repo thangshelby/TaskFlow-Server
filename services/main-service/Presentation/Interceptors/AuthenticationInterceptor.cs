@@ -47,9 +47,11 @@ public class AuthenticationInterceptor : Interceptor
                 var cookies = header.Value.Split(';');
                 foreach (var cookie in cookies)
                 {
-                    if (cookie.Trim().StartsWith("token=", StringComparison.OrdinalIgnoreCase))
+                    var trimmed = cookie.Trim();
+                    if (trimmed.StartsWith("token=", StringComparison.OrdinalIgnoreCase))
                     {
-                        return cookie.Substring("token=".Length).Trim();
+                        var rawToken = trimmed.Substring("token=".Length).Trim();
+                        return Uri.UnescapeDataString(rawToken);
                     }
                 }
             }

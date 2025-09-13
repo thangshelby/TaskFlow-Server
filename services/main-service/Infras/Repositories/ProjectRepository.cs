@@ -137,6 +137,23 @@ public class ProjectRepository : IProjectRepository
 
     public async Task<List<ProjectColumnDomain>> FindColumnsByProjectId(ListProjectColumnsParams param)
     {
+
+        var exprList = MongoUtils.BuildExprMongo(param, new Dictionary<string, (string field, string op)>
+        {
+            { "DueDateFrom", ("due_date_from", "$gte") },
+            { "DueDateTo", ("due_date_to", "$lte") },
+            { "CreatedAtFrom", ("created_at", "$gte") },
+            { "CreatedAtTo", ("created_at", "$lte") },
+            { "AssigneeIds", ("assignee_id", "$in") },
+            { "SprintIds", ("sprint_id", "$in") },
+            { "Types", ("type", "$in") },
+            { "Priorities", ("priority", "$in") },
+            { "Title", ("title", "$regex") }
+        }, excludeProps: ["ProjectId"]);
+
+        exprList.Insert(0, new BsonDocument("$in", new BsonArray { "$_id", "$$issueIds" }));
+        var issueMatch = new BsonDocument("$match", new BsonDocument("$expr", new BsonDocument("$and", exprList)));
+
         var pipeline = new[]
         {
             new BsonDocument {
@@ -153,11 +170,7 @@ public class ProjectRepository : IProjectRepository
                         { "from", "issues" },
                         { "let", new BsonDocument("issueIds", "$issue_ids") },
                         { "pipeline", new BsonArray {
-                            new BsonDocument {
-                                { "$match", new BsonDocument {
-                                    { "$expr", new BsonDocument("$in", new BsonArray { "$_id", "$$issueIds" }) }
-                                }}
-                            },
+                            issueMatch,
                             new BsonDocument {
                                 { "$sort", new BsonDocument("created_at", 1) }
                             }
@@ -170,7 +183,7 @@ public class ProjectRepository : IProjectRepository
 
         var rawResult = await _projectColumns.Aggregate<BsonDocument>(pipeline).ToListAsync();
         var columnsEntity = new List<ProjectColumn>();
-        
+
         foreach (var bsonDoc in rawResult)
         {
             try
@@ -185,7 +198,7 @@ public class ProjectRepository : IProjectRepository
                 throw;
             }
         }
-        
+
         var columnsDomain = _mapper.Map<List<ProjectColumnDomain>>(columnsEntity);
         return columnsDomain;
     }
