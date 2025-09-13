@@ -5,6 +5,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace MainService.Infras.Entities;
 
+[BsonIgnoreExtraElements]
 public class Issue
 {
     [BsonId]
@@ -74,6 +75,10 @@ public class Issue
     [BsonElement("due_date_from")]
     public DateTime DueDateFrom { get; set; } = DateTime.MinValue;
 
+    [BsonElement("key")]
+    [BsonIgnoreIfDefault]
+    public string Key { get; set; } = string.Empty;
+
     public static Issue FromDomain(IssueDomain domain)
     {
         return new Issue
@@ -98,6 +103,7 @@ public class Issue
             UpdatedAt = domain.UpdatedAt,
             DueDateTo = domain.DueDateTo,
             DueDateFrom = domain.DueDateFrom,
+            Key = domain.Key
 
         };
     }
@@ -122,7 +128,9 @@ public class Issue
             CreatedAt = CreatedAt,
             UpdatedAt = UpdatedAt,
             CompletedAt = CompletedAt,
-
+            DueDateFrom = DueDateFrom,
+            DueDateTo = DueDateTo,
+            Key = Key
         };
 
         domain.AssignToSprint(SprintId);

@@ -53,5 +53,9 @@ sync-wd:
 	make build
 cqlsh:
 	docker exec -it cassandra cqlsh
-
-.PHONY: container-up container-down nest-server gen-protobuf sync cqlsh main-service
+all:
+	make sync
+	make main-service
+	make noti-service
+# 	make chat-service
+.PHONY: container-up container-down nest-server gen-protobuf sync cqlsh main-service	

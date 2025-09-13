@@ -169,7 +169,23 @@ public class ProjectRepository : IProjectRepository
         };
 
         var rawResult = await _projectColumns.Aggregate<BsonDocument>(pipeline).ToListAsync();
-        var columnsEntity = rawResult.Select(bson => BsonSerializer.Deserialize<ProjectColumn>(bson)).ToList();
+        var columnsEntity = new List<ProjectColumn>();
+        
+        foreach (var bsonDoc in rawResult)
+        {
+            try
+            {
+                var column = BsonSerializer.Deserialize<ProjectColumn>(bsonDoc);
+                columnsEntity.Add(column);
+            }
+            catch (Exception ex)
+            {
+                // Log the problematic document for debugging
+                _logger.LogError($"Failed to deserialize ProjectColumn document: {bsonDoc.ToJson()}. Error: {ex.Message}");
+                throw;
+            }
+        }
+        
         var columnsDomain = _mapper.Map<List<ProjectColumnDomain>>(columnsEntity);
         return columnsDomain;
     }
