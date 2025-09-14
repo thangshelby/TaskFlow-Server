@@ -1,0 +1,218 @@
+syntax = "proto3";
+
+option go_package = "github.com/vudinhan2525/TaskFlow-Server/services/go-service/types/main_service;main_service";
+option csharp_namespace = "TaskFlow.ProjectService";
+
+package project_service;
+
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto"; // Import Google API annotations
+import "base.proto";
+import "main_service/project_member.proto";
+
+
+// Define the gRPC service
+service ProjectService {
+  rpc CreateProject (CreateProjectReq) returns (CreateProjectRes) {
+    option (google.api.http) = {
+      post: "/api/v1/projects"
+      body: "*"
+    };
+  }
+  rpc GetProject (GetProjectReq) returns (ProjectRes) {
+    option (google.api.http) = {
+      get: "/api/v1/projects/{id}"
+    };
+  }
+  rpc UpdateProject (UpdateProjectReq) returns (ProjectRes) {
+    option (google.api.http) = {
+      put: "/api/v1/projects/{id}"
+      body: "*"
+    };
+  }
+  rpc DeleteProject (DeleteProjectReq) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/projects/{id}"
+    };
+  }
+  rpc ListProjects (ListProjectsReq) returns (ListProjectsRes) {
+    option (google.api.http) = {
+      get: "/api/v1/projects"
+    };
+  }
+  rpc GetUserProjects (UserProjectsReq) returns (ListProjectsRes) {
+    option (google.api.http) = {
+      get: "/api/v1/projects/user/{user_id}"
+    };
+  }
+  rpc CreateProjectColumn (CreateColumnReq) returns (CreateColumnRes) {
+    option (google.api.http) = {
+      post: "/api/v1/projects/add-column"
+      body: "*"
+    };
+  }
+  rpc GetProjectColumns (GetColumnsReq) returns (GetColumnsRes) {
+    option (google.api.http) = {
+      post: "/api/v1/projects/{project_id}/columns"
+      body: "*"
+    };
+  }
+  rpc UpdateOrderProjectColumns (UpdateColumnsOrderReq) returns (UpdateColumnsOrderRes) {
+    option (google.api.http) = {
+      post: "/api/v1/projects/{project_id}/columns/order"
+      body: "*"
+    };
+  }
+  rpc UpdateColumnProject (UpdateColumnReq) returns (UpdateColumnRes) {
+    option (google.api.http) = {
+      put: "/api/v1/projects/{project_id}/columns"
+      body: "*"
+    };
+  }
+  rpc DeleteColumn (DeleteColumnReq) returns (DeleteColumnRes) {
+    option (google.api.http) = {
+      delete: "/api/v1/projects/columns/{column_id}"
+    };
+  }
+}
+
+// Define request message
+enum ProjectAccess {
+  Public = 0;
+  Private = 1;
+  Teams = 2;
+}
+enum ProjectType {
+  Scrum = 0;
+  Kanban = 1;
+}
+message CreateProjectReq {
+  string name = 1;
+  string key = 2;
+  ProjectAccess access = 3;
+  ProjectType type = 4;
+  string owner_id = 5;
+}
+message GetProjectReq {
+  string id = 1;
+}
+
+message UpdateProjectReq {
+  string id = 1;
+  string name = 2;
+  string key = 3;
+  ProjectAccess access = 4;
+  ProjectType type = 5;
+  string owner_id = 6;
+}
+
+message DeleteProjectReq {
+  string id = 1;
+}
+
+message ListProjectsReq {
+  int32 page = 1;
+  int32 limit = 2;
+  string kw = 3;
+  string sort = 4;
+  repeated string project_ids = 5;
+}
+
+message UserProjectsReq {
+  string user_id = 1; 
+  int32 page = 2;
+  int32 limit = 3;
+  string kw = 4;     
+  string sort = 5;   
+}
+
+message ProjectRes {
+  string id = 1;
+  string name = 2;
+  string key = 3;
+  ProjectAccess access = 4;
+  ProjectType type = 5;
+  string owner_id = 6;
+  string created_at = 7;
+  string updated_at = 8;
+  repeated project_service.ProjectMemberRes project_members = 9;
+}
+
+message CreateProjectRes {
+  string status = 1;                  
+  string message = 2; 
+  ProjectRes data = 3;
+  optional base.PaginationRes pagination = 4;
+}
+
+message ListProjectsRes {
+  string status = 1;                  
+  string message = 2; 
+  repeated ProjectRes data = 3;
+  base.PaginationRes pagination = 4;
+}
+
+message CreateColumnReq {
+  string project_id = 1;
+  string name = 2;
+}
+message CreateColumnRes {
+  string status = 1;                  
+  string message = 2;  
+  base.ColumnRes data = 3;
+  base.PaginationRes pagination = 4;
+}
+message GetColumnsReq {
+  string project_id = 1;
+  optional string due_date_from = 2;
+  optional string due_date_to = 3;
+  repeated string assignee_ids = 4;
+  repeated string sprint_ids = 5;
+  repeated string types = 6;
+  repeated string priorities = 7;
+  optional string keyword = 8;
+  optional string created_at_from = 9;
+  optional string created_at_to = 10;
+  repeated string column_ids = 11;
+}
+message GetColumnsRes {
+  string status = 1;                  
+  string message = 2;
+  repeated base.ColumnRes data = 3;
+  base.PaginationRes pagination = 4;
+}
+
+message ColumnOrder {
+  string id = 1; 
+  int32 order = 2;
+}
+
+message UpdateColumnsOrderReq {
+  string project_id = 1;              
+  repeated ColumnOrder columns = 2;   
+}
+
+message UpdateColumnsOrderRes {
+  string status = 1;                  
+  string message = 2;                 
+  repeated base.ColumnRes data = 3;  
+}
+message UpdateColumnReq {
+  string name = 1;
+  string column_id = 2;
+  string project_id = 3;
+}
+
+message UpdateColumnRes {
+  string status = 1;                  
+  string message = 2;  
+  base.ColumnRes data = 3;
+  base.PaginationRes pagination = 4;
+}
+message DeleteColumnReq {
+  string column_id = 1;
+}
+message DeleteColumnRes {
+  string message = 1;
+  string status = 2;
+}

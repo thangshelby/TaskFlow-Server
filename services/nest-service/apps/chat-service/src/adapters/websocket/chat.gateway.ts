@@ -9,7 +9,13 @@ import { WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
 import * as jwt from 'jsonwebtoken';
 @Injectable()
-@WebSocketGateway({ cors: true, path: '/ws' })
+@WebSocketGateway({
+  cors: {
+    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    credentials: true,
+  },
+  path: '/ws',
+})
 export class ChatGateway {
   @WebSocketServer() server: WebSocket.Server; // Access the WebSocket server instance
   private connectedUsers = new Map<string, Set<WebSocket>>(); // Store WebSocket instances
@@ -143,7 +149,6 @@ export class ChatGateway {
     const userId = (ws as any).userId;
     if (!userId) return;
 
-    // Validate event
     if (!message.event) {
       ws.send(
         JSON.stringify({
@@ -216,7 +221,6 @@ export class ChatGateway {
           );
       }
     } catch (error) {
-      // ✅ Now this won't fire due to destructuring
       this.logger.error(`Error handling event ${message.event}: ${error.message}`);
       ws.send(
         JSON.stringify({
@@ -232,7 +236,6 @@ export class ChatGateway {
     try {
       const userId = (ws as any).userId;
 
-      // First get the room to validate access
       const existingRoom = await this.chatService.getRoomById(data.roomId);
 
       if (!existingRoom || !existingRoom.members.includes(userId)) {
@@ -254,8 +257,6 @@ export class ChatGateway {
       }
 
       (ws as any).roomIds.add(data.roomId);
-
-      //Map Messages
       const messages = await this.chatService.getMessagesByRoomId(data.roomId, 50);
       this.logger.log(`Found ${messages.length} messages for room ${data.roomId}`);
       if (existingRoom.lastMessage) {
@@ -265,18 +266,26 @@ export class ChatGateway {
         this.logger.log('Is createdAt valid?', !isNaN(existingRoom.lastMessage.createdAt.getTime()));
       }
       const roomResponse = ChatMapper.toRoomResponse(existingRoom);
-      const messageResponses = messages.map((msg) => ({
-        id: msg.id,
-        roomId: msg.roomId,
-        senderId: msg.senderId,
-        content: msg.content,
-        type: msg.type,
-        replyToId: msg.replyToId,
-        createdAt: msg.createdAt.toISOString(),
-        updatedAt: msg.updatedAt?.toISOString(),
-      }));
+      const messageResponses = await Promise.all(
+        messages.map(async (msg) => {
+          const sender = await this.userClientService.getUserById({ userId: msg.senderId });
 
-      // Send room details and message history to joining user
+          const senderName = sender?.firstName && sender?.lastName ? `${sender.firstName} ${sender.lastName}` : sender?.email || `User ${msg.senderId.slice(0, 8)}`;
+
+          return {
+            id: msg.id,
+            roomId: msg.roomId,
+            senderId: msg.senderId,
+            content: msg.content,
+            type: msg.type,
+            replyToId: msg.replyToId,
+            createdAt: msg.createdAt.toISOString(),
+            updatedAt: msg.updatedAt?.toISOString(),
+            senderName,
+          };
+        }),
+      );
+
       ws.send(
         JSON.stringify({
           event: 'roomJoined',
@@ -288,7 +297,6 @@ export class ChatGateway {
         }),
       );
 
-      // Broadcast to other room members
       this.broadcastToRoom(
         data.roomId,
         'userJoined',
@@ -322,6 +330,7 @@ export class ChatGateway {
   private async handleSendMessage(ws: WebSocket, data: any) {
     try {
       const userId = (ws as any).userId;
+
       const message = await this.chatService.createMessage({
         roomId: data.roomId,
         senderId: userId,
@@ -330,40 +339,30 @@ export class ChatGateway {
         replyToId: data.replyToId,
       });
 
-      const messageResponse = ChatMapper.toMessageResponse(message);
+      const sender = await this.userClientService.getUserById({ userId });
 
-      // Send acknowledgment to sender
+      const senderName = sender?.firstName && sender?.lastName ? `${sender.firstName} ${sender.lastName}` : sender?.email || `User ${userId.slice(0, 8)}`;
+
+      const messageResponse = {
+        ...ChatMapper.toMessageResponse(message),
+        senderName,
+      };
+
       ws.send(
         JSON.stringify({
           event: 'messageSent',
-          data: {
-            message: messageResponse,
-            status: 'delivered',
-            timestamp: new Date().toISOString(),
-          },
+          data: { message: messageResponse },
         }),
       );
 
-      // Broadcast to other room members
       this.broadcastToRoom(data.roomId, 'messageReceived', {
         ...messageResponse,
-        timestamp: new Date().toISOString(),
       });
-
-      this.logger.log(`Message sent in room ${data.roomId} by user ${userId}`);
     } catch (error) {
-      this.logger.error(`Failed to send message: ${error.message}`);
       ws.send(
         JSON.stringify({
           event: 'error',
-          data: {
-            code: 'MESSAGE_SEND_FAILED',
-            message: 'Failed to send message',
-            details: {
-              roomId: data.roomId,
-              error: error.message,
-            },
-          },
+          data: { message: 'Failed to send message' },
         }),
       );
     }
@@ -371,12 +370,37 @@ export class ChatGateway {
   private async handleGetRooms(ws: WebSocket) {
     try {
       const userId = (ws as any).userId;
+
       const rooms = await this.chatService.getRoomsByUserId(userId);
-      this.logger.log('Rooms fetched for getRooms:', JSON.stringify(rooms, null, 2));
-      const roomDomains = (rooms as any[]).map((doc) => ChatMapper.toRoomDomain(doc));
 
-      const roomResponses = roomDomains.map((room) => ChatMapper.toRoomResponse(room));
+      const roomResponses = await Promise.all(
+        rooms.map(async (roomDoc: any) => {
+          const room = ChatMapper.toRoomDomain(roomDoc);
+          const roomResponse = ChatMapper.toRoomResponse(room);
 
+          if (roomResponse.lastMessage) {
+            try {
+              const sender = await this.userClientService.getUserById({
+                userId: roomResponse.lastMessage.senderId,
+              });
+
+              const senderName = sender?.firstName && sender?.lastName ? `${sender.firstName} ${sender.lastName}` : sender?.email || 'User';
+
+              // ✅ Safe: check exists, then add senderName
+              (roomResponse.lastMessage as any).senderName = senderName;
+            } catch (err) {
+              // ✅ Safe: check before assign
+              if (roomResponse.lastMessage) {
+                (roomResponse.lastMessage as any).senderName = 'Unknown';
+              }
+            }
+          }
+
+          return roomResponse;
+        }),
+      );
+
+      // ✅ Fixed: Use `data` field
       ws.send(
         JSON.stringify({
           event: 'roomsList',
@@ -389,6 +413,7 @@ export class ChatGateway {
         }),
       );
     } catch (error) {
+      const userId = (ws as any)?.userId;
       this.logger.error(`Failed to fetch rooms: ${error.message}`);
       ws.send(
         JSON.stringify({
@@ -397,7 +422,7 @@ export class ChatGateway {
             code: 'ROOMS_FETCH_FAILED',
             message: 'Failed to fetch rooms',
             details: {
-              userId: (ws as any).userId,
+              userId: userId,
               error: error.message,
             },
           },
@@ -436,15 +461,24 @@ export class ChatGateway {
 
       // Fetch messages
       const messages = await this.chatService.getMessagesByRoomId(roomId, limit, beforeDate);
-      const messageResponses = messages.map((msg) => ({
-        id: msg.id,
-        roomId: msg.roomId,
-        senderId: msg.senderId,
-        content: msg.content,
-        type: msg.type,
-        replyToId: msg.replyToId,
-        createdAt: msg.createdAt.toISOString(),
-      }));
+      const messageResponses = await Promise.all(
+        messages.map(async (msg) => {
+          const sender = await this.userClientService.getUserById({ userId: msg.senderId });
+          const senderName = sender?.firstName && sender?.lastName ? `${sender.firstName} ${sender.lastName}` : sender?.email || `User ${msg.senderId.slice(0, 8)}`;
+
+          return {
+            id: msg.id,
+            roomId: msg.roomId,
+            senderId: msg.senderId,
+            content: msg.content,
+            type: msg.type,
+            replyToId: msg.replyToId,
+            createdAt: msg.createdAt.toISOString(),
+            updatedAt: msg.updatedAt?.toISOString(),
+            senderName, // ✅ Add senderName
+          };
+        }),
+      );
 
       ws.send(
         JSON.stringify({
