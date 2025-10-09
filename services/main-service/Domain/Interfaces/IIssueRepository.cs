@@ -61,4 +61,5 @@ public class UpdateIssueParams
 
     public string? DueDateFrom { get; set; }
     public string? DueDateTo { get; set; }
+    public DateTime? CompletedAt { get; set; }
 }
