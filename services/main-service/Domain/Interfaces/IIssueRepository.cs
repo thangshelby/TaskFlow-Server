@@ -39,6 +39,8 @@ public class GetIssuesParams
     public string? Keyword;
     public int Page = 1;
     public int Limit = 10;
+    public List<string>? ParentIds;
+    public List<string>? TeamIds;
 }
 public class UpdateIssueParams
 {
