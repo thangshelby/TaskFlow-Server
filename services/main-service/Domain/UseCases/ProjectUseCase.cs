@@ -1,7 +1,7 @@
+using Grpc.Core;
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using MainService.Domain.Enums;
-using Grpc.Core;
 
 namespace MainService.Domain.UseCases;
 
@@ -12,19 +12,22 @@ public class ProjectUseCase
     private readonly IProjectMemberRepository _projectMemberRepository;
     private readonly IUserRepository _userRepository;
     private readonly IssueUseCase _issueUseCase;
-
+    private readonly IPublisherService _publisher;
     public ProjectUseCase(
         IProjectRepository projectRepository,
         ITransactionRepo transactionRepo,
         IProjectMemberRepository projectMemberRepository,
         IssueUseCase issueUseCase,
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        IPublisherService publisher
+        )
     {
         _projectRepository = projectRepository;
         _transactionRepo = transactionRepo;
         _projectMemberRepository = projectMemberRepository;
         _userRepository = userRepository;
         _issueUseCase = issueUseCase;
+        _publisher = publisher;
     }
 
     public async Task<ProjectDomain> CreateProject(ProjectDomain project)
@@ -62,6 +65,12 @@ public class ProjectUseCase
             // Initialize project's team members with the owner
             createdProject.ProjectMembers = new List<ProjectMemberDomain> { ownerMember };
             await _projectRepository.UpdateProject(createdProject);
+        });
+
+        await _publisher.EmitKafka(TopicName.ACTIVITIES, KafkaMessageAction.ACTIVITIES_PROJECT_CREATED, new IProjectMessage
+        {
+            ProjectId = createdProject.Id,
+            UserId = project.OwnerId,
         });
 
         return createdProject;

@@ -16,6 +16,7 @@ export enum ProjectMemberRole {
   MEMBER = 0,
   ADMIN = 1,
   OWNER = 2,
+  VIEWER = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -38,6 +39,8 @@ export interface UpdateProjectMemberRoleReq {
 
 export interface ListProjectMembersReq {
   projectId: string;
+  name?: string | undefined;
+  email?: string | undefined;
   page: number;
   limit: number;
 }

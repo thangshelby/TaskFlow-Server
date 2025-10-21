@@ -309,7 +309,7 @@ static_resources:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
                       providers:
                         my_jwt_provider:
-                          issuer: "127.0.0.1"
+                          issuer: "grpc_server"
                           local_jwks:
                             inline_string: |
                               {
@@ -358,6 +358,7 @@ static_resources:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
     - name: listener_chat_service
+
       address:
         socket_address:
           address: 0.0.0.0
@@ -375,9 +376,7 @@ static_resources:
                     enabled: true
                   - upgrade_type: "GET"
                     enabled: true
-#                websocket_config:
-#                  idle_timeout: 0s
-#                  max_connect_attempts: 5
+
                 route_config:
                   virtual_hosts:
                     - name: chat_service
@@ -412,7 +411,7 @@ static_resources:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
                       providers:
                         my_jwt_provider:
-                          issuer: "127.0.0.1"
+                          issuer: "grpc_server"
                           local_jwks:
                             inline_string: |
                               {
@@ -483,7 +482,7 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 172.17.0.1
+                      address: grpc_server
                       port_value: 5001
     - name: notification_service
       type: LOGICAL_DNS
@@ -496,7 +495,7 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 172.17.0.1
+                      address: notification_service
                       port_value: 5002
     - name: chat_service
       type: LOGICAL_DNS
@@ -515,5 +514,5 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 172.17.0.1
+                      address: grpc_server
                       port_value: 5003

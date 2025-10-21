@@ -47,6 +47,7 @@ export interface IssueRes {
   dueDateFrom: string;
   dueDateTo: string;
   key: string;
+  teamId: string;
 }
 
 /** Activity */

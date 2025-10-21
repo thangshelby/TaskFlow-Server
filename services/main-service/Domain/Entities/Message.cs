@@ -13,10 +13,14 @@ public enum KafkaMessageAction
 {
     ACTIVITIES_ISSUE_CHANGED,
     ACTIVITIES_ISSUE_CREATED,
+    ACTIVITIES_PROJECT_CREATED,
+
+    ACTIVITIES_MEMBER_JOINED_PROJECT,
 
     NOTIFICATIONS_CREATE_NEW_NOTIFICATION,
 
     MAILS_SEND_VERIFY_OTP_USER,
+
 }
 
 public readonly record struct TopicName(string Value)
@@ -36,6 +40,12 @@ public class IActivitiesMessage
 {
     public IssueDomain? OldIssue { get; set; }
     public required IssueDomain NewIssue { get; set; }
+    public required string UserId { get; set; }
+};
+
+public class IProjectMessage
+{
+    public required string ProjectId { get; set; }
     public required string UserId { get; set; }
 };
 

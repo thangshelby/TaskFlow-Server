@@ -45,6 +45,7 @@ export interface UpdateIssueReq {
   reporterId?: string | undefined;
   title?: string | undefined;
   summary?: string | undefined;
+  teamId?: string | undefined;
   description?: string | undefined;
   type?: string | undefined;
   columnId?: string | undefined;
@@ -71,6 +72,7 @@ export interface ListIssuesReq {
   priorities: string[];
   page: number;
   limit: number;
+  teamId: string[];
 }
 
 export interface ListIssuesRes {

@@ -114,9 +114,10 @@ export interface GetColumnsReq {
   sprintIds: string[];
   types: string[];
   priorities: string[];
-  title?: string | undefined;
+  keyword?: string | undefined;
   createdAtFrom?: string | undefined;
   createdAtTo?: string | undefined;
+  columnIds: string[];
 }
 
 export interface GetColumnsRes {
