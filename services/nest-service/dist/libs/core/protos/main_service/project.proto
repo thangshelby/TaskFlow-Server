@@ -53,8 +53,7 @@ service ProjectService {
   }
   rpc GetProjectColumns (GetColumnsReq) returns (GetColumnsRes) {
     option (google.api.http) = {
-      post: "/api/v1/projects/{project_id}/columns"
-      body: "*"
+      get: "/api/v1/projects/{project_id}/columns"
     };
   }
   rpc UpdateOrderProjectColumns (UpdateColumnsOrderReq) returns (UpdateColumnsOrderRes) {
@@ -92,12 +91,6 @@ message CreateProjectReq {
   ProjectAccess access = 3;
   ProjectType type = 4;
   string owner_id = 5;
-  int32 issues_count = 6;
-  int32 members_count = 7;
-  string due_date_from = 8;
-  string due_date_to = 9;
-  optional string description = 10;
-  optional string background_img = 11;
 }
 message GetProjectReq {
   string id = 1;
@@ -110,12 +103,6 @@ message UpdateProjectReq {
   ProjectAccess access = 4;
   ProjectType type = 5;
   string owner_id = 6;
-  optional int32 issues_count = 7;
-  optional int32 members_count = 8;
-  optional string due_date_from = 9;
-  optional string due_date_to = 10;
-  optional string description = 11;
-  optional string background_img = 12;
 }
 
 message DeleteProjectReq {
@@ -148,12 +135,6 @@ message ProjectRes {
   string created_at = 7;
   string updated_at = 8;
   repeated project_service.ProjectMemberRes project_members = 9;
-  optional int32 issues_count = 10;
-  optional int32 members_count = 11;
-  optional string due_date_from = 12;
-  optional string due_date_to = 13;
-  optional string description = 14;
-  optional string background_img = 15;
 }
 
 message CreateProjectRes {
@@ -182,17 +163,6 @@ message CreateColumnRes {
 }
 message GetColumnsReq {
   string project_id = 1;
-  optional string due_date_from = 2;
-  optional string due_date_to = 3;
-  repeated string assignee_ids = 4;
-  repeated string sprint_ids = 5;
-  repeated string types = 6;
-  repeated string priorities = 7;
-  optional string keyword = 8;
-  optional string created_at_from = 9;
-  optional string created_at_to = 10;
-  repeated string column_ids = 11;
-  optional bool active_sprint_only = 12;
 }
 message GetColumnsRes {
   string status = 1;                  

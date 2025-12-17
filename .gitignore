@@ -74,15 +74,15 @@ Thumbs.db
 **/yarn-debug.log*
 **/yarn-error.log*
 **/pnpm-debug.log*
-**/pnpm-lock.yaml*
-**/dist/
+# **/pnpm-lock.yaml*
+# **/dist/
 **/build/
 **/.cache/
 
 # Environment Variables
 # Keep .env files specific to each service
 # Ignore global or sensitive env files
-**/.env
+# **/.env
 
 # TypeScript
 **/*.tsbuildinfo
@@ -93,3 +93,6 @@ Thumbs.db
 **/junit.xml
 **/test-results.xml
 **/__snapshots__/
+
+# Express Service
+/services/express-service/**

@@ -27,7 +27,7 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     private readonly configService: ConfigService,
   ) {
     const clientId = this.configService.get<string>('KAFKA_CLIENT_ID', 'taskflow-client');
-    const brokers = this.configService.get<string>('KAFKA_BROKERS', 'kafka:9092').split(',');
+    const brokers = this.configService.get<string>('KAFKA_BROKERS', 'kafka:9094').split(',');
 
     this.kafka = new Kafka({
       clientId,

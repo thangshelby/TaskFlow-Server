@@ -13,60 +13,73 @@ services:
     networks:
       - taskflow-network
     depends_on:
-      - grpc-server
+      # - grpc-server
       - kafka
       - zookeeper
-      - notification-service
+      # - notification-service
 
-  grpc-server:
-    build:
-      context: . # Build from root directory to access protos
-      dockerfile: ./services/main-service/Dockerfile
-    container_name: grpc_server
+  # grpc-server:
+  #   build:
+  #     context: . # Build from root directory to access protos
+  #     dockerfile: ./services/main-service/Dockerfile
+  #   container_name: grpc_server
+  #   ports:
+  #     - "5001:5001"
+  #   networks:
+  #     - taskflow-network
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ASPNETCORE_URLS=http://0.0.0.0:5001
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+
+  # notification-service:
+  #   build:
+  #     context: ./services/nest-service
+  #     dockerfile: ./Dockerfile
+  #   container_name: notification_service
+  #   ports:
+  #     - "5002:5002"
+  #   networks:
+  #     - taskflow-network
+  #   env_file:
+  #     - ./services/nest-service/.env # 👈 Load các biến môi trường từ file .env
+  #   environment:
+  #     - NODE_ENV=production
+  #     - PORT=5002
+  #   depends_on:
+  #     - kafka
+  #     - grpc-server
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD",
+  #         "wget",
+  #         "--no-verbose",
+  #         "--tries=1",
+  #         "--spider",
+  #         "http://localhost:5002/api/v1/notifications/health",
+  #       ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
     ports:
-      - "5001:5001"
+      - "2181:2181"
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+      - ZOOKEEPER_TICK_TIME=2000
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
     networks:
       - taskflow-network
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://0.0.0.0:5001
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  notification-service:
-    build:
-      context: ./services/nest-service
-      dockerfile: ./Dockerfile
-    container_name: notification_service
-    ports:
-      - "5002:5002"
-    networks:
-      - taskflow-network
-    env_file:
-      - ./services/nest-service/.env # 👈 Load các biến môi trường từ file .env
-    environment:
-      - NODE_ENV=production
-      - PORT=5002
-    depends_on:
-      - kafka
-      - grpc-server
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:5002/api/v1/notifications/health",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   kafka:
     image: confluentinc/cp-kafka:7.4.0
@@ -78,10 +91,8 @@ services:
     environment:
       - KAFKA_BROKER_ID=1
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9094,PLAINTEXT_HOST://localhost:9092
-      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9094,PLAINTEXT_HOST://0.0.0.0:9092
-      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
       - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
     volumes:
@@ -90,19 +101,6 @@ services:
       - taskflow-network
     depends_on:
       - zookeeper
-
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.0
-    container_name: zookeeper
-    ports:
-      - "2181:2181"
-    environment:
-      - ZOOKEEPER_CLIENT_PORT=2181
-      - ZOOKEEPER_TICK_TIME=2000
-    volumes:
-      - zookeeper-data:/var/lib/zookeeper/data
-    networks:
-      - taskflow-network
 
   # kafka-ui:
   #   image: provectuslabs/kafka-ui:latest
@@ -126,10 +124,10 @@ services:
     command: >
       "
       echo '⏳ Waiting for Kafka to be available...' &&
-      while ! kafka-topics --bootstrap-server kafka:9094 --list; do sleep 2; done &&
+      while ! kafka-topics --bootstrap-server kafka:9092 --list; do sleep 2; done &&
       echo '✅ Kafka is up!' &&
-      kafka-topics --bootstrap-server kafka:9094 --create --if-not-exists --topic activities --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server kafka:9094 --create --if-not-exists --topic notifications --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic activities --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic notifications --partitions 3 --replication-factor 1
       "
     networks:
       - taskflow-network
@@ -139,9 +137,5 @@ networks:
     driver: bridge
 
 volumes:
-  esdata: {}
-  kong-data: {}
   kafka-data: {}
   zookeeper-data: {}
-  cassandra-data: {}
-  mongodb-data: {}

@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+option csharp_namespace = "TaskFlow.CommentService";
+option go_package = "github.com/vudinhan2525/TaskFlow-Server/services/go-service/types/main_service;main_service";
+
+package project_service;
+import "google/api/annotations.proto";
+import "base.proto";
+
+
+service CommentService {
+  rpc CreateComment (CreateCommentReq) returns (CreateCommentRes) {
+    option (google.api.http) = {
+      post: "/api/v1/comments"
+      body: "*"
+    };
+  }
+  rpc ListComments (ListCommentsReq) returns (ListCommentsRes) {
+    option (google.api.http) = {
+      post: "/api/v1/comments/list-comments"
+      body: "*"
+    };
+  }
+}
+
+message CreateCommentReq {
+  string user_id = 1;
+  string content = 2;
+  string issue_id = 3;
+}
+
+message CreateCommentRes {
+  string status = 1;
+  string message = 2;
+  base.CommentRes data = 3;
+}
+message ListCommentsReq {
+  string issue_id = 1;
+  int32 page = 2;
+  int32 limit = 3;
+}
+message ListCommentsRes {
+  string status = 1;
+  string message = 2;
+  repeated base.CommentRes data = 3;
+  base.PaginationRes pagination = 4;
+}

@@ -5,13 +5,13 @@ admin:
       address: 0.0.0.0
       port_value: 9901
 
-static_resources:
+static_resources: 
   listeners:
     - name: listener_main_service
       address:
         socket_address:
           address: 0.0.0.0
-          port_value: 8081
+          port_value: 8081  
       filter_chains:
         - filters:
             - name: envoy.filters.network.http_connection_manager
@@ -22,10 +22,10 @@ static_resources:
                 route_config:
                   virtual_hosts:
                     - name: main_service
-                      domains: ["*"]
+                      domains: ["*"]  
                       routes:
                         - match:
-                            prefix: ""
+                            prefix: "/"
                           route:
                             cluster: main_service
                           decorator:
@@ -46,200 +46,200 @@ static_resources:
                   - name: envoy.filters.http.cors
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
-                  - name: envoy.filters.http.jwt_authn
-                    typed_config:
-                      "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
-                      providers:
-                        my_jwt_provider:
-                          issuer: "127.0.0.1"
-                          local_jwks:
-                            inline_string: |
-                              {
-                                "keys": [
-                                  {
-                                    "kty": "RSA",
-                                    "alg": "RS256",
-                                    "use": "sig",
-                                    "n": "sqeJGov8nTaxpcqKnjOlt2_6YgBdm9vPX67brfmEY--M4mn7Tbt_Q76hDk44CvLvFll7amwO763rA5m9mQDTgmK57_E7zaF4T2A2B0xqg8V_f6EG5G9lBmtwqHX4mDW8B4ZKXX9KYzVK6wndoJsRu1rq1FmZMeapDpjXL1Rb0DVP9ZPxnvGDhVBxA83lzUhIRBX3_2CwrCrET9nCEDOAer7U9xKz-oVbXyuCvUwYCJPN02gOV_sBjHrW2T09bEsUW6s-vLspv9AVC5sjYduhAVrqmh1RGhZOPziwwa1DmvO5z_qEdDawSOki7dU8zxZQ5cX18BzkXZjuwhjQYP9vlw",
-                                    "e": "AQAB"
-                                  }
-                                ]
-                              }
-                          forward: true
-                          payload_in_metadata: "jwt_payload"
-                          from_cookies:
-                            - token
-                      rules:
-                        # Public routes - không cần JWT
-                        - match:
-                            path: "/api/v1/users/login"
-                            headers:
-                              - name: ":method"
-                                string_match:
-                                  exact: "POST"
-                          requires: {}
+                  # - name: envoy.filters.http.jwt_authn
+                  #   typed_config:
+                  #     "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
+                  #     providers:
+                  #       my_jwt_provider:
+                  #         issuer: "127.0.0.1"
+                  #         local_jwks:
+                  #           inline_string: |
+                  #             {
+                  #               "keys": [
+                  #                 {
+                  #                   "kty": "RSA",
+                  #                   "alg": "RS256",
+                  #                   "use": "sig",
+                  #                   "n": "sqeJGov8nTaxpcqKnjOlt2_6YgBdm9vPX67brfmEY--M4mn7Tbt_Q76hDk44CvLvFll7amwO763rA5m9mQDTgmK57_E7zaF4T2A2B0xqg8V_f6EG5G9lBmtwqHX4mDW8B4ZKXX9KYzVK6wndoJsRu1rq1FmZMeapDpjXL1Rb0DVP9ZPxnvGDhVBxA83lzUhIRBX3_2CwrCrET9nCEDOAer7U9xKz-oVbXyuCvUwYCJPN02gOV_sBjHrW2T09bEsUW6s-vLspv9AVC5sjYduhAVrqmh1RGhZOPziwwa1DmvO5z_qEdDawSOki7dU8zxZQ5cX18BzkXZjuwhjQYP9vlw",
+                  #                   "e": "AQAB"
+                  #                 }
+                  #               ]
+                  #             }
+                  #         forward: true
+                  #         payload_in_metadata: "jwt_payload"
+                  #         from_cookies:
+                  #           - token
+                  #     rules:
+                  #       # Public routes - không cần JWT
+                  #       - match:
+                  #           path: "/api/v1/users/login"
+                  #           headers:
+                  #             - name: ":method"
+                  #               string_match:
+                  #                 exact: "POST"
+                  #         requires: {}
 
-                        - match:
-                            path: "/api/v1/users/register"
-                            headers:
-                              - name: ":method"
-                                string_match:
-                                  exact: "POST"
-                          requires: {}
+                  #       - match:
+                  #           path: "/api/v1/users/register"
+                  #           headers:
+                  #             - name: ":method"
+                  #               string_match:
+                  #                 exact: "POST"
+                  #         requires: {}
 
-                        - match:
-                            path: "/api/v1/users/verify"
-                            headers:
-                              - name: ":method"
-                                string_match:
-                                  exact: "POST"
-                          requires: {}
+                  #       - match:
+                  #           path: "/api/v1/users/verify"
+                  #           headers:
+                  #             - name: ":method"
+                  #               string_match:
+                  #                 exact: "POST"
+                  #         requires: {}
                         
-                        - match:
-                            path: "/api/v1/users/resend-otp"
-                            headers:
-                              - name: ":method"
-                                string_match:
-                                  exact: "POST"
-                          requires: {}
+                  #       - match:
+                  #           path: "/api/v1/users/resend-otp"
+                  #           headers:
+                  #             - name: ":method"
+                  #               string_match:
+                  #                 exact: "POST"
+                  #         requires: {}
 
-                        - match:
-                            path: "/api/v1/users/logout"
-                            headers:
-                              - name: ":method"
-                                string_match:
-                                  exact: "POST"
-                          requires: {}
+                  #       - match:
+                  #           path: "/api/v1/users/logout"
+                  #           headers:
+                  #             - name: ":method"
+                  #               string_match:
+                  #                 exact: "POST"
+                  #         requires: {}
 
-                        - match:
-                            path: "/api/v1/users"
-                            headers:
-                              - name: ":method"
-                                string_match:
-                                  exact: "POST"
-                          requires: {}
+                  #       - match:
+                  #           path: "/api/v1/users"
+                  #           headers:
+                  #             - name: ":method"
+                  #               string_match:
+                  #                 exact: "POST"
+                  #         requires: {}
 
-                        # Private route
-                        - match:
-                            prefix: "/"
-                          requires:
-                            provider_name: "my_jwt_provider"
-                  - name: envoy.filters.http.rbac
-                    typed_config:
-                      "@type": type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
-                      rules:
-                        action: ALLOW
-                        policies:
-                          "public-routes-policy":
-                            permissions:
-                              - or_rules:
-                                  rules:
-                                    - and_rules:
-                                        rules:
-                                          - header:
-                                              name: ":method"
-                                              string_match:
-                                                exact: "POST"
-                                          - url_path:
-                                              path:
-                                                exact: "/api/v1/users/login"
-                                    - and_rules:
-                                        rules:
-                                          - header:
-                                              name: ":method"
-                                              string_match:
-                                                exact: "POST"
-                                          - url_path:
-                                              path:
-                                                exact: "/api/v1/users/register"
-                                    - and_rules:
-                                        rules:
-                                          - header:
-                                              name: ":method"
-                                              string_match:
-                                                exact: "POST"
-                                          - url_path:
-                                              path:
-                                                exact: "/api/v1/users/verify"
-                                    - and_rules:
-                                        rules:
-                                          - header:
-                                              name: ":method"
-                                              string_match:
-                                                exact: "POST"
-                                          - url_path:
-                                              path:
-                                                exact: "/api/v1/users/resend-otp"
-                                    - and_rules:
-                                        rules:
-                                          - header:
-                                              name: ":method"
-                                              string_match:
-                                                exact: "POST"
-                                          - url_path:
-                                              path:
-                                                exact: "/api/v1/users/logout"
-                                    - and_rules:
-                                        rules:
-                                          - header:
-                                              name: ":method"
-                                              string_match:
-                                                exact: "POST"
-                                          - url_path:
-                                              path:
-                                                exact: "/api/v1/users"
-                            principals:
-                              - any: true
+                  #       # Private route
+                  #       - match:
+                  #           prefix: "/"
+                  #         requires:
+                  #           provider_name: "my_jwt_provider"
+                  # - name: envoy.filters.http.rbac
+                  #   typed_config:
+                  #     "@type": type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
+                  #     rules:
+                  #       action: ALLOW
+                  #       policies:
+                  #         "public-routes-policy":
+                  #           permissions:
+                  #             - or_rules:
+                  #                 rules:
+                  #                   - and_rules:
+                  #                       rules:
+                  #                         - header:
+                  #                             name: ":method"
+                  #                             string_match:
+                  #                               exact: "POST"
+                  #                         - url_path:
+                  #                             path:
+                  #                               exact: "/api/v1/users/login"
+                  #                   - and_rules:
+                  #                       rules:
+                  #                         - header:
+                  #                             name: ":method"
+                  #                             string_match:
+                  #                               exact: "POST"
+                  #                         - url_path:
+                  #                             path:
+                  #                               exact: "/api/v1/users/register"
+                  #                   - and_rules:
+                  #                       rules:
+                  #                         - header:
+                  #                             name: ":method"
+                  #                             string_match:
+                  #                               exact: "POST"
+                  #                         - url_path:
+                  #                             path:
+                  #                               exact: "/api/v1/users/verify"
+                  #                   - and_rules:
+                  #                       rules:
+                  #                         - header:
+                  #                             name: ":method"
+                  #                             string_match:
+                  #                               exact: "POST"
+                  #                         - url_path:
+                  #                             path:
+                  #                               exact: "/api/v1/users/resend-otp"
+                  #                   - and_rules:
+                  #                       rules:
+                  #                         - header:
+                  #                             name: ":method"
+                  #                             string_match:
+                  #                               exact: "POST"
+                  #                         - url_path:
+                  #                             path:
+                  #                               exact: "/api/v1/users/logout"
+                  #                   - and_rules:
+                  #                       rules:
+                  #                         - header:
+                  #                             name: ":method"
+                  #                             string_match:
+                  #                               exact: "POST"
+                  #                         - url_path:
+                  #                             path:
+                  #                               exact: "/api/v1/users"
+                  #           principals:
+                  #             - any: true
 
-                          "verified-users-policy":
-                            permissions:
-                              - not_rule:
-                                  or_rules:
-                                    rules:
-                                      - url_path:
-                                          path:
-                                            exact: "/api/v1/users/login"
-                                      - url_path:
-                                          path:
-                                            exact: "/api/v1/users/register"
-                                      - url_path:
-                                          path:
-                                            exact: "/api/v1/users/verify"
-                                      - url_path:
-                                          path:
-                                            exact: "/api/v1/users/resend-otp"
-                                      - url_path:
-                                          path:
-                                            exact: "/api/v1/users/logout"
-                                      - and_rules:
-                                          rules:
-                                            - header:
-                                                name: ":method"
-                                                string_match:
-                                                  exact: "POST"
-                                            - url_path:
-                                                path:
-                                                  exact: "/api/v1/users"
-                            principals:
-                              - metadata:
-                                  filter: "envoy.filters.http.jwt_authn"
-                                  path:
-                                    - key: "jwt_payload"
-                                    - key: "isVerified"
-                                  value:
-                                    string_match:
-                                      exact: "true"
+                  #         "verified-users-policy":
+                  #           permissions:
+                  #             - not_rule:
+                  #                 or_rules:
+                  #                   rules:
+                  #                     - url_path:
+                  #                         path:
+                  #                           exact: "/api/v1/users/login"
+                  #                     - url_path:
+                  #                         path:
+                  #                           exact: "/api/v1/users/register"
+                  #                     - url_path:
+                  #                         path:
+                  #                           exact: "/api/v1/users/verify"
+                  #                     - url_path:
+                  #                         path:
+                  #                           exact: "/api/v1/users/resend-otp"
+                  #                     - url_path:
+                  #                         path:
+                  #                           exact: "/api/v1/users/logout"
+                  #                     - and_rules:
+                  #                         rules:
+                  #                           - header:
+                  #                               name: ":method"
+                  #                               string_match:
+                  #                                 exact: "POST"
+                  #                           - url_path:
+                  #                               path:
+                  #                                 exact: "/api/v1/users"
+                  #           principals:
+                  #             - metadata:
+                  #                 filter: "envoy.filters.http.jwt_authn"
+                  #                 path:
+                  #                   - key: "jwt_payload"
+                  #                   - key: "isVerified"
+                  #                 value:
+                  #                   string_match:
+                  #                     exact: "true"
 
-                  - name: envoy.filters.http.lua
-                    typed_config:
-                      "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
-                      inline_code: |
-                        function envoy_on_response(response_handle)
-                          local token = response_handle:headers():get("authorization")
-                          if token then
-                            response_handle:headers():add("Set-Cookie", "token=" .. token .. "; Path=/; HttpOnly; Secure; SameSite=None")
-                          end
-                        end
+                  # - name: envoy.filters.http.lua
+                    # typed_config:
+                    #   "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+                    #   inline_code: |
+                    #     function envoy_on_response(response_handle)
+                    #       local token = response_handle:headers():get("authorization")
+                    #       if token then
+                    #         response_handle:headers():add("Set-Cookie", "token=" .. token .. "; Path=/; HttpOnly; Secure; SameSite=None")
+                    #       end
+                    #     end
                   - name: envoy.filters.http.grpc_json_transcoder
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_json_transcoder.v3.GrpcJsonTranscoder
@@ -295,9 +295,6 @@ static_resources:
                           allow_methods: "GET, POST, PUT, DELETE, OPTIONS"
                           allow_headers: "content-type, authorization"
                           expose_headers: "x-custom-header"
-                          # allow_methods: "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-                          # allow_headers: "content-type, authorization, accept, origin, x-requested-with"
-                          # expose_headers: "authorization"
                           max_age: "86400"
                           allow_credentials: true
                 http_filters:
@@ -474,7 +471,7 @@ static_resources:
       type: LOGICAL_DNS
       connect_timeout: 5s
       lb_policy: ROUND_ROBIN
-      http2_protocol_options: {}
+      http2_protocol_options: {}  
       load_assignment:
         cluster_name: main_service
         endpoints:

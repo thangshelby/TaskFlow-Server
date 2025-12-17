@@ -1,6 +1,3 @@
-/node_modules
-/dist
-/build
-/coverage
-/logs
-/tmp
+node_modules/
+dist/
+/generated/prisma
