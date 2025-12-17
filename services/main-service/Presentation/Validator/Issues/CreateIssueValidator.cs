@@ -9,9 +9,9 @@ public class CreateIssueValidator : AbstractValidator<CreateIssueReq>
     public CreateIssueValidator()
     {
         // Required for all issues
-        RuleFor(x => x.Title)
-            .NotEmpty().WithMessage("Title is required.")
-            .MaximumLength(255).WithMessage("Title must not exceed 255 characters.");
+        // RuleFor(x => x.Title)
+        //     .NotEmpty().WithMessage("Title is required.")
+        //     .MaximumLength(255).WithMessage("Title must not exceed 255 characters.");
 
         RuleFor(x => x.Summary)
             .NotEmpty().WithMessage("Summary is required.")

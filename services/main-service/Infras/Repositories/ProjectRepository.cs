@@ -286,4 +286,26 @@ public class ProjectRepository : IProjectRepository
 
         await _projectColumns.FindOneAndDeleteAsync(filter);
     }
+
+    public async Task IncrementIssuesCount(string projectId)
+    {
+        var filter = Builders<Project>.Filter.Eq(p => p.Id, projectId);
+        var update = Builders<Project>.Update
+            .Inc(p => p.IssuesCount, 1)
+            .Set(p => p.UpdatedAt, DateTime.UtcNow);
+
+        await _projects.UpdateOneAsync(filter, update);
+    }
+
+    public async Task<(string Key, int IssuesCount)> GetProjectKeyAndIssuesCount(string projectId)
+    {
+        var project = await _projects.Find(p => p.Id == projectId)
+            .Project(p => new { p.Key, p.IssuesCount })
+            .FirstOrDefaultAsync();
+
+        if (project == null)
+            throw new Exception("Project not found");
+
+        return (project.Key, project.IssuesCount ?? 0);
+    }
 }

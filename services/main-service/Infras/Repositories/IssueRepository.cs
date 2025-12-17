@@ -1,4 +1,5 @@
 using AutoMapper;
+using MainService.Domain.Common;
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using MainService.Infras.Entities;
@@ -260,7 +261,7 @@ public class IssueRepository : IIssueRepository
         return response;
     }
 
-    public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(GetIssuesParams param)
+    public async Task<PagedResult<IssueDomain>> ListIssues(GetIssuesParams param)
     {
         var filterBuilder = Builders<Issue>.Filter;
         var filter = filterBuilder.Empty;
@@ -429,7 +430,7 @@ public class IssueRepository : IIssueRepository
         var rawResults = await _issues.Aggregate<BsonDocument>(pipeline).ToListAsync();
         var issues = rawResults.Select(bson => BsonSerializer.Deserialize<Issue>(bson)).ToList();
 
-        return (_mapper.Map<List<IssueDomain>>(issues), (int)totalCount);
+        return new PagedResult<IssueDomain>(_mapper.Map<List<IssueDomain>>(issues), (int)totalCount);
     }
     
     private static FilterDefinition<Issue> BuildDueDateFilter(string dueDateParam, FilterDefinitionBuilder<Issue> filterBuilder)

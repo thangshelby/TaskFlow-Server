@@ -1,3 +1,4 @@
+using MainService.Domain.Common;
 using MainService.Domain.Entities;
 using MainService.Domain.Enums;
 using TaskFlow.UserService;
@@ -10,7 +11,7 @@ public interface IIssueRepository
     Task<IssueDomain> UpdateIssue(UpdateIssueParams issue);
     Task<UserStats> GetStats(string id, bool isSprintId);
     Task DeleteIssue(string id);
-    Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(GetIssuesParams param);
+    Task<PagedResult<IssueDomain>> ListIssues(GetIssuesParams param);
 }
 
 public class CreateIssueParams

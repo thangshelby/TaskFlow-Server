@@ -4,6 +4,7 @@ using MainService.Domain.UseCases;
 using MainService.Infras;
 using MainService.Infras.Repositories;
 using MainService.Presentation.Validator.Users;
+using StackExchange.Redis;
 
 
 public static class DependencyInjectionExtensions
@@ -12,6 +13,18 @@ public static class DependencyInjectionExtensions
     {
         // Database Service
         services.AddSingleton<MongoDbService>();
+        
+        // Redis Service
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var configuration = sp.GetRequiredService<IConfiguration>();
+            var redisConnection = configuration.GetValue<string>("Redis:ConnectionString") ?? "localhost:6379";
+            return ConnectionMultiplexer.Connect(redisConnection);
+        });
+        
+        // Cache Repository
+        services.AddSingleton<ICacheRepository, CacheRepository>();
+        
         // Use Cases
         services.AddScoped<UserUseCase>();
         services.AddScoped<ProjectUseCase>();
@@ -27,7 +40,17 @@ public static class DependencyInjectionExtensions
         services.AddSingleton<IUserRepository, UserRepository>();
         services.AddSingleton<IProjectRepository, ProjectRepository>();
         services.AddSingleton<ISprintRepository, SprintRepository>();
-        services.AddSingleton<IIssueRepository, IssueRepository>();
+        
+        // Register IssueRepository with Cache Decorator
+        services.AddSingleton<IssueRepository>();
+        services.AddSingleton<IIssueRepository>(sp =>
+        {
+            var innerRepository = sp.GetRequiredService<IssueRepository>();
+            var cacheRepository = sp.GetRequiredService<ICacheRepository>();
+            var logger = sp.GetRequiredService<ILogger<IssueRepositoryCacheDecorator>>();
+            return new IssueRepositoryCacheDecorator(innerRepository, cacheRepository, logger);
+        });
+        
         services.AddSingleton<IActivitiesRepository, ActivitiesRepository>();
         services.AddSingleton<IProjectMemberRepository, ProjectMemberRepository>();
         services.AddSingleton<ICommentsRepository, CommentsRepository>();

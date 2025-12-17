@@ -197,15 +197,7 @@ public class ProjectMemberController : ProjectMemberService.ProjectMemberService
                     IsPending = member.IsPending,
                     CreatedAt = member.CreatedAt.ToString("O"),
                     UpdatedAt = member.UpdatedAt.ToString("O"),
-                    Project = new ProjectInfo
-                    {
-                        Id = project.Id ?? string.Empty,
-                        Name = project.Name,
-                        Description = project.Key,
-                        Status = project.Access.ToString(),
-                        CreatedAt = project.CreatedAt.ToString("O"),
-                        UpdatedAt = project.UpdatedAt.ToString("O"),
-                    }
+                    Project = _mapper.Map<ProjectInfo>(project)
                 };
                 response.Data.Add(userMembership);
             }

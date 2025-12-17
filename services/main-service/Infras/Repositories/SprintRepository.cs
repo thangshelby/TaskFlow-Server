@@ -155,7 +155,7 @@ public class SprintRepository : ISprintRepository
         var start = sprint.DateStarted.ToUniversalTime().Date;
         var end = sprint.DateEnded.ToUniversalTime().Date;
 
-        var (issues, totalCount) = await _issueRepository.ListIssues(new GetIssuesParams
+        var result = await _issueRepository.ListIssues(new GetIssuesParams
         {
             SprintIds = [sprint_id]
         });
@@ -163,14 +163,14 @@ public class SprintRepository : ISprintRepository
         var dailyStats = new List<SprintDailyStats>();
         for (var date = start; date <= end; date = date.AddDays(1))
         {
-            var completedCount = issues.Count(i =>
+            var completedCount = result.Items.Count(i =>
                 i.CompletedAt.ToUniversalTime().Date <= date);
 
             dailyStats.Add(new SprintDailyStats
             {
                 Date = date.ToString(),
                 CompletedIssues = completedCount,
-                RemainingIssues = totalCount - completedCount
+                RemainingIssues = result.TotalCount - completedCount
             });
         }
         return dailyStats;

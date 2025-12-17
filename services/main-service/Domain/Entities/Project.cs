@@ -13,6 +13,14 @@ public class ProjectDomain
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public List<ProjectMemberDomain>? ProjectMembers { get; set; } = new List<ProjectMemberDomain>();
+    
+    // New fields
+    public int? IssuesCount { get; set; }
+    public int? MembersCount { get; set; }
+    public DateTime? DueDateFrom { get; set; }
+    public DateTime? DueDateTo { get; set; }
+    public string? Description { get; set; }
+    public string? BackgroundImg { get; set; }
 }
 
 public class ProjectColumnDomain
