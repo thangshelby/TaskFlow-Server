@@ -73,7 +73,7 @@ public class IssueRepositoryCacheDecorator : IIssueRepository
 
     public async Task<PagedResult<IssueDomain>> ListIssues(GetIssuesParams param)
     {
-        var cacheKey = GetListIssuesCacheKey(param);
+        var cacheKey = CacheKeys.Issues.List(param);
         
         try
         {
@@ -81,7 +81,9 @@ public class IssueRepositoryCacheDecorator : IIssueRepository
             var cachedResult = await _cacheRepository.GetAsync<PagedResult<IssueDomain>>(cacheKey);
             if (cachedResult != null && cachedResult.Items != null && cachedResult.Items.Any())
             {
+                var result = new PagedResult<IssueDomain>
                 _logger.LogInformation("Cache hit for key: {CacheKey}", cacheKey);
+                cachedResult.
                 return cachedResult;
             }
         }
@@ -97,6 +99,7 @@ public class IssueRepositoryCacheDecorator : IIssueRepository
         // Store in cache
         try
         {
+            var 
             await _cacheRepository.SetAsync(cacheKey, result, TimeSpan.FromMinutes(CacheExpirationMinutes));
         }
         catch (Exception ex)
