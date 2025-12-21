@@ -65,4 +65,36 @@ public static class CacheKeys
     {
         public static string Profile(string userId) => $"users:profile:{userId}";
     }
+
+    public static class ProjectMembers
+    {
+        private const string Prefix = "project_members";
+
+        public static string Detail(string memberId) 
+            => $"{Prefix}:detail:{memberId}";
+
+        public static string ByProjectAndUser(string projectId, string userId) 
+            => $"{Prefix}:project:{projectId}:user:{userId}";
+
+        public static string ProjectMembersList(string projectId, int page, int limit) 
+            => $"{Prefix}:list:pid:{projectId}:page:{page}:limit:{limit}";
+
+        public static string UserProjectsList(string userId, int page, int limit) 
+            => $"{Prefix}:user_projects:uid:{userId}:page:{page}:limit:{limit}";
+
+        public static string SearchList(SearchProjectMemberQueryParams param)
+        {
+            var keyParts = new List<string>
+            {
+                $"{Prefix}:search",
+                $"pid:{param.ProjectId}",
+                $"page:{param.Page}",
+                $"limit:{param.Limit}",
+                $"name:{param.Name ?? "none"}",
+                $"email:{param.Email ?? "none"}"
+            };
+
+            return string.Join(":", keyParts);
+        }
+    }
 }
