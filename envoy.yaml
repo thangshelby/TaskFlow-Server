@@ -368,7 +368,7 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: host.docker.internal
+                      address: 3.89.161.126
                       port_value: 5001
     - name: notification_service
       type: LOGICAL_DNS

@@ -1,5 +1,5 @@
 using MainService.Infras;
-
+using MainService.Presentation.MiddleWare;
 
 // using MainService.Presentation.Services;
 
@@ -36,6 +36,8 @@ if (app.Environment.IsDevelopment())
   app.UseSwagger();
   app.UseSwaggerUI();
 }
+app.UseMiddleware<RateLimitingMiddleware>();
+
 
 // Map GRPC Services
 app.MapGrpcService<ProjectController>();

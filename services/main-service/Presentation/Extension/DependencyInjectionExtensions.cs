@@ -6,7 +6,7 @@ using MainService.Infras.Repositories;
 using MainService.Presentation.Validator.Users;
 using StackExchange.Redis;
 using MainService.Domain.Decorator;
-
+using MainService.Presentation.MiddleWare;
 
 public static class DependencyInjectionExtensions
 {
@@ -71,6 +71,15 @@ public static class DependencyInjectionExtensions
 
         // Workers
         services.AddHostedService<ActivitiesConsumer>();
+
+        // Register Rate Limiter
+        services.AddSingleton(new RateLimitOptions
+        {
+            Capacity = 100,
+            RefillPerSecond = 20
+        });
+        services.AddSingleton<IRateLimiter, RedisTokenBucketRateLimiter>();
+
         return services;
     }
 

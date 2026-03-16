@@ -12,11 +12,11 @@ services:
       - ./proto.pb:/etc/envoy/proto.pb
     networks:
       - taskflow-network
-    depends_on:
-      # - grpc-server
-      - kafka
-      - zookeeper
-      # - notification-service
+    # depends_on:
+    # - grpc-server
+    # - kafka
+    # - zookeeper
+    # - notification-service
 
   # grpc-server:
   #   build:
@@ -68,71 +68,71 @@ services:
   #     retries: 3
   #     start_period: 40s
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    container_name: zookeeper
-    ports:
-      - "2181:2181"
-    environment:
-      - ZOOKEEPER_CLIENT_PORT=2181
-      - ZOOKEEPER_TICK_TIME=2000
-    volumes:
-      - zookeeper-data:/var/lib/zookeeper/data
-    networks:
-      - taskflow-network
+  # zookeeper:
+  #   image: confluentinc/cp-zookeeper:latest
+  #   container_name: zookeeper
+  #   ports:
+  #     - "2181:2181"
+  #   environment:
+  #     - ZOOKEEPER_CLIENT_PORT=2181
+  #     - ZOOKEEPER_TICK_TIME=2000
+  #   volumes:
+  #     - zookeeper-data:/var/lib/zookeeper/data
+  #   networks:
+  #     - taskflow-network
 
-  kafka:
-    image: confluentinc/cp-kafka:7.4.0
-    container_name: kafka
-    ports:
-      - "29092:29092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+  # kafka:
+  #   image: confluentinc/cp-kafka:7.4.0
+  #   container_name: kafka
+  #   ports:
+  #     - "29092:29092"
+  #   environment:
+  #     KAFKA_BROKER_ID: 1
+  #     KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
 
-      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+  #     KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
+  #     KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
+  #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+  #     KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
 
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-    volumes:
-      - kafka-data:/var/lib/kafka/data
-    networks:
-      - taskflow-network
-    depends_on:
-      - zookeeper
+  #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  #     KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+  #   volumes:
+  #     - kafka-data:/var/lib/kafka/data
+  #   networks:
+  #     - taskflow-network
+  #   depends_on:
+  #     - zookeeper
 
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka_ui
-    ports:
-      - "8888:8888"
-    environment:
-      - KAFKA_CLUSTERS_0_NAME=local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9094
-      - SERVER_PORT=8888
-    depends_on:
-      - kafka
-    networks:
-      - taskflow-network
+  # kafka-ui:
+  #   image: provectuslabs/kafka-ui:latest
+  #   container_name: kafka_ui
+  #   ports:
+  #     - "8888:8888"
+  #   environment:
+  #     - KAFKA_CLUSTERS_0_NAME=local
+  #     - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+  #     - SERVER_PORT=8888
+  #   depends_on:
+  #     - kafka
+  #   networks:
+  #     - taskflow-network
 
-  kafka-topic-creator:
-    image: confluentinc/cp-kafka:7.4.0
-    depends_on:
-      - kafka
-    entrypoint: ["/bin/sh", "-c"]
-    command: >
-      "
-      echo '⏳ Waiting for Kafka to be available...' &&
-      while ! kafka-topics --bootstrap-server kafka:9092 --list; do sleep 2; done &&
-      echo '✅ Kafka is up!' &&
-      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic activities --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic notifications --partitions 3 --replication-factor 1
-      "
-    networks:
-      - taskflow-network
+  # kafka-topic-creator:
+  # image: confluentinc/cp-kafka:7.4.0
+  # depends_on:
+  #   - kafka
+  # entrypoint: ["/bin/sh", "-c"]
+  # command: >
+  #   "
+  #   echo '⏳ Waiting for Kafka to be available...' &&
+  #   while ! kafka-topics --bootstrap-server kafka:9092 --list; do sleep 2; done &&
+  #   echo '✅ Kafka is up!' &&
+  #   kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic activities --partitions 3 --replication-factor 1 &&
+  #   kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic notifications --partitions 3 --replication-factor 1
+  #   "
+  # networks:
+  #   - taskflow-network
   redis:
     image: redis:latest
     container_name: redis
