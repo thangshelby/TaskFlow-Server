@@ -35,6 +35,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<CommentUseCase>();
         services.AddScoped<OtpTokenUseCase>();
         services.AddScoped<ProjectTeamUseCase>();
+        services.AddScoped<MetadataUseCase>();
 
         // Repositories
         services.AddSingleton<ITransactionRepo, MongoTransactionRepo>();
@@ -68,6 +69,7 @@ public static class DependencyInjectionExtensions
         services.AddSingleton<IOtpTokenRepository, OtpTokenRepository>();
         services.AddSingleton<IPublisherService, KafkaPublisher>();
         services.AddSingleton<IProjectTeamRepository, ProjectTeamRepository>();
+        services.AddSingleton<IS3Repository, S3Repository>();
 
         // Workers
         services.AddHostedService<ActivitiesConsumer>();

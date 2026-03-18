@@ -21,6 +21,7 @@ public enum KafkaMessageAction
 
     MAILS_SEND_VERIFY_OTP_USER,
 
+    METADATA_CREATE_PRESIGNED_URL_IMAGE,
 }
 
 public readonly record struct TopicName(string Value)
@@ -28,6 +29,7 @@ public readonly record struct TopicName(string Value)
     public static readonly TopicName NOTIFICATIONS = new("notifications");
     public static readonly TopicName ACTIVITIES = new("activities");
     public static readonly TopicName MAILS = new("mails");
+    public static readonly TopicName METADATA = new("metadata");
 
     public override string ToString() => Value;
 }

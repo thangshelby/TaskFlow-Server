@@ -253,6 +253,7 @@ static_resources:
                           "project_service.ProjectMemberService",
                           "project_service.CommentService",
                           "project_service.ProjectTeamService",
+                          "project_service.MetadataService",
                         ]
                       convert_grpc_status: true
                       print_options:
@@ -368,7 +369,7 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 3.89.161.126
+                      address: host.docker.internal
                       port_value: 5001
     - name: notification_service
       type: LOGICAL_DNS
