@@ -30,7 +30,8 @@ export class IssueClientService implements OnModuleInit {
         projectId: '',
         types: [],
         priorities: [],
-        teamId: [],
+        teamIds: [],
+        parentIds: [],
       }),
     );
     return res.data;

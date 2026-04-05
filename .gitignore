@@ -96,3 +96,6 @@ Thumbs.db
 
 # Express Service
 /services/express-service/**
+
+# Python
+**/lambda/**
