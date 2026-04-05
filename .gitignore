@@ -97,7 +97,7 @@ Thumbs.db
 # Express Service
 /services/express-service/**
 
-#Lambda 
+# Lambda
 **/lambda/python/**
 **/lambda/python.zip
 **/lambda/env/

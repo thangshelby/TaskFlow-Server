@@ -179,7 +179,7 @@ public class ProjectRepository : IProjectRepository
         // Add active sprint filtering to issue query if needed
         if (param.ActiveSprintOnly == true && activeSprintIds != null && activeSprintIds.Any())
         {
-            _logger.LogInformation("Adding active sprint filtering to issue query",param.ActiveSprintOnly);
+            _logger.LogInformation("Adding active sprint filtering to issue query: {ActiveSprintOnly}", param.ActiveSprintOnly);
             issueQuery.Add(new BsonDocument("$in", new BsonArray { "$sprint_id", new BsonArray(activeSprintIds.Select(id => new BsonString(id)).ToArray()) }));
         }
         
