@@ -72,7 +72,7 @@ export interface ListIssuesReq {
   priorities: string[];
   page: number;
   limit: number;
-  teamId: string[];
+  teamIds: string[];
 }
 
 export interface ListIssuesRes {
