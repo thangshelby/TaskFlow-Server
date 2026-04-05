@@ -27,7 +27,7 @@ public class CacheRepository : ICacheRepository
                 return default;
             }
 
-            return JsonSerializer.Deserialize<T>(value!);
+            return JsonSerializer.Deserialize<T>(value.ToString());
         }
         catch (Exception ex)
         {

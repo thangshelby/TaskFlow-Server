@@ -146,34 +146,5 @@ public class SprintRepository : ISprintRepository
             CompletedStoryPoint = rawResult.GetValue("completed_story_point", 0).ToInt32()
         };
     }
-    public async Task<List<SprintDailyStats>> GetSprintDailyStats(string sprint_id)
-    {
-        var sprint = await _sprints.Find(x => x.Id == sprint_id).FirstOrDefaultAsync();
-        if (sprint == null)
-            return [];
-
-        var start = sprint.DateStarted.ToUniversalTime().Date;
-        var end = sprint.DateEnded.ToUniversalTime().Date;
-
-        var result = await _issueRepository.ListIssues(new GetIssuesParams
-        {
-            SprintIds = [sprint_id]
-        });
-
-        var dailyStats = new List<SprintDailyStats>();
-        for (var date = start; date <= end; date = date.AddDays(1))
-        {
-            var completedCount = result.Items.Count(i =>
-                i.CompletedAt.ToUniversalTime().Date <= date);
-
-            dailyStats.Add(new SprintDailyStats
-            {
-                Date = date.ToString(),
-                CompletedIssues = completedCount,
-                RemainingIssues = result.TotalCount - completedCount
-            });
-        }
-        return dailyStats;
-    }
 
 }
