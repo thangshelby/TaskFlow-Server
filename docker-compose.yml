@@ -1,27 +1,30 @@
-version: "3.8"
 services:
   envoy:
     image: envoyproxy/envoy:v1.33.0
     container_name: envoy_proxy
     ports:
       - "8081:8081" # HTTP (REST to gRPC)
-      - "8082:8082" # HTTP (REST to gRPC)
-      - "8083:8083" # HTTP (REST to gRPC)
+      - "8082:8082"
+      - "8083:8083"
       - "9901:9901" # Admin Panel
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
       - ./proto.pb:/etc/envoy/proto.pb
     networks:
       - taskflow-network
-    # depends_on:
-    #   - grpc-server
+    depends_on:
+      # - grpc-server
+      - kafka
+      - zookeeper
+      # - notification-service
+
   # grpc-server:
   #   build:
-  #     context: ./services/main-service # Path to your .NET project
-  #     dockerfile: Dockerfile
+  #     context: . # Build from root directory to access protos
+  #     dockerfile: ./services/main-service/Dockerfile
   #   container_name: grpc_server
   #   ports:
-  #     - "5001:5001" # Map host port 5001 to container port 5001
+  #     - "5001:5001"
   #   networks:
   #     - taskflow-network
   #   environment:
@@ -32,30 +35,75 @@ services:
   #     interval: 10s
   #     timeout: 5s
   #     retries: 3
-  kafka:
-    image: bitnami/kafka:3.8
-    container_name: kafka
+
+  # notification-service:
+  #   build:
+  #     context: ./services/nest-service
+  #     dockerfile: ./Dockerfile
+  #   container_name: notification_service
+  #   ports:
+  #     - "5002:5002"
+  #   networks:
+  #     - taskflow-network
+  #   env_file:
+  #     - ./services/nest-service/.env # 👈 Load các biến môi trường từ file .env
+  #   environment:
+  #     - NODE_ENV=production
+  #     - PORT=5002
+  #   depends_on:
+  #     - kafka
+  #     - grpc-server
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD",
+  #         "wget",
+  #         "--no-verbose",
+  #         "--tries=1",
+  #         "--spider",
+  #         "http://localhost:5002/api/v1/notifications/health",
+  #       ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
     ports:
-      - "9092:9092" # External access
-      - "9094:9094" # Internal access
-      - "9093:9093" # Controller
+      - "2181:2181"
     environment:
-      - KAFKA_CFG_NODE_ID=1
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      # Define multiple listeners: INTERNAL for Docker network, EXTERNAL for host access
-      - KAFKA_CFG_LISTENERS=INTERNAL://:9094,EXTERNAL://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
-      # Advertise different addresses for internal vs external clients
-      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:9094,EXTERNAL://localhost:9092
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
-      - KAFKA_CFG_BROKER_ID=1
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - ALLOW_PLAINTEXT_LISTENER=yes
+      - ZOOKEEPER_CLIENT_PORT=2181
+      - ZOOKEEPER_TICK_TIME=2000
     volumes:
-      - kafka-data:/bitnami/kafka
+      - zookeeper-data:/var/lib/zookeeper/data
     networks:
       - taskflow-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - taskflow-network
+    depends_on:
+      - zookeeper
+
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka_ui
@@ -63,62 +111,40 @@ services:
       - "8888:8888"
     environment:
       - KAFKA_CLUSTERS_0_NAME=local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9094 # Use internal port
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9094
       - SERVER_PORT=8888
     depends_on:
       - kafka
     networks:
       - taskflow-network
+
   kafka-topic-creator:
-    image: bitnami/kafka:3.8
+    image: confluentinc/cp-kafka:7.4.0
     depends_on:
       - kafka
     entrypoint: ["/bin/sh", "-c"]
     command: >
       "
       echo '⏳ Waiting for Kafka to be available...' &&
-      while ! kafka-topics.sh --bootstrap-server kafka:9094 --list; do sleep 2; done &&
+      while ! kafka-topics --bootstrap-server kafka:9092 --list; do sleep 2; done &&
       echo '✅ Kafka is up!' &&
-      kafka-topics.sh --bootstrap-server kafka:9094 --create --if-not-exists --topic activities --partitions 3 --replication-factor 1 && 
-      kafka-topics.sh --bootstrap-server kafka:9094 --create --if-not-exists --topic notifications --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic activities --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic notifications --partitions 3 --replication-factor 1
       "
     networks:
       - taskflow-network
-  # cassandra:
-  #   image: cassandra:5.0.4
-  #   container_name: cassandra
-  #   environment:
-  #     - CASSANDRA_CLUSTER_NAME=my-cluster
-  #     - CASSANDRA_BROADCAST_ADDRESS=auto
-  #     - CASSANDRA_LISTEN_ADDRESS=auto
-  #   ports:
-  #     - "9042:9042"
-  #   volumes:
-  #     - cassandra-data:/var/lib/cassandra
-  #   networks:
-  #     - taskflow-network
-  # cassandra-init:
-  #   image: cassandra:5.0.4
-  #   depends_on:
-  #     - cassandra
-  #   entrypoint: ["/bin/sh", "-c"]
-  #   command: >
-  #     "
-  #     echo '⏳ Waiting for Cassandra to be available...' &&
-  #     while ! cqlsh cassandra -e 'describe keyspaces'; do sleep 2; done &&
-  #     echo '✅ Cassandra is up!' &&
-  #     cqlsh cassandra -e \"
-  #       CREATE KEYSPACE IF NOT EXISTS taskflow
-  #       WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
-  #     \"
-  #     "
-  #   networks:
-  #     - taskflow-network
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - taskflow-network
+
 networks:
   taskflow-network:
     driver: bridge
+
 volumes:
-  esdata: {}
-  kong-data: {}
   kafka-data: {}
-  cassandra-data: {}
+  zookeeper-data: {}

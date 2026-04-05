@@ -1,4 +1,5 @@
 using AutoMapper;
+using MainService.Domain.Common;
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using MainService.Infras.Entities;
@@ -260,7 +261,7 @@ public class IssueRepository : IIssueRepository
         return response;
     }
 
-    public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(GetIssuesParams param)
+    public async Task<PagedResult<IssueDomain>> ListIssues(GetIssuesParams param)
     {
         var filterBuilder = Builders<Issue>.Filter;
         var filter = filterBuilder.Empty;
@@ -297,6 +298,64 @@ public class IssueRepository : IIssueRepository
         if (param.Types != null && param.Types.Any())
         {
             filter &= filterBuilder.In("type", param.Types);
+        }
+
+        // Handle TeamIds filter with NULL support
+        if (param.TeamIds != null && param.TeamIds.Any())
+        {
+            var teamFilters = new List<FilterDefinition<Issue>>();
+            
+            foreach (var teamId in param.TeamIds)
+            {
+                if (teamId == "NULL")
+                {
+                    // Filter for null or empty team_id
+                    teamFilters.Add(filterBuilder.Or(
+                        filterBuilder.Eq(i => i.TeamId, null),
+                        filterBuilder.Eq(i => i.TeamId, ""),
+                        filterBuilder.Eq("team_id", BsonNull.Value)
+                    ));
+                }
+                else
+                {
+                    // Filter for specific team_id
+                    teamFilters.Add(filterBuilder.Eq(i => i.TeamId, teamId));
+                }
+            }
+            
+            if (teamFilters.Any())
+            {
+                filter &= filterBuilder.Or(teamFilters);
+            }
+        }
+
+        // Handle ParentIds filter with NULL support
+        if (param.ParentIds != null && param.ParentIds.Any())
+        {
+            var parentFilters = new List<FilterDefinition<Issue>>();
+            
+            foreach (var parentId in param.ParentIds)
+            {
+                if (parentId == "NULL")
+                {
+                    // Filter for null or empty parent_id
+                    parentFilters.Add(filterBuilder.Or(
+                        filterBuilder.Eq(i => i.ParentId, null),
+                        filterBuilder.Eq(i => i.ParentId, ""),
+                        filterBuilder.Eq("parent_id", BsonNull.Value)
+                    ));
+                }
+                else
+                {
+                    // Filter for specific parent_id
+                    parentFilters.Add(filterBuilder.Eq(i => i.ParentId, parentId));
+                }
+            }
+            
+            if (parentFilters.Any())
+            {
+                filter &= filterBuilder.Or(parentFilters);
+            }
         }
 
         if (!string.IsNullOrEmpty(param.Keyword))
@@ -338,7 +397,7 @@ public class IssueRepository : IIssueRepository
             BsonSerializer.SerializerRegistry.GetSerializer<Issue>(),
             BsonSerializer.SerializerRegistry
         ));
-        var pipeline = new[]
+        var pipelineStages = new List<BsonDocument>
         {
             new BsonDocument("$match", renderedFilter),
             new BsonDocument("$lookup", new BsonDocument
@@ -363,15 +422,19 @@ public class IssueRepository : IIssueRepository
             {
                 { "path", "$column" },
                 { "preserveNullAndEmptyArrays", true }
-            }),
-            new BsonDocument("$skip", (param.Page - 1) * param.Limit),
-            new BsonDocument("$limit", param.Limit)
+            })
         };
 
-        var rawResults = await _issues.Aggregate<BsonDocument>(pipeline).ToListAsync();
+        if (!param.Unpaged)
+        {
+            pipelineStages.Add(new BsonDocument("$skip", (param.Page - 1) * param.Limit));
+            pipelineStages.Add(new BsonDocument("$limit", param.Limit));
+        }
+
+        var rawResults = await _issues.Aggregate<BsonDocument>(pipelineStages).ToListAsync();
         var issues = rawResults.Select(bson => BsonSerializer.Deserialize<Issue>(bson)).ToList();
 
-        return (_mapper.Map<List<IssueDomain>>(issues), (int)totalCount);
+        return new PagedResult<IssueDomain>(_mapper.Map<List<IssueDomain>>(issues), (int)totalCount);
     }
     
     private static FilterDefinition<Issue> BuildDueDateFilter(string dueDateParam, FilterDefinitionBuilder<Issue> filterBuilder)

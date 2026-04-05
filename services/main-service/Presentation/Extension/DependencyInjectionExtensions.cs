@@ -4,6 +4,8 @@ using MainService.Domain.UseCases;
 using MainService.Infras;
 using MainService.Infras.Repositories;
 using MainService.Presentation.Validator.Users;
+using StackExchange.Redis;
+using MainService.Domain.Decorator;
 
 
 public static class DependencyInjectionExtensions
@@ -12,6 +14,18 @@ public static class DependencyInjectionExtensions
     {
         // Database Service
         services.AddSingleton<MongoDbService>();
+        
+        // Redis Service
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var configuration = sp.GetRequiredService<IConfiguration>();
+            var redisConnection = configuration.GetValue<string>("Redis:ConnectionString") ?? "localhost:6379";
+            return ConnectionMultiplexer.Connect(redisConnection);
+        });
+        
+        // Cache Repository
+        services.AddSingleton<ICacheRepository, CacheRepository>();
+        
         // Use Cases
         services.AddScoped<UserUseCase>();
         services.AddScoped<ProjectUseCase>();
@@ -20,18 +34,40 @@ public static class DependencyInjectionExtensions
         services.AddScoped<ProjectMemberUseCase>();
         services.AddScoped<CommentUseCase>();
         services.AddScoped<OtpTokenUseCase>();
+        services.AddScoped<ProjectTeamUseCase>();
 
         // Repositories
         services.AddSingleton<ITransactionRepo, MongoTransactionRepo>();
         services.AddSingleton<IUserRepository, UserRepository>();
         services.AddSingleton<IProjectRepository, ProjectRepository>();
         services.AddSingleton<ISprintRepository, SprintRepository>();
-        services.AddSingleton<IIssueRepository, IssueRepository>();
+        // services.AddSingleton<IIssueRepository, IssueCacheDecorator>();
+
+        // Register IssueRepository with Cache Decorator
+        services.AddSingleton<IssueRepository>();
+        services.AddSingleton<IIssueRepository>(sp =>
+        {
+            var innerRepository = sp.GetRequiredService<IssueRepository>();
+            var cacheRepository = sp.GetRequiredService<ICacheRepository>();
+            var logger = sp.GetRequiredService<ILogger<IssueCacheDecorator>>();
+            return new IssueCacheDecorator(innerRepository, cacheRepository, logger);
+        });
+        
         services.AddSingleton<IActivitiesRepository, ActivitiesRepository>();
-        services.AddSingleton<IProjectMemberRepository, ProjectMemberRepository>();
+        
+        // Register ProjectMemberRepository with Cache Decorator
+        services.AddSingleton<ProjectMemberRepository>();
+        services.AddSingleton<IProjectMemberRepository>(sp =>
+        {
+            var innerRepository = sp.GetRequiredService<ProjectMemberRepository>();
+            var cacheRepository = sp.GetRequiredService<ICacheRepository>();
+            var logger = sp.GetRequiredService<ILogger<ProjectMemberCacheDecorator>>();
+            return new ProjectMemberCacheDecorator(innerRepository, cacheRepository, logger);
+        });
         services.AddSingleton<ICommentsRepository, CommentsRepository>();
         services.AddSingleton<IOtpTokenRepository, OtpTokenRepository>();
         services.AddSingleton<IPublisherService, KafkaPublisher>();
+        services.AddSingleton<IProjectTeamRepository, ProjectTeamRepository>();
 
         // Workers
         services.AddHostedService<ActivitiesConsumer>();

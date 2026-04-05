@@ -140,6 +140,7 @@ public class IssueController : IssueService.IssueServiceBase
             ReporterId = request.ReporterId,
             SprintId = request.SprintId,
             ColumnId = request.ColumnId,
+            TeamId = request.TeamId,
             StoryPoint = request.StoryPoint,
             Summary = request.Summary,
             Title = request.Title,
@@ -177,7 +178,7 @@ public class IssueController : IssueService.IssueServiceBase
         var columnIds = request.ColumnIds.ToList();
         var assigneeIds = request.AssigneeIds.ToList();
         var sprintIds = request.SprintIds.ToList();
-        var (issues, totalCount) = await _issueUseCase.ListIssues(new GetIssuesParams
+        var result = await _issueUseCase.ListIssues(new GetIssuesParams
         {
             Limit = request.Limit == 0 ? 10 : request.Limit,
             Page = request.Page == 0 ? 1 : request.Page,
@@ -193,13 +194,15 @@ public class IssueController : IssueService.IssueServiceBase
             DueDateFrom = request.DueDateFrom,
             DueDateTo = request.DueDateTo,
             IssueIds = request.IssueIds.ToList(),
+            ParentIds = request.ParentIds.ToList(),
+            TeamIds = request.TeamIds.ToList(),
         });
-        var totalPages = (int)Math.Ceiling((double)totalCount / request.Limit);
+        var totalPages = (int)Math.Ceiling((double)result.TotalCount / request.Limit);
         var response = new ListIssuesRes();
-        response.Data.AddRange(_mapper.Map<List<IssueRes>>(issues));
+        response.Data.AddRange(_mapper.Map<List<IssueRes>>(result.Items));
         response.Pagination = new PaginationRes
         {
-            TotalItems = totalCount,
+            TotalItems = result.TotalCount,
             TotalPages = totalPages,
             CurrentPage = request.Page,
             Limit = request.Limit

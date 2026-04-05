@@ -18,7 +18,6 @@ public class KafkaPublisher : IPublisherService, IDisposable
             Acks = Acks.All
         };
         _producer = new ProducerBuilder<Null, string>(config).Build();
-        _logger = logger;
     }
 
     public async Task EmitKafka<T>(TopicName topic, KafkaMessageAction type, T message)

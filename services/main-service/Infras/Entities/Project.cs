@@ -32,6 +32,25 @@ public class Project
 
     [BsonElement("team_members")]
     public List<ProjectMember>? ProjectMembers { get; set; } = new List<ProjectMember>();
+
+    // New fields
+    [BsonElement("issues_count")]
+    public int? IssuesCount { get; set; }
+
+    [BsonElement("members_count")]
+    public int? MembersCount { get; set; }
+
+    [BsonElement("due_date_from")]
+    public DateTime? DueDateFrom { get; set; }
+
+    [BsonElement("due_date_to")]
+    public DateTime? DueDateTo { get; set; }
+
+    [BsonElement("description")]
+    public string? Description { get; set; }
+
+    [BsonElement("background_img")]
+    public string? BackgroundImg { get; set; }
 }
 
 [BsonIgnoreExtraElements]

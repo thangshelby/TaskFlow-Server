@@ -1,7 +1,7 @@
+using Grpc.Core;
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using MainService.Domain.Enums;
-using Grpc.Core;
 
 namespace MainService.Domain.UseCases;
 
@@ -12,19 +12,22 @@ public class ProjectUseCase
     private readonly IProjectMemberRepository _projectMemberRepository;
     private readonly IUserRepository _userRepository;
     private readonly IssueUseCase _issueUseCase;
-
+    private readonly IPublisherService _publisher;
     public ProjectUseCase(
         IProjectRepository projectRepository,
         ITransactionRepo transactionRepo,
         IProjectMemberRepository projectMemberRepository,
         IssueUseCase issueUseCase,
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        IPublisherService publisher
+        )
     {
         _projectRepository = projectRepository;
         _transactionRepo = transactionRepo;
         _projectMemberRepository = projectMemberRepository;
         _userRepository = userRepository;
         _issueUseCase = issueUseCase;
+        _publisher = publisher;
     }
 
     public async Task<ProjectDomain> CreateProject(ProjectDomain project)
@@ -39,7 +42,10 @@ public class ProjectUseCase
         if (string.IsNullOrEmpty(project.OwnerId))
             throw new ArgumentException("Project owner ID cannot be empty");
 
-        // Create project and owner member in a transaction
+        // Initialize issues count to 0 for new projects
+        project.IssuesCount = 0;
+
+        // Create project, owner member, and default columns in a transaction
         ProjectDomain createdProject = null!;
         ProjectMemberDomain ownerMember = null!;
 
@@ -62,6 +68,34 @@ public class ProjectUseCase
             // Initialize project's team members with the owner
             createdProject.ProjectMembers = new List<ProjectMemberDomain> { ownerMember };
             await _projectRepository.UpdateProject(createdProject);
+
+            // Create default columns (TODO, INPROGRESS, DONE)
+            var defaultColumns = new[]
+            {
+                new { Name = "TODO", Order = 1 },
+                new { Name = "INPROGRESS", Order = 2 },
+                new { Name = "DONE", Order = 3 }
+            };
+
+            foreach (var columnInfo in defaultColumns)
+            {
+                var defaultColumn = new ProjectColumnDomain
+                {
+                    Name = columnInfo.Name,
+                    ProjectId = createdProject.Id!,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    Issues = new List<IssueDomain>(),
+                    Order = columnInfo.Order
+                };
+                await _projectRepository.CreateColumn(defaultColumn);
+            }
+        });
+
+        await _publisher.EmitKafka(TopicName.ACTIVITIES, KafkaMessageAction.ACTIVITIES_PROJECT_CREATED, new IProjectMessage
+        {
+            ProjectId = createdProject.Id,
+            UserId = project.OwnerId,
         });
 
         return createdProject;

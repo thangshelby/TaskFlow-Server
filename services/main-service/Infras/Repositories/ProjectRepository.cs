@@ -11,12 +11,15 @@ namespace MainService.Infras.Repositories;
 
 public class ProjectRepository : IProjectRepository
 {
-    private readonly ILogger<ProjectRepository> _logger;
     private readonly IMongoCollection<Project> _projects;
     private readonly IMongoCollection<ProjectColumn> _projectColumns;
+    private readonly IMongoCollection<ProjectTeam> _projectTeams;
     private readonly IMongoCollection<Issue> _issues;
     private readonly IMongoCollection<ProjectMember> _teamMembers;  // Changed to match DB collection name
     private readonly IMongoCollection<User> _users;
+    private readonly IMongoCollection<Sprint> _sprints;
+    
+    private readonly ILogger<ProjectRepository> _logger;
     private readonly IMapper _mapper;
 
     public ProjectRepository(MongoDbService mongoDbService, IMapper mapper, ILogger<ProjectRepository> logger)
@@ -25,8 +28,9 @@ public class ProjectRepository : IProjectRepository
         _projects = database.GetCollection<Project>("projects");
         _issues = database.GetCollection<Issue>("issues");
         _projectColumns = database.GetCollection<ProjectColumn>("project_column");
-        _teamMembers = database.GetCollection<ProjectMember>("team_members");  // Changed to match DB collection name
+        _teamMembers = database.GetCollection<ProjectMember>("team_members");
         _users = database.GetCollection<User>("users");
+        _sprints = database.GetCollection<Sprint>("sprints");
         _mapper = mapper;
         _logger = logger;
         // Ensure index on Key
@@ -137,6 +141,26 @@ public class ProjectRepository : IProjectRepository
 
     public async Task<List<ProjectColumnDomain>> FindColumnsByProjectId(ListProjectColumnsParams param)
     {
+        // Get active sprint IDs if filtering is requested
+      
+        List<string>? activeSprintIds = null;
+        if (param.ActiveSprintOnly == true)
+        {
+            var currentDate = DateTime.UtcNow;
+            // Find active sprints: DateStarted <= currentDate <= DateEnded
+            var sprintFilter = Builders<Sprint>.Filter.And(
+                Builders<Sprint>.Filter.Eq(s => s.ProjectId, param.ProjectId),
+                Builders<Sprint>.Filter.Lte(s => s.DateStarted, currentDate),
+                Builders<Sprint>.Filter.Gte(s => s.DateEnded, currentDate)
+            );
+            
+            var activeSprints = await _sprints.Find(sprintFilter).ToListAsync();
+            _logger.LogInformation("Found {Count} active sprints", activeSprints.Count);
+            
+            activeSprintIds = activeSprints.Select(s => s.Id!).ToList();
+        }
+
+        _logger.LogInformation("Active sprint IDs",activeSprintIds);
 
         var issueQuery = MongoUtils.BuildExprMongo(param, new Dictionary<string, (string field, string op, string? extra)>
         {
@@ -149,15 +173,23 @@ public class ProjectRepository : IProjectRepository
             { "Types", ("type", "$in", null) },
             { "Priorities", ("priority", "$in", null) },
             { "Keyword", ("title", "$regex", null) }
-        }, excludeProps: ["ProjectId", "ColumnIds"]);
+        }, excludeProps: ["ProjectId", "ColumnIds", "ActiveSprintOnly"]);
         issueQuery.Insert(0, new BsonDocument("$in", new BsonArray { "$_id", "$$issueIds" }));
+        
+        // Add active sprint filtering to issue query if needed
+        if (param.ActiveSprintOnly == true && activeSprintIds != null && activeSprintIds.Any())
+        {
+            _logger.LogInformation("Adding active sprint filtering to issue query: {ActiveSprintOnly}", param.ActiveSprintOnly);
+            issueQuery.Add(new BsonDocument("$in", new BsonArray { "$sprint_id", new BsonArray(activeSprintIds.Select(id => new BsonString(id)).ToArray()) }));
+        }
+        
         var issueMatch = new BsonDocument("$match", new BsonDocument("$expr", new BsonDocument("$and", issueQuery)));
 
         var columnQuery = MongoUtils.BuildExprMongo(param, new Dictionary<string, (string field, string op, string? extra)>
         {
             { "ColumnIds", ("_id", "$in", "is_object_id") },
             { "ProjectId", ("project_id", "$eq", "is_object_id") },
-        }, excludeProps: ["Keyword", "DueDateFrom", "DueDateTo", "CreatedAtFrom", "CreatedAtTo", "AssigneeIds", "SprintIds", "Types", "Priorities"]);
+        }, excludeProps: ["Keyword", "DueDateFrom", "DueDateTo", "CreatedAtFrom", "CreatedAtTo", "AssigneeIds", "SprintIds", "Types", "Priorities", "ActiveSprintOnly"]);
         var columnMatch = new BsonDocument("$match", new BsonDocument("$expr", new BsonDocument("$and", columnQuery)));
 
         var pipeline = new[]
@@ -253,5 +285,27 @@ public class ProjectRepository : IProjectRepository
             .Where(c => c.Id == param.ColumnId);
 
         await _projectColumns.FindOneAndDeleteAsync(filter);
+    }
+
+    public async Task IncrementIssuesCount(string projectId)
+    {
+        var filter = Builders<Project>.Filter.Eq(p => p.Id, projectId);
+        var update = Builders<Project>.Update
+            .Inc(p => p.IssuesCount, 1)
+            .Set(p => p.UpdatedAt, DateTime.UtcNow);
+
+        await _projects.UpdateOneAsync(filter, update);
+    }
+
+    public async Task<(string Key, int IssuesCount)> GetProjectKeyAndIssuesCount(string projectId)
+    {
+        var project = await _projects.Find(p => p.Id == projectId)
+            .Project(p => new { p.Key, p.IssuesCount })
+            .FirstOrDefaultAsync();
+
+        if (project == null)
+            throw new Exception("Project not found");
+
+        return (project.Key, project.IssuesCount ?? 0);
     }
 }

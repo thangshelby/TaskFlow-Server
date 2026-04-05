@@ -91,6 +91,8 @@ public class SprintRepository : ISprintRepository
 
         return (_mapper.Map<List<SprintDomain>>(sprints), (int)totalCount);
     }
+
+
     public async Task<SprintStats> GetSprintStats(string sprint_id, string project_id)
     {
         var columns = await _projectRepository.FindColumnsByProjectId(new ListProjectColumnsParams { ProjectId = project_id });
@@ -143,35 +145,6 @@ public class SprintRepository : ISprintRepository
             TotalStoryPoint = rawResult.GetValue("total_story_point", 0).ToInt32(),
             CompletedStoryPoint = rawResult.GetValue("completed_story_point", 0).ToInt32()
         };
-    }
-    public async Task<List<SprintDailyStats>> GetSprintDailyStats(string sprint_id)
-    {
-        var sprint = await _sprints.Find(x => x.Id == sprint_id).FirstOrDefaultAsync();
-        if (sprint == null)
-            return [];
-
-        var start = sprint.DateStarted.ToUniversalTime().Date;
-        var end = sprint.DateEnded.ToUniversalTime().Date;
-
-        var (issues, totalCount) = await _issueRepository.ListIssues(new GetIssuesParams
-        {
-            SprintIds = [sprint_id]
-        });
-
-        var dailyStats = new List<SprintDailyStats>();
-        for (var date = start; date <= end; date = date.AddDays(1))
-        {
-            var completedCount = issues.Count(i =>
-                i.CompletedAt.ToUniversalTime().Date <= date);
-
-            dailyStats.Add(new SprintDailyStats
-            {
-                Date = date.ToString(),
-                CompletedIssues = completedCount,
-                RemainingIssues = totalCount - completedCount
-            });
-        }
-        return dailyStats;
     }
 
 }

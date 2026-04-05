@@ -1,0 +1,1996 @@
+/******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ([
+/* 0 */,
+/* 1 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+__exportStar(__webpack_require__(2), exports);
+__exportStar(__webpack_require__(5), exports);
+__exportStar(__webpack_require__(6), exports);
+__exportStar(__webpack_require__(17), exports);
+__exportStar(__webpack_require__(19), exports);
+__exportStar(__webpack_require__(21), exports);
+__exportStar(__webpack_require__(24), exports);
+__exportStar(__webpack_require__(10), exports);
+__exportStar(__webpack_require__(15), exports);
+__exportStar(__webpack_require__(16), exports);
+__exportStar(__webpack_require__(14), exports);
+__exportStar(__webpack_require__(25), exports);
+
+
+/***/ }),
+/* 2 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CoreModule = void 0;
+const config_1 = __webpack_require__(3);
+const common_1 = __webpack_require__(4);
+const log_service_1 = __webpack_require__(5);
+const kafka_service_1 = __webpack_require__(6);
+const mongoose_1 = __webpack_require__(9);
+const user_client_service_1 = __webpack_require__(10);
+const microservices_1 = __webpack_require__(11);
+const path_1 = __webpack_require__(13);
+const project_client_service_1 = __webpack_require__(14);
+const sprint_client_service_1 = __webpack_require__(15);
+const issue_client_service_1 = __webpack_require__(16);
+let CoreModule = class CoreModule {
+};
+exports.CoreModule = CoreModule;
+exports.CoreModule = CoreModule = __decorate([
+    (0, common_1.Module)({
+        controllers: [],
+        imports: [
+            config_1.ConfigModule.forRoot({
+                isGlobal: true,
+            }),
+            microservices_1.ClientsModule.registerAsync([
+                {
+                    name: 'USER_PACKAGE',
+                    imports: [config_1.ConfigModule],
+                    inject: [config_1.ConfigService],
+                    useFactory: (configService) => ({
+                        transport: microservices_1.Transport.GRPC,
+                        options: {
+                            package: 'project_service',
+                            protoPath: (0, path_1.join)(__dirname, 'protos/main_service/user.proto'),
+                            loader: {
+                                includeDirs: [(0, path_1.join)(__dirname, 'protos')],
+                            },
+                            url: configService.get('MAIN_SERVICE') || '0.0.0.0:5001',
+                        },
+                    }),
+                },
+                {
+                    name: 'PROJECT_PACKAGE',
+                    imports: [config_1.ConfigModule],
+                    inject: [config_1.ConfigService],
+                    useFactory: (configService) => ({
+                        transport: microservices_1.Transport.GRPC,
+                        options: {
+                            package: 'project_service',
+                            protoPath: (0, path_1.join)(__dirname, 'protos/main_service/project.proto'),
+                            loader: {
+                                includeDirs: [(0, path_1.join)(__dirname, 'protos')],
+                            },
+                            url: configService.get('MAIN_SERVICE'),
+                        },
+                    }),
+                },
+                {
+                    name: 'SPRINT_PACKAGE',
+                    imports: [config_1.ConfigModule],
+                    inject: [config_1.ConfigService],
+                    useFactory: (configService) => ({
+                        transport: microservices_1.Transport.GRPC,
+                        options: {
+                            package: 'project_service',
+                            protoPath: (0, path_1.join)(__dirname, 'protos/main_service/sprint.proto'),
+                            loader: {
+                                includeDirs: [(0, path_1.join)(__dirname, 'protos')],
+                            },
+                            url: configService.get('MAIN_SERVICE'),
+                        },
+                    }),
+                },
+                {
+                    name: 'ISSUE_PACKAGE',
+                    imports: [config_1.ConfigModule],
+                    inject: [config_1.ConfigService],
+                    useFactory: (configService) => ({
+                        transport: microservices_1.Transport.GRPC,
+                        options: {
+                            package: 'project_service',
+                            protoPath: (0, path_1.join)(__dirname, 'protos/main_service/issue.proto'),
+                            loader: {
+                                includeDirs: [(0, path_1.join)(__dirname, 'protos')],
+                            },
+                            url: configService.get('MAIN_SERVICE'),
+                        },
+                    }),
+                },
+            ]),
+            mongoose_1.MongooseModule.forRootAsync({
+                imports: [config_1.ConfigModule],
+                inject: [config_1.ConfigService],
+                useFactory: (configService) => ({
+                    uri: configService.get('MONGODB_URI'),
+                    dbName: configService.get('MONGODB_DB_NAME'),
+                }),
+            }),
+        ],
+        providers: [log_service_1.LogService, kafka_service_1.KafkaService, user_client_service_1.UserClientService, project_client_service_1.ProjectClientService, sprint_client_service_1.SprintClientService, issue_client_service_1.IssueClientService],
+        exports: [log_service_1.LogService, kafka_service_1.KafkaService, user_client_service_1.UserClientService, project_client_service_1.ProjectClientService, sprint_client_service_1.SprintClientService, issue_client_service_1.IssueClientService],
+    })
+], CoreModule);
+
+
+/***/ }),
+/* 3 */
+/***/ ((module) => {
+
+module.exports = require("@nestjs/config");
+
+/***/ }),
+/* 4 */
+/***/ ((module) => {
+
+module.exports = require("@nestjs/common");
+
+/***/ }),
+/* 5 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var LogService_1;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.LogService = void 0;
+const common_1 = __webpack_require__(4);
+let LogService = LogService_1 = class LogService {
+    logger = new common_1.Logger(LogService_1.name);
+    log(message) {
+        this.logger.log(message);
+    }
+    error(message, trace) {
+        this.logger.error(message, trace);
+    }
+    warn(message) {
+        this.logger.warn(message);
+    }
+};
+exports.LogService = LogService;
+exports.LogService = LogService = LogService_1 = __decorate([
+    (0, common_1.Injectable)()
+], LogService);
+
+
+/***/ }),
+/* 6 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.KafkaService = exports.KafkaActionType = void 0;
+const common_1 = __webpack_require__(4);
+const kafkajs_1 = __webpack_require__(7);
+const uuid_1 = __webpack_require__(8);
+const log_service_1 = __webpack_require__(5);
+const config_1 = __webpack_require__(3);
+var KafkaActionType;
+(function (KafkaActionType) {
+    KafkaActionType["NOTIFICATIONS_CREATE_NEW_NOTIFICATION"] = "NOTIFICATIONS_CREATE_NEW_NOTIFICATION";
+    KafkaActionType["MAILS_SEND_VERIFY_OTP_USER"] = "MAILS_SEND_VERIFY_OTP_USER";
+})(KafkaActionType || (exports.KafkaActionType = KafkaActionType = {}));
+let KafkaService = class KafkaService {
+    logService;
+    configService;
+    kafka;
+    producer;
+    consumers = [];
+    constructor(logService, configService) {
+        this.logService = logService;
+        this.configService = configService;
+        const clientId = this.configService.get('KAFKA_CLIENT_ID', 'taskflow-client');
+        const brokers = this.configService.get('KAFKA_BROKERS', 'kafka:9094').split(',');
+        this.kafka = new kafkajs_1.Kafka({
+            clientId,
+            brokers,
+        });
+        this.producer = this.kafka.producer({
+            createPartitioner: kafkajs_1.Partitioners.LegacyPartitioner,
+        });
+    }
+    async onModuleInit() {
+        await this.producer.connect();
+        this.logService.log('Kafka Producer connected');
+    }
+    async onModuleDestroy() {
+        for (const consumer of this.consumers) {
+            await consumer.disconnect();
+        }
+        await this.producer.disconnect();
+        this.logService.log('Kafka disconnected');
+    }
+    async publish(topic, message, config = {}) {
+        try {
+            const kafkaMessage = {
+                value: JSON.stringify(message),
+                key: config.partitionKey ?? `part_${(0, uuid_1.v4)()}`,
+            };
+            await this.producer.send({
+                topic,
+                messages: [kafkaMessage],
+            });
+            this.logService.log(`Message published to topic ${topic}: ${JSON.stringify(message)}`);
+        }
+        catch (error) {
+            this.logService.error(`Failed to publish message to ${topic}`, error.stack);
+            throw error;
+        }
+    }
+    async emit(topic, message, config) {
+        if (!config && !('id' in message)) {
+            throw new Error('Message id is required');
+        }
+        await this.publish(topic, message, config);
+    }
+    async subscribe(topic, callback) {
+        const baseGroupId = this.configService.get('KAFKA_GROUP_ID', 'taskflow-group');
+        const consumer = this.kafka.consumer({ groupId: `${baseGroupId}-${topic}` });
+        await consumer.connect();
+        await consumer.subscribe({ topic, fromBeginning: true });
+        await consumer.run({
+            eachMessage: async (payload) => {
+                try {
+                    await callback(payload);
+                    this.logService.log(`Processed message from ${topic} [${payload.partition}]: ${payload.message.value?.toString() || ''}`);
+                }
+                catch (error) {
+                    this.logService.error(`Error processing message from ${topic}`, error.stack);
+                }
+            },
+        });
+        this.consumers.push(consumer);
+        this.logService.log(`Subscribed to topic: ${topic}`);
+    }
+    on(topic, callback) {
+        void this.subscribe(topic, callback);
+    }
+};
+exports.KafkaService = KafkaService;
+exports.KafkaService = KafkaService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof log_service_1.LogService !== "undefined" && log_service_1.LogService) === "function" ? _a : Object, typeof (_b = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _b : Object])
+], KafkaService);
+
+
+/***/ }),
+/* 7 */
+/***/ ((module) => {
+
+module.exports = require("kafkajs");
+
+/***/ }),
+/* 8 */
+/***/ ((module) => {
+
+module.exports = require("uuid");
+
+/***/ }),
+/* 9 */
+/***/ ((module) => {
+
+module.exports = require("@nestjs/mongoose");
+
+/***/ }),
+/* 10 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.UserClientService = void 0;
+const common_1 = __webpack_require__(4);
+const microservices_1 = __webpack_require__(11);
+const rxjs_1 = __webpack_require__(12);
+let UserClientService = class UserClientService {
+    client;
+    userGrpcService;
+    constructor(client) {
+        this.client = client;
+    }
+    onModuleInit() {
+        this.userGrpcService = this.client.getService('UserService');
+    }
+    async getUserById(data) {
+        let user_id = data?.userId || '';
+        if (data.metadata) {
+            user_id = this.extractUserMetadata(data.metadata).userId;
+        }
+        const res = await (0, rxjs_1.firstValueFrom)(this.userGrpcService.getById({ userId: user_id }));
+        return res.data;
+    }
+    async getListUsers(params) {
+        const res = await (0, rxjs_1.firstValueFrom)(this.userGrpcService.listUsers({ userIds: params.userIds, limit: params.limit, page: params.page }));
+        return res.data;
+    }
+    extractUserMetadata(metadata) {
+        return {
+            userId: metadata.get('userId')?.[0] || '',
+            userRole: metadata.get('userRole')?.[0] || '',
+        };
+    }
+};
+exports.UserClientService = UserClientService;
+exports.UserClientService = UserClientService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, common_1.Inject)('USER_PACKAGE')),
+    __metadata("design:paramtypes", [typeof (_a = typeof microservices_1.ClientGrpc !== "undefined" && microservices_1.ClientGrpc) === "function" ? _a : Object])
+], UserClientService);
+
+
+/***/ }),
+/* 11 */
+/***/ ((module) => {
+
+module.exports = require("@nestjs/microservices");
+
+/***/ }),
+/* 12 */
+/***/ ((module) => {
+
+module.exports = require("rxjs");
+
+/***/ }),
+/* 13 */
+/***/ ((module) => {
+
+module.exports = require("path");
+
+/***/ }),
+/* 14 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ProjectClientService = void 0;
+const common_1 = __webpack_require__(4);
+const microservices_1 = __webpack_require__(11);
+const rxjs_1 = __webpack_require__(12);
+let ProjectClientService = class ProjectClientService {
+    client;
+    projectGrpcService;
+    constructor(client) {
+        this.client = client;
+    }
+    onModuleInit() {
+        this.projectGrpcService = this.client.getService('ProjectService');
+    }
+    async getListProjects(param) {
+        const res = await (0, rxjs_1.firstValueFrom)(this.projectGrpcService.listProjects({ projectIds: param.projectIds, limit: param.limit, page: param.page, kw: '', sort: '' }));
+        return res.data;
+    }
+};
+exports.ProjectClientService = ProjectClientService;
+exports.ProjectClientService = ProjectClientService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, common_1.Inject)('PROJECT_PACKAGE')),
+    __metadata("design:paramtypes", [typeof (_a = typeof microservices_1.ClientGrpc !== "undefined" && microservices_1.ClientGrpc) === "function" ? _a : Object])
+], ProjectClientService);
+
+
+/***/ }),
+/* 15 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SprintClientService = void 0;
+const common_1 = __webpack_require__(4);
+const microservices_1 = __webpack_require__(11);
+const rxjs_1 = __webpack_require__(12);
+let SprintClientService = class SprintClientService {
+    client;
+    sprintGrpcService;
+    constructor(client) {
+        this.client = client;
+    }
+    onModuleInit() {
+        this.sprintGrpcService = this.client.getService('SprintService');
+    }
+    async getListSprints(params) {
+        const res = await (0, rxjs_1.firstValueFrom)(this.sprintGrpcService.listSprints({ sprintIds: params.sprintIds, limit: params.limit, page: params.page }));
+        return res.data;
+    }
+};
+exports.SprintClientService = SprintClientService;
+exports.SprintClientService = SprintClientService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, common_1.Inject)('SPRINT_PACKAGE')),
+    __metadata("design:paramtypes", [typeof (_a = typeof microservices_1.ClientGrpc !== "undefined" && microservices_1.ClientGrpc) === "function" ? _a : Object])
+], SprintClientService);
+
+
+/***/ }),
+/* 16 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.IssueClientService = void 0;
+const common_1 = __webpack_require__(4);
+const microservices_1 = __webpack_require__(11);
+const rxjs_1 = __webpack_require__(12);
+let IssueClientService = class IssueClientService {
+    client;
+    issueGrpcService;
+    constructor(client) {
+        this.client = client;
+    }
+    onModuleInit() {
+        this.issueGrpcService = this.client.getService('IssueService');
+    }
+    async getListIssues(params) {
+        const res = await (0, rxjs_1.firstValueFrom)(this.issueGrpcService.listIssues({
+            page: params.page,
+            limit: params.limit,
+            assigneeIds: [],
+            columnIds: [],
+            issueIds: params.issueIds,
+            sprintIds: [],
+            projectId: '',
+            types: [],
+            priorities: [],
+            teamId: [],
+        }));
+        return res.data;
+    }
+};
+exports.IssueClientService = IssueClientService;
+exports.IssueClientService = IssueClientService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, common_1.Inject)('ISSUE_PACKAGE')),
+    __metadata("design:paramtypes", [typeof (_a = typeof microservices_1.ClientGrpc !== "undefined" && microservices_1.ClientGrpc) === "function" ? _a : Object])
+], IssueClientService);
+
+
+/***/ }),
+/* 17 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CassandraService = void 0;
+const common_1 = __webpack_require__(4);
+const config_1 = __webpack_require__(3);
+const cassandra_driver_1 = __webpack_require__(18);
+const log_service_1 = __webpack_require__(5);
+let CassandraService = class CassandraService {
+    configService;
+    logService;
+    client;
+    constructor(configService, logService) {
+        this.configService = configService;
+        this.logService = logService;
+        const contactPoints = this.configService.get('CASSANDRA_CONTACT_POINTS', 'localhost').split(',');
+        const localDataCenter = this.configService.get('CASSANDRA_LOCAL_DATA_CENTER', 'datacenter1');
+        const keyspace = this.configService.get('CASSANDRA_KEYSPACE', 'taskflow');
+        this.client = new cassandra_driver_1.Client({
+            contactPoints,
+            localDataCenter,
+            keyspace,
+        });
+    }
+    async onModuleInit() {
+        try {
+            await this.client.connect();
+            this.logService.log('Cassandra client connected');
+        }
+        catch (error) {
+            this.logService.error('Failed to connect to Cassandra', error.stack);
+            throw error;
+        }
+    }
+    async onModuleDestroy() {
+        try {
+            await this.client.shutdown();
+            this.logService.log('Cassandra client disconnected');
+        }
+        catch (error) {
+            this.logService.error('Failed to disconnect from Cassandra', error.stack);
+        }
+    }
+    getClient() {
+        return this.client;
+    }
+    async executeQuery(query, params, options) {
+        try {
+            const result = await this.client.execute(query, params, {
+                prepare: true,
+                ...options,
+            });
+            this.logService.log(`Executed query: ${query}`);
+            return result;
+        }
+        catch (error) {
+            this.logService.error(`Error executing Cassandra query: ${query}`, error.stack);
+            throw error;
+        }
+    }
+};
+exports.CassandraService = CassandraService;
+exports.CassandraService = CassandraService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _a : Object, typeof (_b = typeof log_service_1.LogService !== "undefined" && log_service_1.LogService) === "function" ? _b : Object])
+], CassandraService);
+
+
+/***/ }),
+/* 18 */
+/***/ ((module) => {
+
+module.exports = require("cassandra-driver");
+
+/***/ }),
+/* 19 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var GlobalHandleErrorInterceptor_1;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.GlobalHandleErrorInterceptor = void 0;
+const common_1 = __webpack_require__(4);
+const rxjs_1 = __webpack_require__(12);
+const microservices_1 = __webpack_require__(11);
+const grpc_js_1 = __webpack_require__(20);
+let GlobalHandleErrorInterceptor = GlobalHandleErrorInterceptor_1 = class GlobalHandleErrorInterceptor {
+    logger = new common_1.Logger(GlobalHandleErrorInterceptor_1.name);
+    intercept(context, next) {
+        return next.handle().pipe((0, rxjs_1.catchError)((error) => {
+            const handler = context.getHandler().name;
+            this.logger.error(`[gRPC Error] ${handler}: ${error.message || error}`);
+            throw new microservices_1.RpcException({
+                code: grpc_js_1.status.INTERNAL,
+                message: error.message || 'Internal server error',
+            });
+        }));
+    }
+};
+exports.GlobalHandleErrorInterceptor = GlobalHandleErrorInterceptor;
+exports.GlobalHandleErrorInterceptor = GlobalHandleErrorInterceptor = GlobalHandleErrorInterceptor_1 = __decorate([
+    (0, common_1.Injectable)()
+], GlobalHandleErrorInterceptor);
+
+
+/***/ }),
+/* 20 */
+/***/ ((module) => {
+
+module.exports = require("@grpc/grpc-js");
+
+/***/ }),
+/* 21 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.GrpcAuthInterceptor = void 0;
+const common_1 = __webpack_require__(4);
+const microservices_1 = __webpack_require__(11);
+const constants_1 = __webpack_require__(22);
+const jwt_decode_1 = __webpack_require__(23);
+let GrpcAuthInterceptor = class GrpcAuthInterceptor {
+    intercept(context, next) {
+        const metadata = context.getArgByIndex(1);
+        const rawCookie = metadata.get('cookie')?.[0];
+        const cookieHeader = Buffer.isBuffer(rawCookie) ? rawCookie.toString() : rawCookie;
+        const token = this.getTokenFromCookie(cookieHeader);
+        if (token) {
+            try {
+                const payload = (0, jwt_decode_1.jwtDecode)(token);
+                metadata.add('userId', String(payload.userId));
+                metadata.add('userRole', String(payload.role));
+            }
+            catch (error) {
+                throw new microservices_1.RpcException({
+                    code: constants_1.Status.UNAUTHENTICATED,
+                    message: `Token verification failed: ${error.message}`,
+                });
+            }
+        }
+        return next.handle();
+    }
+    getTokenFromCookie(cookieHeader) {
+        if (!cookieHeader)
+            return null;
+        const cookies = cookieHeader.split(';');
+        for (const cookie of cookies) {
+            const trimmed = cookie.trim();
+            if (trimmed.startsWith('token=')) {
+                return trimmed.substring('token='.length);
+            }
+        }
+        return null;
+    }
+};
+exports.GrpcAuthInterceptor = GrpcAuthInterceptor;
+exports.GrpcAuthInterceptor = GrpcAuthInterceptor = __decorate([
+    (0, common_1.Injectable)()
+], GrpcAuthInterceptor);
+
+
+/***/ }),
+/* 22 */
+/***/ ((module) => {
+
+module.exports = require("@grpc/grpc-js/build/src/constants");
+
+/***/ }),
+/* 23 */
+/***/ ((module) => {
+
+module.exports = require("jwt-decode");
+
+/***/ }),
+/* 24 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.HttpAuthInterceptor = void 0;
+const common_1 = __webpack_require__(4);
+const jwt_decode_1 = __webpack_require__(23);
+let HttpAuthInterceptor = class HttpAuthInterceptor {
+    intercept(context, next) {
+        const request = context.switchToHttp().getRequest();
+        const cookieHeader = request.headers.cookie;
+        const token = this.getTokenFromCookie(cookieHeader);
+        if (!token) {
+            throw new common_1.UnauthorizedException('No token found in cookies');
+        }
+        try {
+            const payload = (0, jwt_decode_1.jwtDecode)(token);
+            request.user = {
+                userId: payload.userId,
+                role: payload.role,
+            };
+        }
+        catch (error) {
+            throw new common_1.UnauthorizedException(`Invalid token: ${error.message}`);
+        }
+        return next.handle();
+    }
+    getTokenFromCookie(cookieHeader) {
+        if (!cookieHeader)
+            return null;
+        const cookies = cookieHeader.split(';');
+        for (const cookie of cookies) {
+            const trimmed = cookie.trim();
+            if (trimmed.startsWith('token=')) {
+                return trimmed.substring('token='.length);
+            }
+        }
+        return null;
+    }
+};
+exports.HttpAuthInterceptor = HttpAuthInterceptor;
+exports.HttpAuthInterceptor = HttpAuthInterceptor = __decorate([
+    (0, common_1.Injectable)()
+], HttpAuthInterceptor);
+
+
+/***/ }),
+/* 25 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.UserMetadata = void 0;
+const common_1 = __webpack_require__(4);
+exports.UserMetadata = (0, common_1.createParamDecorator)((_, ctx) => {
+    const metadata = ctx.switchToRpc().getContext();
+    const userId = metadata.get('userId')?.[0];
+    const userRole = metadata.get('userRole')?.[0];
+    return {
+        userId,
+        userRole,
+    };
+});
+
+
+/***/ }),
+/* 26 */
+/***/ ((module) => {
+
+module.exports = require("@nestjs/core");
+
+/***/ }),
+/* 27 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.TransformResponseInterceptor = void 0;
+const common_1 = __webpack_require__(4);
+const convert_utils_1 = __webpack_require__(28);
+const operators_1 = __webpack_require__(29);
+let TransformResponseInterceptor = class TransformResponseInterceptor {
+    intercept(context, next) {
+        return next.handle().pipe((0, operators_1.map)((data) => convert_utils_1.default.convertToSnakeCase(data)));
+    }
+};
+exports.TransformResponseInterceptor = TransformResponseInterceptor;
+exports.TransformResponseInterceptor = TransformResponseInterceptor = __decorate([
+    (0, common_1.Injectable)()
+], TransformResponseInterceptor);
+
+
+/***/ }),
+/* 28 */
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const toSnakeCase = (str) => {
+    return str.replace(/([A-Z])/g, '_$1').toLowerCase();
+};
+const convertToSnakeCase = (obj) => {
+    if (Array.isArray(obj)) {
+        return obj.map((item) => convertToSnakeCase(item));
+    }
+    if (obj !== null && typeof obj === 'object') {
+        return Object.entries(obj).reduce((acc, [key, value]) => {
+            const newKey = toSnakeCase(key);
+            acc[newKey] = convertToSnakeCase(value);
+            return acc;
+        }, {});
+    }
+    return obj;
+};
+const convert = {
+    toSnakeCase,
+    convertToSnakeCase,
+};
+exports["default"] = convert;
+
+
+/***/ }),
+/* 29 */
+/***/ ((module) => {
+
+module.exports = require("rxjs/operators");
+
+/***/ }),
+/* 30 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NotificationModule = void 0;
+const common_1 = __webpack_require__(4);
+const core_1 = __webpack_require__(1);
+const config_1 = __webpack_require__(3);
+const notification_service_1 = __webpack_require__(31);
+const notification_subcriber_service_1 = __webpack_require__(37);
+const mail_subcriber_service_1 = __webpack_require__(39);
+const notification_repo_1 = __webpack_require__(42);
+const mongoose_1 = __webpack_require__(9);
+const notification_repo_interface_1 = __webpack_require__(33);
+const notification_schema_1 = __webpack_require__(44);
+const notification_controller_1 = __webpack_require__(46);
+const notification_websocket_1 = __webpack_require__(34);
+const mail_service_1 = __webpack_require__(40);
+const mail_sender_interface_1 = __webpack_require__(41);
+const mail_sender_repo_1 = __webpack_require__(47);
+let NotificationModule = class NotificationModule {
+};
+exports.NotificationModule = NotificationModule;
+exports.NotificationModule = NotificationModule = __decorate([
+    (0, common_1.Module)({
+        imports: [
+            config_1.ConfigModule.forRoot({
+                isGlobal: true,
+                envFilePath: ['.env'],
+            }),
+            core_1.CoreModule,
+            mongoose_1.MongooseModule.forFeature([{ name: notification_schema_1.INotification.name, schema: notification_schema_1.NotificationSchema }]),
+        ],
+        controllers: [notification_controller_1.NotificationController],
+        providers: [
+            notification_websocket_1.NotificationGateway,
+            mail_service_1.MailService,
+            notification_service_1.NotificationService,
+            mail_subcriber_service_1.MailSubscriberService,
+            notification_subcriber_service_1.NotificationSubscriberService,
+            notification_websocket_1.NotificationEmitterService,
+            {
+                provide: notification_repo_interface_1.INotificationRepo,
+                useClass: notification_repo_1.NotificationRepo,
+            },
+            {
+                provide: mail_sender_interface_1.IMailSender,
+                useClass: mail_sender_repo_1.MailSenderRepo,
+            },
+        ],
+    })
+], NotificationModule);
+
+
+/***/ }),
+/* 31 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c, _d, _e, _f;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NotificationService = void 0;
+const common_1 = __webpack_require__(4);
+const notification_1 = __webpack_require__(32);
+const notification_repo_interface_1 = __webpack_require__(33);
+const microservices_1 = __webpack_require__(11);
+const grpc_js_1 = __webpack_require__(20);
+const core_1 = __webpack_require__(1);
+const notification_websocket_1 = __webpack_require__(34);
+let NotificationService = class NotificationService {
+    notificationRepo;
+    projectClientService;
+    sprintCLientService;
+    issueClientService;
+    userClientService;
+    notiEmitter;
+    constructor(notificationRepo, projectClientService, sprintCLientService, issueClientService, userClientService, notiEmitter) {
+        this.notificationRepo = notificationRepo;
+        this.projectClientService = projectClientService;
+        this.sprintCLientService = sprintCLientService;
+        this.issueClientService = issueClientService;
+        this.userClientService = userClientService;
+        this.notiEmitter = notiEmitter;
+    }
+    async createNotification(data) {
+        const refType = this.getReferenceTypeByNotification(data.type);
+        const noti = await this.notificationRepo.create({
+            recipientId: data.recipientId,
+            actorId: data.actorId,
+            type: data.type,
+            referenceId: data.referenceId,
+            referenceType: refType,
+            content: data?.content || '',
+            isRead: false,
+            createdAt: new Date(),
+        });
+        await this.notiEmitter.sendToUser(data.recipientId);
+        return noti;
+    }
+    async listNotifications(params) {
+        const [notiDomain, totalCount] = await Promise.all([this.notificationRepo.listAll(params), this.notificationRepo.countAll(params)]);
+        const issueIds = [];
+        const projectIds = [];
+        const sprintIds = [];
+        const actorIds = notiDomain.map((noti) => noti?.actorId).filter(Boolean);
+        notiDomain.forEach((noti) => {
+            if (noti.referenceType == notification_1.ReferenceType.ISSUE && noti.referenceId) {
+                issueIds.push(noti.referenceId);
+            }
+            if (noti.referenceType == notification_1.ReferenceType.PROJECT && noti.referenceId) {
+                projectIds.push(noti.referenceId);
+            }
+            if (noti.referenceType == notification_1.ReferenceType.SPRINT && noti.referenceId) {
+                sprintIds.push(noti.referenceId);
+            }
+        });
+        const [projects, sprints, issues, receivers, actors] = await Promise.all([
+            this.projectClientService.getListProjects({ projectIds: projectIds, limit: params.limit || 100, page: params.page || 1 }),
+            this.sprintCLientService.getListSprints({ sprintIds: sprintIds, limit: params.limit || 100, page: params.page || 1 }),
+            this.issueClientService.getListIssues({ issueIds: issueIds, limit: params.limit || 100, page: params.page || 1 }),
+            this.userClientService.getListUsers({ userIds: notiDomain.map((noti) => noti.recipientId), limit: params.limit || 100, page: params.page || 1 }),
+            this.userClientService.getListUsers({ userIds: actorIds, limit: params.limit || 100, page: params.page || 1 }),
+        ]);
+        const projectsMap = new Map();
+        (projects || []).forEach((project) => {
+            projectsMap.set(project.id, project);
+        });
+        const sprintsMap = new Map();
+        (sprints || []).forEach((sprint) => {
+            sprintsMap.set(sprint.id, sprint);
+        });
+        const issuesMaps = new Map();
+        (issues || []).forEach((issue) => {
+            issuesMaps.set(issue.id, issue);
+        });
+        const receiverMaps = new Map();
+        (receivers || []).forEach((receiver) => {
+            receiverMaps.set(receiver.id, receiver);
+        });
+        const actorMaps = new Map();
+        (actors || []).forEach((actor) => {
+            actorMaps.set(actor.id, actor);
+        });
+        notiDomain.forEach((noti) => {
+            if (noti.referenceType === notification_1.ReferenceType.PROJECT && noti.referenceId) {
+                const project = projectsMap.get(noti.referenceId);
+                if (project) {
+                    noti.referenceData = project;
+                }
+            }
+            if (noti.referenceType === notification_1.ReferenceType.SPRINT && noti.referenceId) {
+                const sprint = sprintsMap.get(noti.referenceId);
+                if (sprint) {
+                    noti.referenceData = sprint;
+                }
+            }
+            if (noti.referenceType === notification_1.ReferenceType.ISSUE && noti.referenceId) {
+                const issue = issuesMaps.get(noti.referenceId);
+                if (issue) {
+                    noti.referenceData = issue;
+                }
+            }
+            const receiver = receiverMaps.get(noti.recipientId);
+            if (receiver) {
+                noti.recipient = receiver;
+            }
+            if (noti.actorId) {
+                const actor = actorMaps.get(noti.actorId);
+                noti.actor = actor;
+            }
+        });
+        return {
+            data: notiDomain,
+            totalCount: totalCount,
+        };
+    }
+    async updateNotification(data) {
+        const noti = await this.notificationRepo.update(data);
+        return noti;
+    }
+    async bulkUpdateNotification(data) {
+        return await this.notificationRepo.bulkUpdate(data);
+    }
+    getReferenceTypeByNotification(type) {
+        switch (type) {
+            case notification_1.NotificationType.ASSIGNMENT:
+            case notification_1.NotificationType.MENTION:
+            case notification_1.NotificationType.COMMENT:
+            case notification_1.NotificationType.STATUS_UPDATE:
+            case notification_1.NotificationType.DUE_DATE_REMINDER:
+                return notification_1.ReferenceType.ISSUE;
+            case notification_1.NotificationType.SPRINT_STARTED:
+                return notification_1.ReferenceType.SPRINT;
+            case notification_1.NotificationType.PROJECT_INVITATION:
+            case notification_1.NotificationType.PROJECT_ADDED:
+                return notification_1.ReferenceType.PROJECT;
+            case notification_1.NotificationType.REACTION:
+                return notification_1.ReferenceType.COMMENT;
+            case notification_1.NotificationType.PROJECT_TEAM_ADDED:
+                return notification_1.ReferenceType.PROJECT_MEMBER;
+            case notification_1.NotificationType.SYSTEM_ALERT:
+                return notification_1.ReferenceType.SYSTEM;
+            default:
+                return notification_1.ReferenceType.SYSTEM;
+        }
+    }
+    ValidateNotificationType(type) {
+        if (!type || !Object.values(notification_1.NotificationType).includes(type)) {
+            throw new microservices_1.RpcException({
+                code: grpc_js_1.status.INVALID_ARGUMENT,
+                message: 'Invalid notification type',
+            });
+        }
+        return type;
+    }
+};
+exports.NotificationService = NotificationService;
+exports.NotificationService = NotificationService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof notification_repo_interface_1.INotificationRepo !== "undefined" && notification_repo_interface_1.INotificationRepo) === "function" ? _a : Object, typeof (_b = typeof core_1.ProjectClientService !== "undefined" && core_1.ProjectClientService) === "function" ? _b : Object, typeof (_c = typeof core_1.SprintClientService !== "undefined" && core_1.SprintClientService) === "function" ? _c : Object, typeof (_d = typeof core_1.IssueClientService !== "undefined" && core_1.IssueClientService) === "function" ? _d : Object, typeof (_e = typeof core_1.UserClientService !== "undefined" && core_1.UserClientService) === "function" ? _e : Object, typeof (_f = typeof notification_websocket_1.NotificationEmitterService !== "undefined" && notification_websocket_1.NotificationEmitterService) === "function" ? _f : Object])
+], NotificationService);
+
+
+/***/ }),
+/* 32 */
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ReferenceType = exports.NotificationType = void 0;
+var NotificationType;
+(function (NotificationType) {
+    NotificationType["ASSIGNMENT"] = "ASSIGNMENT";
+    NotificationType["MENTION"] = "MENTION";
+    NotificationType["COMMENT"] = "COMMENT";
+    NotificationType["STATUS_UPDATE"] = "STATUS_UPDATE";
+    NotificationType["DUE_DATE_REMINDER"] = "DUE_DATE_REMINDER";
+    NotificationType["PROJECT_INVITATION"] = "PROJECT_INVITATION";
+    NotificationType["REACTION"] = "REACTION";
+    NotificationType["SYSTEM_ALERT"] = "SYSTEM_ALERT";
+    NotificationType["SPRINT_STARTED"] = "SPRINT_STARTED";
+    NotificationType["PROJECT_ADDED"] = "PROJECT_ADDED";
+    NotificationType["PROJECT_TEAM_ADDED"] = "PROJECT_TEAM_ADDED";
+})(NotificationType || (exports.NotificationType = NotificationType = {}));
+var ReferenceType;
+(function (ReferenceType) {
+    ReferenceType["ISSUE"] = "issue";
+    ReferenceType["PROJECT"] = "project";
+    ReferenceType["COMMENT"] = "comment";
+    ReferenceType["SPRINT"] = "sprint";
+    ReferenceType["SYSTEM"] = "system";
+    ReferenceType["PROJECT_MEMBER"] = "project_member";
+})(ReferenceType || (exports.ReferenceType = ReferenceType = {}));
+
+
+/***/ }),
+/* 33 */
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.INotificationRepo = void 0;
+class INotificationRepo {
+}
+exports.INotificationRepo = INotificationRepo;
+
+
+/***/ }),
+/* 34 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NotificationGateway = exports.NotificationEmitterService = void 0;
+const common_1 = __webpack_require__(4);
+const websockets_1 = __webpack_require__(35);
+const notification_service_1 = __webpack_require__(31);
+const socket_io_1 = __webpack_require__(36);
+const convert_utils_1 = __webpack_require__(28);
+let NotificationEmitterService = class NotificationEmitterService {
+    notificationService;
+    server;
+    constructor(notificationService) {
+        this.notificationService = notificationService;
+    }
+    setServer(server) {
+        this.server = server;
+    }
+    broadcast(event, data) {
+        if (this.server) {
+            this.server.emit(event, data);
+        }
+    }
+    async sendToUser(userId) {
+        if (this.server) {
+            const notis = await this.notificationService.listNotifications({
+                page: 1,
+                limit: 100,
+                userId: userId,
+            });
+            this.server.to(userId).emit('refresh-list', convert_utils_1.default.convertToSnakeCase({
+                notifications: notis.data,
+                total: notis.totalCount,
+            }));
+        }
+    }
+};
+exports.NotificationEmitterService = NotificationEmitterService;
+exports.NotificationEmitterService = NotificationEmitterService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, common_1.Inject)((0, common_1.forwardRef)(() => notification_service_1.NotificationService))),
+    __metadata("design:paramtypes", [typeof (_a = typeof notification_service_1.NotificationService !== "undefined" && notification_service_1.NotificationService) === "function" ? _a : Object])
+], NotificationEmitterService);
+let NotificationGateway = class NotificationGateway {
+    emitter;
+    server;
+    constructor(emitter) {
+        this.emitter = emitter;
+    }
+    afterInit(server) {
+        this.emitter.setServer(server);
+    }
+    async handleConnection(socket) {
+        const userId = socket.handshake.query.userId;
+        if (userId && typeof userId === 'string') {
+            await socket.join(userId);
+            common_1.Logger.log(`User ${userId} connected`);
+            await this.emitter.sendToUser(userId);
+        }
+        else {
+            socket.disconnect();
+            common_1.Logger.warn(`Socket disconnected due to missing userId`);
+        }
+    }
+    handleDisconnect(socket) {
+        common_1.Logger.log(`Client disconnected: ${socket.id}`);
+    }
+};
+exports.NotificationGateway = NotificationGateway;
+__decorate([
+    (0, websockets_1.WebSocketServer)(),
+    __metadata("design:type", typeof (_b = typeof socket_io_1.Server !== "undefined" && socket_io_1.Server) === "function" ? _b : Object)
+], NotificationGateway.prototype, "server", void 0);
+exports.NotificationGateway = NotificationGateway = __decorate([
+    (0, common_1.Injectable)(),
+    (0, websockets_1.WebSocketGateway)({
+        cors: {
+            origin: '*',
+        },
+    }),
+    __metadata("design:paramtypes", [NotificationEmitterService])
+], NotificationGateway);
+
+
+/***/ }),
+/* 35 */
+/***/ ((module) => {
+
+module.exports = require("@nestjs/websockets");
+
+/***/ }),
+/* 36 */
+/***/ ((module) => {
+
+module.exports = require("socket.io");
+
+/***/ }),
+/* 37 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NotificationSubscriberService = exports.NOTIFICATION_KAFKA_TOPIC = void 0;
+const core_1 = __webpack_require__(1);
+const common_1 = __webpack_require__(4);
+const notification_service_1 = __webpack_require__(31);
+const validate_utils_1 = __webpack_require__(38);
+exports.NOTIFICATION_KAFKA_TOPIC = 'notifications';
+let NotificationSubscriberService = class NotificationSubscriberService {
+    kafkaService;
+    notificationService;
+    constructor(kafkaService, notificationService) {
+        this.kafkaService = kafkaService;
+        this.notificationService = notificationService;
+    }
+    async onModuleInit() {
+        this.kafkaService.on(exports.NOTIFICATION_KAFKA_TOPIC, this.handleNotificationReceiver.bind(this));
+    }
+    async handleNotificationReceiver(payload) {
+        const { message } = payload;
+        const value = message.value?.toString();
+        try {
+            const notificationMessage = value ? JSON.parse(value) : null;
+            switch (notificationMessage.eventType) {
+                case core_1.KafkaActionType.NOTIFICATIONS_CREATE_NEW_NOTIFICATION:
+                    await this.handleCreateNotification(notificationMessage);
+                    break;
+                default:
+                    console.error('❌ [NOTIFICATION_TOPIC] Unknown event type:', notificationMessage.eventType);
+                    break;
+            }
+        }
+        catch (err) {
+            console.error('❌ [NOTIFICATION_TOPIC] Failed to process notification message:', err);
+        }
+    }
+    async handleCreateNotification(kafkaMessage) {
+        const { isValid, message, data } = validate_utils_1.default.validateRequiredFields(kafkaMessage);
+        if (!isValid || !data) {
+            console.error('❌ Missing field:', message);
+            return;
+        }
+        const type = this.notificationService.ValidateNotificationType(data.type);
+        const notification = {
+            recipientId: data.recipientId,
+            type: type,
+            content: ``,
+            isRead: false,
+            createdAt: new Date(),
+            actorId: data.actorId,
+            referenceId: data.issueId,
+        };
+        await this.notificationService.createNotification(notification);
+    }
+};
+exports.NotificationSubscriberService = NotificationSubscriberService;
+exports.NotificationSubscriberService = NotificationSubscriberService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof core_1.KafkaService !== "undefined" && core_1.KafkaService) === "function" ? _a : Object, typeof (_b = typeof notification_service_1.NotificationService !== "undefined" && notification_service_1.NotificationService) === "function" ? _b : Object])
+], NotificationSubscriberService);
+
+
+/***/ }),
+/* 38 */
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const validator = {
+    validateRequiredFields(message) {
+        if (!message.data) {
+            return {
+                isValid: false,
+                message: `Missing data for ${message.id} event`,
+            };
+        }
+        const requiredFields = Object.keys(message.data);
+        const missingFields = requiredFields.filter((field) => {
+            const value = message.data[field];
+            return value === undefined || value === null;
+        });
+        if (missingFields.length > 0) {
+            return {
+                isValid: false,
+                message: `Missing required fields for ${message.id} event: ${missingFields.join(', ')}`,
+                missingFields: missingFields,
+            };
+        }
+        return {
+            isValid: true,
+            message: 'valid',
+            data: message.data,
+        };
+    },
+};
+exports["default"] = validator;
+
+
+/***/ }),
+/* 39 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MailSubscriberService = exports.MAIL_KAFKA_TOPIC = void 0;
+const core_1 = __webpack_require__(1);
+const common_1 = __webpack_require__(4);
+const mail_service_1 = __webpack_require__(40);
+const validate_utils_1 = __webpack_require__(38);
+exports.MAIL_KAFKA_TOPIC = 'mails';
+let MailSubscriberService = class MailSubscriberService {
+    kafkaService;
+    mailService;
+    constructor(kafkaService, mailService) {
+        this.kafkaService = kafkaService;
+        this.mailService = mailService;
+    }
+    async onModuleInit() {
+        this.kafkaService.on(exports.MAIL_KAFKA_TOPIC, this.handleMailMessageReceiver.bind(this));
+    }
+    async handleMailMessageReceiver(payload) {
+        const { message } = payload;
+        const value = message.value?.toString();
+        try {
+            const message = value ? JSON.parse(value) : null;
+            switch (message.eventType) {
+                case core_1.KafkaActionType.MAILS_SEND_VERIFY_OTP_USER:
+                    await this.handleSendMailVerifyOtp(message);
+                    break;
+                default:
+                    console.error('❌ [MAIL_TOPIC] Unknown event type:', message.eventType);
+                    break;
+            }
+        }
+        catch (err) {
+            console.error('❌ [MAIL_TOPIC] Failed to process notification message:', err);
+        }
+    }
+    async handleSendMailVerifyOtp(kafkaMessage) {
+        const { isValid, message, data: messageData } = validate_utils_1.default.validateRequiredFields(kafkaMessage);
+        if (!isValid || !messageData) {
+            console.error('❌ Missing field:', message);
+            return;
+        }
+        const { userId, data } = messageData;
+        await this.mailService.sendVerifyOtp({
+            userId: userId,
+            otp: data.otp,
+        });
+    }
+};
+exports.MailSubscriberService = MailSubscriberService;
+exports.MailSubscriberService = MailSubscriberService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof core_1.KafkaService !== "undefined" && core_1.KafkaService) === "function" ? _a : Object, typeof (_b = typeof mail_service_1.MailService !== "undefined" && mail_service_1.MailService) === "function" ? _b : Object])
+], MailSubscriberService);
+
+
+/***/ }),
+/* 40 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MailService = void 0;
+const core_1 = __webpack_require__(1);
+const common_1 = __webpack_require__(4);
+const mail_sender_interface_1 = __webpack_require__(41);
+let MailService = class MailService {
+    userClientService;
+    mailSender;
+    constructor(userClientService, mailSender) {
+        this.userClientService = userClientService;
+        this.mailSender = mailSender;
+    }
+    async sendVerifyOtp(input) {
+        const { userId, otp } = input;
+        if (!otp || !userId) {
+            throw new Error('Invalid OTP || User Id');
+        }
+        const user = await this.userClientService.getUserById({ userId: userId });
+        if (!user) {
+            throw new Error('User not found!');
+        }
+        const data = {
+            NAME: `${user.firstName} ${user.lastName}`,
+            OTP: otp,
+            EXPIRE_MINUTES: 5,
+            YEAR: 2025,
+        };
+        await this.mailSender.sendMail({
+            subject: 'test',
+            to: user.email,
+            template: 'verify-otp.hbs',
+            data,
+        });
+    }
+};
+exports.MailService = MailService;
+exports.MailService = MailService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof core_1.UserClientService !== "undefined" && core_1.UserClientService) === "function" ? _a : Object, typeof (_b = typeof mail_sender_interface_1.IMailSender !== "undefined" && mail_sender_interface_1.IMailSender) === "function" ? _b : Object])
+], MailService);
+
+
+/***/ }),
+/* 41 */
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.IMailSender = void 0;
+class IMailSender {
+}
+exports.IMailSender = IMailSender;
+
+
+/***/ }),
+/* 42 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NotificationRepo = void 0;
+const common_1 = __webpack_require__(4);
+const mongoose_1 = __webpack_require__(9);
+const mongoose_2 = __webpack_require__(43);
+const notification_schema_1 = __webpack_require__(44);
+const mapper_1 = __webpack_require__(45);
+let NotificationRepo = class NotificationRepo {
+    notificationModel;
+    constructor(notificationModel) {
+        this.notificationModel = notificationModel;
+    }
+    async create(notification) {
+        const newNotification = new this.notificationModel(notification);
+        await newNotification.save();
+        return notification;
+    }
+    async countAll(params) {
+        const filter = {};
+        if (params?.userId) {
+            filter.recipientId = params.userId;
+        }
+        if (params?.projectId) {
+            filter.referenceType = 'project';
+            filter.referenceId = params.projectId;
+        }
+        if (params?.sprintId) {
+            filter.referenceType = 'sprint';
+            filter.referenceId = params.sprintId;
+        }
+        return this.notificationModel.countDocuments(filter);
+    }
+    async listAll(params) {
+        const filter = {};
+        if (params.userId) {
+            filter.recipientId = params.userId;
+        }
+        if (params.projectId) {
+            filter.referenceType = 'project';
+            filter.referenceId = params.projectId;
+        }
+        if (params.sprintId) {
+            filter.referenceType = 'sprint';
+            filter.referenceId = params.sprintId;
+        }
+        const page = params.page ?? 1;
+        const limit = params.limit ?? 10;
+        const skip = (page - 1) * limit;
+        const notifications = await this.notificationModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean();
+        return mapper_1.NotificationMapper.toDomainList(notifications);
+    }
+    async update(params) {
+        const { notiId, isRead } = params;
+        const updated = await this.notificationModel.findByIdAndUpdate(notiId, { isRead: isRead }, { new: true }).lean();
+        if (!updated) {
+            throw new Error(`Notification with ID ${notiId} not found.`);
+        }
+        return mapper_1.NotificationMapper.toDomain(updated);
+    }
+    async bulkUpdate(params) {
+        const { userId, isRead } = params;
+        const result = await this.notificationModel.updateMany({ recipientId: userId }, { $set: { isRead: isRead } });
+        if (result.modifiedCount === 0) {
+            throw new Error(`Notification not found with this user`);
+        }
+        return { success: true };
+    }
+};
+exports.NotificationRepo = NotificationRepo;
+exports.NotificationRepo = NotificationRepo = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, mongoose_1.InjectModel)(notification_schema_1.INotification.name)),
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object])
+], NotificationRepo);
+
+
+/***/ }),
+/* 43 */
+/***/ ((module) => {
+
+module.exports = require("mongoose");
+
+/***/ }),
+/* 44 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NotificationSchema = exports.INotification = void 0;
+const mongoose_1 = __webpack_require__(9);
+let INotification = class INotification {
+    _id;
+    recipientId;
+    actorId;
+    type;
+    referenceId;
+    referenceType;
+    content;
+    isRead;
+    createdAt;
+};
+exports.INotification = INotification;
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", String)
+], INotification.prototype, "recipientId", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", String)
+], INotification.prototype, "actorId", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", String)
+], INotification.prototype, "type", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", String)
+], INotification.prototype, "referenceId", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", String)
+], INotification.prototype, "referenceType", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", String)
+], INotification.prototype, "content", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: false }),
+    __metadata("design:type", Boolean)
+], INotification.prototype, "isRead", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", typeof (_a = typeof Date !== "undefined" && Date) === "function" ? _a : Object)
+], INotification.prototype, "createdAt", void 0);
+exports.INotification = INotification = __decorate([
+    (0, mongoose_1.Schema)({ timestamps: { createdAt: 'createdAt' }, collection: 'notifications' })
+], INotification);
+exports.NotificationSchema = mongoose_1.SchemaFactory.createForClass(INotification);
+
+
+/***/ }),
+/* 45 */
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NotificationMapper = void 0;
+class NotificationMapper {
+    static toDomain(entity) {
+        return {
+            id: entity._id.toString(),
+            recipientId: entity.recipientId?.toString(),
+            actorId: entity.actorId?.toString(),
+            type: entity.type,
+            referenceId: entity.referenceId,
+            referenceType: entity.referenceType,
+            content: entity.content,
+            isRead: entity.isRead,
+            createdAt: entity.createdAt.toISOString(),
+        };
+    }
+    static toDomainList(entities) {
+        return entities.map((entity) => this.toDomain(entity));
+    }
+}
+exports.NotificationMapper = NotificationMapper;
+
+
+/***/ }),
+/* 46 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NotificationController = void 0;
+const common_1 = __webpack_require__(4);
+const notification_service_1 = __webpack_require__(31);
+let NotificationController = class NotificationController {
+    notificationService;
+    constructor(notificationService) {
+        this.notificationService = notificationService;
+    }
+    async healthCheck() {
+        return {
+            status: 'ok',
+            message: 'Notification service is running',
+            timestamp: new Date().toISOString(),
+        };
+    }
+    async sendNotification(data) {
+        const type = this.notificationService.ValidateNotificationType(data.type);
+        const noti = await this.notificationService.createNotification({
+            content: data.content || '',
+            createdAt: new Date(),
+            isRead: false,
+            recipientId: data.recipientId,
+            type: type,
+            actorId: data.actorId,
+            referenceId: data.recipientId,
+        });
+        return {
+            status: 'success',
+            message: 'Notification sent!',
+            data: noti,
+        };
+    }
+    async getAllNotifications(body) {
+        const { data: notis, totalCount } = await this.notificationService.listNotifications(body);
+        const currentPage = body.page || 1;
+        const limit = body.limit || 10;
+        const totalPages = Math.ceil(totalCount / limit);
+        return {
+            status: 'success',
+            message: 'Get all notification success!',
+            pagination: {
+                currentPage,
+                limit,
+                totalItems: totalCount,
+                totalPages,
+            },
+            data: notis,
+        };
+    }
+    async updateNotification(notiId, body) {
+        const noti = await this.notificationService.updateNotification({
+            notiId: notiId,
+            isRead: body.isRead,
+        });
+        return {
+            status: 'success',
+            message: 'Update notification success!',
+            data: noti,
+        };
+    }
+    async bulkUpdateNotification(body) {
+        const res = await this.notificationService.bulkUpdateNotification({
+            isRead: body.isRead,
+            userId: body.userId,
+        });
+        return {
+            status: 'success',
+            message: 'Update notification success!',
+            data: res,
+        };
+    }
+};
+exports.NotificationController = NotificationController;
+__decorate([
+    (0, common_1.Get)('/health'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], NotificationController.prototype, "healthCheck", null);
+__decorate([
+    (0, common_1.Post)(),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], NotificationController.prototype, "sendNotification", null);
+__decorate([
+    (0, common_1.Post)('/get-all'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], NotificationController.prototype, "getAllNotifications", null);
+__decorate([
+    (0, common_1.Put)(':notiId'),
+    __param(0, (0, common_1.Param)('notiId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], NotificationController.prototype, "updateNotification", null);
+__decorate([
+    (0, common_1.Post)('/update-all'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], NotificationController.prototype, "bulkUpdateNotification", null);
+exports.NotificationController = NotificationController = __decorate([
+    (0, common_1.Controller)('/api/v1/notifications'),
+    __metadata("design:paramtypes", [typeof (_a = typeof notification_service_1.NotificationService !== "undefined" && notification_service_1.NotificationService) === "function" ? _a : Object])
+], NotificationController);
+
+
+/***/ }),
+/* 47 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MailSenderRepo = void 0;
+const common_1 = __webpack_require__(4);
+const config_1 = __webpack_require__(3);
+const nodemailer = __webpack_require__(48);
+const fs = __webpack_require__(49);
+const handlebars = __webpack_require__(50);
+const path_1 = __webpack_require__(13);
+let MailSenderRepo = class MailSenderRepo {
+    configService;
+    transporter;
+    constructor(configService) {
+        this.configService = configService;
+        this.transporter = nodemailer.createTransport({
+            host: this.configService.get('MAIL_SMTP_HOST', 'smtp.mailtrap.io'),
+            port: this.configService.get('MAIL_SMTP_PORT', 587),
+            secure: false,
+            auth: {
+                user: this.configService.get('MAIL_SMTP_USER'),
+                pass: this.configService.get('MAIL_SMTP_PASS'),
+            },
+        });
+    }
+    async sendMail(options) {
+        let html = options.html;
+        if (options.template && options.data) {
+            const templatePath = (0, path_1.join)(__dirname, 'public', 'templates', `${options.template}`);
+            const template = fs.readFileSync(templatePath, 'utf8');
+            const compiled = handlebars.compile(template);
+            html = compiled(options.data);
+        }
+        await this.transporter.sendMail({
+            from: `"My App" <${this.configService.get('MAIL_SMTP_USER')}>`,
+            to: options.to,
+            subject: options.subject,
+            text: options.text,
+            html,
+        });
+    }
+};
+exports.MailSenderRepo = MailSenderRepo;
+exports.MailSenderRepo = MailSenderRepo = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _a : Object])
+], MailSenderRepo);
+
+
+/***/ }),
+/* 48 */
+/***/ ((module) => {
+
+module.exports = require("nodemailer");
+
+/***/ }),
+/* 49 */
+/***/ ((module) => {
+
+module.exports = require("fs");
+
+/***/ }),
+/* 50 */
+/***/ ((module) => {
+
+module.exports = require("handlebars");
+
+/***/ })
+/******/ 	]);
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+var __webpack_exports__ = {};
+// This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
+(() => {
+var exports = __webpack_exports__;
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const core_1 = __webpack_require__(1);
+const common_1 = __webpack_require__(4);
+const core_2 = __webpack_require__(26);
+const snakeCase_interceptor_1 = __webpack_require__(27);
+const notification_module_1 = __webpack_require__(30);
+async function bootstrap() {
+    const app = await core_2.NestFactory.create(notification_module_1.NotificationModule);
+    app.enableCors();
+    app.useGlobalInterceptors(new core_1.HttpAuthInterceptor(), new snakeCase_interceptor_1.TransformResponseInterceptor(), new core_1.GlobalHandleErrorInterceptor());
+    await app.listen(5002);
+    common_1.Logger.log(`🚀 HTTP server running at http://localhost:5002`);
+}
+bootstrap();
+
+})();
+
+/******/ })()
+;

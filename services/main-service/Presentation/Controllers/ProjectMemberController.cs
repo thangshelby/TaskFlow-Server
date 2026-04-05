@@ -118,11 +118,16 @@ public class ProjectMemberController : ProjectMemberService.ProjectMemberService
             if (request.Page <= 0) request.Page = 1;
             if (request.Limit <= 0) request.Limit = 10;
 
-            var (members, totalCount) = await _projectMemberUseCase.GetProjectMembersAsync(
-                request.ProjectId,
-                (int)request.Page,
-                (int)request.Limit
-            );
+            // Use search functionality if name or email filters are provided
+            var (members, totalCount) = await _projectMemberUseCase.SearchProjectMembersAsync(new SearchProjectMemberQueryParams
+            {
+                ProjectId = request.ProjectId,
+                Name = request.Name,
+                Email = request.Email,
+                Page = (int)request.Page,
+                Limit = (int)request.Limit
+            });
+           
 
             var response = new ListProjectMembersRes
             {
@@ -156,7 +161,6 @@ public class ProjectMemberController : ProjectMemberService.ProjectMemberService
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "UserId is required"));
             }
 
-            _logger.LogInformation("Getting projects for user {UserId}", request.UserId);
             var (project_members, totalCount) = await _projectMemberUseCase.GetUserProjectsAsync(
                 request.UserId,
                 (int)request.Page,
@@ -193,15 +197,7 @@ public class ProjectMemberController : ProjectMemberService.ProjectMemberService
                     IsPending = member.IsPending,
                     CreatedAt = member.CreatedAt.ToString("O"),
                     UpdatedAt = member.UpdatedAt.ToString("O"),
-                    Project = new ProjectInfo
-                    {
-                        Id = project.Id ?? string.Empty,
-                        Name = project.Name,
-                        Description = project.Key,
-                        Status = project.Access.ToString(),
-                        CreatedAt = project.CreatedAt.ToString("O"),
-                        UpdatedAt = project.UpdatedAt.ToString("O"),
-                    }
+                    Project = _mapper.Map<ProjectInfo>(project)
                 };
                 response.Data.Add(userMembership);
             }
@@ -326,6 +322,43 @@ public class ProjectMemberController : ProjectMemberService.ProjectMemberService
         {
             _logger.LogError(ex, "Error rejecting member for project {ProjectId}", request.ProjectId);
             throw new RpcException(new Status(StatusCode.Internal, "Error rejecting member"));
+        }
+    }
+
+    public override async Task<Empty> AddMemberToTeam(AddMemberToTeamReq request, ServerCallContext context)
+    {
+        var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User must be authenticated"));
+        }
+
+        try
+        {
+            await _projectMemberUseCase.AddMembersToTeamAsync(
+                request.ProjectId,
+                request.TeamId,
+                request.UserIds.ToList()
+            );
+
+            return new Empty();
+        }
+        catch (ArgumentException ex)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding members to team {TeamId} in project {ProjectId}", request.TeamId, request.ProjectId);
+            throw new RpcException(new Status(StatusCode.Internal, "Error adding members to team"));
         }
     }
 

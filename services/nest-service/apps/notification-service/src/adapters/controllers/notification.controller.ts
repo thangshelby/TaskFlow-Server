@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Put, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param } from '@nestjs/common';
 import { NotificationService } from '@notification-service/core/services/notification.service';
 
 interface CreateNotificationReq {
@@ -31,6 +31,15 @@ interface BulkUpdateNotificationsReq {
 @Controller('/api/v1/notifications')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
+
+  @Get('/health')
+  async healthCheck() {
+    return {
+      status: 'ok',
+      message: 'Notification service is running',
+      timestamp: new Date().toISOString(),
+    };
+  }
 
   @Post()
   async sendNotification(@Body() data: CreateNotificationReq) {

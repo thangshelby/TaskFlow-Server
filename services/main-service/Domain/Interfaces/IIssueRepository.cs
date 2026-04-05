@@ -1,3 +1,4 @@
+using MainService.Domain.Common;
 using MainService.Domain.Entities;
 using MainService.Domain.Enums;
 using TaskFlow.UserService;
@@ -10,7 +11,7 @@ public interface IIssueRepository
     Task<IssueDomain> UpdateIssue(UpdateIssueParams issue);
     Task<UserStats> GetStats(string id, bool isSprintId);
     Task DeleteIssue(string id);
-    Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(GetIssuesParams param);
+    Task<PagedResult<IssueDomain>> ListIssues(GetIssuesParams param);
 }
 
 public class CreateIssueParams
@@ -39,6 +40,10 @@ public class GetIssuesParams
     public string? Keyword;
     public int Page = 1;
     public int Limit = 10;
+    /// <summary>When true, returns all matching issues (no skip/limit). Intended for internal use; not cached in IssueCacheDecorator.</summary>
+    public bool Unpaged;
+    public List<string>? ParentIds;
+    public List<string>? TeamIds;
 }
 public class UpdateIssueParams
 {
@@ -50,6 +55,7 @@ public class UpdateIssueParams
     public string? AssigneeId { get; set; }
     public string? Description { get; set; }
     public string? Summary { get; set; }
+    public string? TeamId { get; set; }
     public int? StoryPoint { get; set; }
     public string? ReporterId { get; set; }
     public string? ColumnId { get; set; }
@@ -60,4 +66,5 @@ public class UpdateIssueParams
 
     public string? DueDateFrom { get; set; }
     public string? DueDateTo { get; set; }
+    public DateTime? CompletedAt { get; set; }
 }

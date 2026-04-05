@@ -2,8 +2,10 @@ container-up:
 	docker compose up -d
 container-down:
 	docker compose down
+	docker volume rm taskflow-server_kafka-data taskflow-server_zookeeper-data
 build:
-	docker compose down
+	make container-down
+	make gen-protobuf
 	docker compose up --build -d
 	docker image prune -f 
 logs:

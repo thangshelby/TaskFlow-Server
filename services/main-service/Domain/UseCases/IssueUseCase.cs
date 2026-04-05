@@ -1,4 +1,5 @@
 using Grpc.Core;
+using MainService.Domain.Common;
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
 using MainService.Domain.Enums;
@@ -47,6 +48,11 @@ public class IssueUseCase
         if (column == null)
             throw new RpcException(new Status(StatusCode.InvalidArgument, "ColumnId is invalid or does not exist."));
 
+        // Get project key and current issues count
+        var (projectKey, currentIssuesCount) = await _projectRepository.GetProjectKeyAndIssuesCount(param.ProjectId);
+        var nextIssueNumber = currentIssuesCount + 1;
+        var issueKey = $"{projectKey}-{nextIssueNumber}";
+
         var issue = new IssueDomain()
         {
             ProjectId = param.ProjectId,
@@ -59,7 +65,8 @@ public class IssueUseCase
             Priority = Enum.TryParse<IssuePriority>(param.Priority, true, out var priority) ? priority : IssuePriority.Medium,
             StoryPoint = param.StoryPoint,
             ParentId = param.ParentId ?? string.Empty,
-            Attachments = param.Attachments.ToList()
+            Attachments = param.Attachments.ToList(),
+            Key = issueKey
         };
 
         if (param.SprintId != null)
@@ -80,6 +87,9 @@ public class IssueUseCase
                 AddIssueId = newIssue.Id,
                 ColumnId = column.Id,
             });
+
+            // Increment issues count in project
+            await _projectRepository.IncrementIssuesCount(param.ProjectId);
 
             return newIssue;
         });
@@ -133,6 +143,13 @@ public class IssueUseCase
 
                 if (oldColumn == null)
                     throw new RpcException(new Status(StatusCode.InvalidArgument, $"Original column with id '{existingIssue.ColumnId}' not found"));
+
+                // Check if moving to DONE column and set completed_at
+                // This logic automatically sets the completed_at timestamp when an issue is moved to a column named "DONE"
+                if (newColumn.Name.ToUpper() == "DONE" && oldColumn.Name.ToUpper() != "DONE")
+                {
+                    updateData.CompletedAt = DateTime.UtcNow;
+                }
 
                 await _projectRepository.UpdateColumn(new UpdateColumnParams
                 {
@@ -330,7 +347,7 @@ public class IssueUseCase
         return changes;
     }
 
-    public async Task<(List<IssueDomain> Issues, int TotalCount)> ListIssues(GetIssuesParams param)
+    public async Task<PagedResult<IssueDomain>> ListIssues(GetIssuesParams param)
     {
         if (param.Page <= 0) param.Page = 1;
         if (param.Limit <= 0) param.Limit = 10;
