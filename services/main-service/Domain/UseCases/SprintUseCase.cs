@@ -10,14 +10,18 @@ public class SprintUseCase
     private readonly IProjectMemberRepository _projectMemberRepository;
     private readonly IPublisherService _publisher;
 
+    private readonly IIssueRepository _issueRepository;
+
     public SprintUseCase(
         ISprintRepository sprintRepository,
         IProjectMemberRepository projectMemberRepository,
-        IPublisherService publisher)
+        IPublisherService publisher,
+        IIssueRepository issueRepository)
     {
         _sprintRepository = sprintRepository;
         _projectMemberRepository = projectMemberRepository;
         _publisher = publisher;
+        _issueRepository = issueRepository;
     }
 
     public async Task<SprintDomain> CreateSprint(SprintDomain sprint)
@@ -107,7 +111,35 @@ public class SprintUseCase
     {
         var sprint = await GetSprint(sprint_id);
         SprintStats sprintStats = await _sprintRepository.GetSprintStats(sprint_id, sprint.ProjectId);
-        List<SprintDailyStats> dailyData = await _sprintRepository.GetSprintDailyStats(sprint_id);
+        List<SprintDailyStats> dailyData = await GetSprintDailyStats(sprint);
         return (sprint, sprintStats, dailyData);
+    }
+
+    private async Task<List<SprintDailyStats>> GetSprintDailyStats(SprintDomain sprint)
+    {
+
+        var issues = await _issueRepository.ListIssues(new GetIssuesParams
+        {
+            SprintIds = [sprint.Id],
+            Unpaged = true
+        });
+
+        var start = sprint.DateStarted.ToUniversalTime().Date;
+        var end = sprint.DateEnded.ToUniversalTime().Date;
+
+        var dailyStats = new List<SprintDailyStats>();
+        for (var date = start; date <= end; date = date.AddDays(1))
+        {
+            var completedCount = issues.Items.Count(i =>
+                i.CompletedAt.ToUniversalTime().Date <= date);
+
+            dailyStats.Add(new SprintDailyStats
+            {
+                Date = date.ToString(),
+                CompletedIssues = completedCount,
+                RemainingIssues = issues.TotalCount - completedCount
+            });
+        }
+        return dailyStats;
     }
 }

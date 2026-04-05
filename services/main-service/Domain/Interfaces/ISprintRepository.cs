@@ -9,7 +9,7 @@ public interface ISprintRepository
     Task<SprintDomain> UpdateSprint(SprintDomain sprint);
     Task DeleteSprint(string id);
     Task<SprintStats> GetSprintStats(string sprint_id, string project_id);
-    Task<List<SprintDailyStats>> GetSprintDailyStats(string sprint_id);
+    // Task<List<SprintDailyStats>> GetSprintDailyStats(string sprint_id);
     Task<(List<SprintDomain> Sprints, int TotalCount)> ListSprints(ListSprintParams param);
     // Task<List<SprintDomain>> GetAllSprintsByProjectId(string projectId);
 }

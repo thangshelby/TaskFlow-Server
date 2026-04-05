@@ -34,6 +34,11 @@ public class IssueCacheDecorator : IIssueRepository
 
     public async Task<PagedResult<IssueDomain>> ListIssues(GetIssuesParams param)
     {
+        if (param.Unpaged)
+        {
+            return await _innerRepository.ListIssues(param);
+        }
+
         var listCacheKey = CacheKeys.Issues.List(param);
 
         try

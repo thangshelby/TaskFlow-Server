@@ -397,7 +397,7 @@ public class IssueRepository : IIssueRepository
             BsonSerializer.SerializerRegistry.GetSerializer<Issue>(),
             BsonSerializer.SerializerRegistry
         ));
-        var pipeline = new[]
+        var pipelineStages = new List<BsonDocument>
         {
             new BsonDocument("$match", renderedFilter),
             new BsonDocument("$lookup", new BsonDocument
@@ -422,12 +422,16 @@ public class IssueRepository : IIssueRepository
             {
                 { "path", "$column" },
                 { "preserveNullAndEmptyArrays", true }
-            }),
-            new BsonDocument("$skip", (param.Page - 1) * param.Limit),
-            new BsonDocument("$limit", param.Limit)
+            })
         };
 
-        var rawResults = await _issues.Aggregate<BsonDocument>(pipeline).ToListAsync();
+        if (!param.Unpaged)
+        {
+            pipelineStages.Add(new BsonDocument("$skip", (param.Page - 1) * param.Limit));
+            pipelineStages.Add(new BsonDocument("$limit", param.Limit));
+        }
+
+        var rawResults = await _issues.Aggregate<BsonDocument>(pipelineStages).ToListAsync();
         var issues = rawResults.Select(bson => BsonSerializer.Deserialize<Issue>(bson)).ToList();
 
         return new PagedResult<IssueDomain>(_mapper.Map<List<IssueDomain>>(issues), (int)totalCount);
