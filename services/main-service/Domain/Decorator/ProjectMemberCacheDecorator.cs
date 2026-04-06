@@ -143,7 +143,7 @@ public class ProjectMemberCacheDecorator : IProjectMemberRepository
 
             var cachedList = new CachedMemberList
             {
-                MemberIds = dbMembers.Select(m => m.Id).ToList(),
+                MemberIds = dbMembers.Where(m => m.Id != null).Select(m => m.Id!).ToList(),
                 TotalCount = dbMembers.Count()
             };
 
@@ -221,7 +221,7 @@ public class ProjectMemberCacheDecorator : IProjectMemberRepository
 
             var cachedList = new CachedMemberList
             {
-                MemberIds = dbMembers.Select(m => m.Id).ToList(),
+                MemberIds = dbMembers.Where(m => m.Id != null).Select(m => m.Id!).ToList(),
                 TotalCount = totalCount
             };
 
@@ -307,7 +307,7 @@ public class ProjectMemberCacheDecorator : IProjectMemberRepository
 
             var cachedList = new CachedMemberList
             {
-                MemberIds = dbMembers.Select(m => m.Id).ToList(),
+                MemberIds = dbMembers.Where(m => m.Id != null).Select(m => m.Id!).ToList(),
                 TotalCount = dbMembers.Count()
             };
 
@@ -402,7 +402,7 @@ public class ProjectMemberCacheDecorator : IProjectMemberRepository
 
         var result = await _innerRepository.RejectMemberAsync(projectId, userId);
 
-        if (result && member != null)
+        if (result && member != null && !string.IsNullOrEmpty(member.Id))
         {
             await RemoveMemberDetailCacheAsync(member.Id);
             await RemoveMemberByProjectAndUserCacheAsync(projectId, userId);
@@ -445,6 +445,9 @@ public class ProjectMemberCacheDecorator : IProjectMemberRepository
     /// </summary>
     private async Task UpsertMemberDetailCacheAsync(ProjectMemberDomain member)
     {
+        if (string.IsNullOrEmpty(member.Id))
+            return;
+
         var cacheKey = CacheKeys.ProjectMembers.Detail(member.Id);
 
         try

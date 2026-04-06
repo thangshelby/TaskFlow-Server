@@ -21,7 +21,7 @@ public class S3Repository : IS3Repository
 
         _s3Client = new AmazonS3Client(accessKey, secretKey);
         _logger = logger;
-        _bucketName = bucketName;
+        _bucketName = bucketName ?? throw new InvalidOperationException("AWS:S3:Bucket configuration is required.");
     }
 
  public async Task<string> CreatePresignedURLImage(
@@ -31,7 +31,12 @@ public class S3Repository : IS3Repository
     string contentType)
 {
     var fileId = Guid.NewGuid();
-    _logger.LogInformation("Creating presigned URL for project {ProjectId} and user {UserId}", projectId, userId, fileExtension, contentType);
+    _logger.LogInformation(
+        "Creating presigned URL for project {ProjectId}, user {UserId}, extension {FileExtension}, contentType {ContentType}",
+        projectId,
+        userId,
+        fileExtension,
+        contentType);
     var key =
         $"images/raw/project_{projectId}/user_{userId}/{fileId}.{fileExtension}";
 

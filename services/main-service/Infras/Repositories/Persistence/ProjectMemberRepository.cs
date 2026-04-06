@@ -91,7 +91,7 @@ public class ProjectMemberRepository : IProjectMemberRepository
         if (userFilter != userFilterBuilder.Empty)
         {
             var matchingUsers = await _users.Find(userFilter).Project(x => x.Id).ToListAsync();
-            matchingUserIds = matchingUsers.Where(x => !string.IsNullOrEmpty(x)).ToList();
+            matchingUserIds = matchingUsers.Where(x => !string.IsNullOrEmpty(x)).Select(x => x!).ToList();
             
             // If no users match the filters, return empty result
             if (!matchingUserIds.Any())
