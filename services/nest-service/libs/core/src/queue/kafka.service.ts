@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Kafka, Producer, Consumer, EachMessagePayload, Message, Partitioners } from 'kafkajs';
 import { v4 as uuidv4 } from 'uuid';
 import { LogService } from '../log/log.service';
@@ -17,17 +17,18 @@ export enum KafkaActionType {
 }
 
 @Injectable()
-export class KafkaService implements OnModuleInit, OnModuleDestroy {
+export class KafkaService implements OnModuleDestroy {
   private readonly kafka: Kafka;
   private producer: Producer;
   private consumers: Consumer[] = [];
+  private producerConnected = false;
 
   constructor(
     private readonly logService: LogService,
     private readonly configService: ConfigService,
   ) {
     const clientId = this.configService.get<string>('KAFKA_CLIENT_ID', 'taskflow-client');
-    const brokers = this.configService.get<string>('KAFKA_BROKERS', 'kafka:9094').split(',');
+    const brokers = this.configService.get<string>('KAFKA_BROKERS', 'localhost:29092').split(',');
 
     this.kafka = new Kafka({
       clientId,
@@ -38,8 +39,12 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  async onModuleInit() {
+  private async ensureProducerConnected(): Promise<void> {
+    if (this.producerConnected) {
+      return;
+    }
     await this.producer.connect();
+    this.producerConnected = true;
     this.logService.log('Kafka Producer connected');
   }
 
@@ -47,11 +52,14 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     for (const consumer of this.consumers) {
       await consumer.disconnect();
     }
-    await this.producer.disconnect();
+    if (this.producerConnected) {
+      await this.producer.disconnect();
+    }
     this.logService.log('Kafka disconnected');
   }
 
   async publish(topic: string, message: KafkaMessage, config: { partitionKey?: string } = {}): Promise<void> {
+    await this.ensureProducerConnected();
     try {
       const kafkaMessage: Message = {
         value: JSON.stringify(message),

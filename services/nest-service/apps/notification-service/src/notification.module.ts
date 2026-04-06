@@ -28,7 +28,7 @@ import { MailSenderRepo } from '@notification-service/infras/repos/mail-sender.r
     NotificationGateway,
     MailService,
     NotificationService,
-    MailSubscriberService,
+    // MailSubscriberService,
     NotificationSubscriberService,
     NotificationEmitterService,
     {

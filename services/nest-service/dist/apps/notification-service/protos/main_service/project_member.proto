@@ -9,6 +9,7 @@ import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
 import "base.proto";
 
+
 service ProjectMemberService {
   rpc AddProjectMember (AddProjectMemberReq) returns (ProjectMemberRes) {
     option (google.api.http) = {
@@ -61,12 +62,19 @@ service ProjectMemberService {
       body: "*"
     };
   }
+  rpc AddMemberToTeam (AddMemberToTeamReq) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/v1/projects/{project_id}/teams/{team_id}/members"
+      body: "*"
+    };
+  }
 }
 
 enum ProjectMemberRole {
   MEMBER = 0;
   ADMIN = 1;
   OWNER = 2;
+  VIEWER = 3;
 }
 
 message AddProjectMemberReq {
@@ -88,8 +96,10 @@ message UpdateProjectMemberRoleReq {
 
 message ListProjectMembersReq {
   string project_id = 1;
-  int32 page = 2;
-  int32 limit = 3;
+  optional string name = 2;
+  optional string email = 3;
+  int32 page = 4;
+  int32 limit = 5;
 }
 
 message ProjectMemberRes {
@@ -117,6 +127,11 @@ message ProjectInfo {
   string status = 4;
   string created_at = 5;
   string updated_at = 6;
+  optional int32 issues_count = 7;
+  optional int32 members_count = 8;
+  optional string due_date_from =9;
+  optional string due_date_to = 10;
+  optional string background_img = 11;
 }
 
 message UserMembershipRes {
@@ -127,7 +142,7 @@ message UserMembershipRes {
   bool is_pending = 5;
   string created_at = 6;
   string updated_at = 7;
-  ProjectInfo project = 8;
+  ProjectInfo project =8;
 }
 
 message ListProjectMembersRes {
@@ -162,4 +177,10 @@ message AcceptInvitationReq {
 
 message RejectInvitationReq {
   string project_id = 1;
+}
+
+message AddMemberToTeamReq {
+  string project_id = 1;
+  string team_id = 2;
+  repeated string user_ids = 3;
 }
