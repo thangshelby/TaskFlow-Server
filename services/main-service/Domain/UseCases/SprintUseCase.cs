@@ -45,7 +45,7 @@ public class SprintUseCase
             var members = await _projectMemberRepository.GetProjectMembersAsync(sprint.ProjectId, 1, int.MaxValue);
 
             var notificationTasks = members.Select(member =>
-                _publisher.EmitKafka(TopicName.NOTIFICATIONS, KafkaMessageAction.NOTIFICATIONS_CREATE_NEW_NOTIFICATION, new INotificationMessage
+                _publisher.EmitQueue(QueueTopicName.NOTIFICATIONS, QueueMessageAction.NOTIFICATIONS_CREATE_NEW_NOTIFICATION, new INotificationMessage
                 {
                     Type = NotificationType.SPRINT_STARTED.ToString(),
                     RecipientId = member.Id
@@ -131,11 +131,12 @@ public class SprintUseCase
         for (var date = start; date <= end; date = date.AddDays(1))
         {
             var completedCount = issues.Items.Count(i =>
+                i.CompletedAt != DateTime.MinValue &&
                 i.CompletedAt.ToUniversalTime().Date <= date);
 
             dailyStats.Add(new SprintDailyStats
             {
-                Date = date.ToString(),
+                Date = date.ToString("yyyy-MM-dd"),
                 CompletedIssues = completedCount,
                 RemainingIssues = issues.TotalCount - completedCount
             });

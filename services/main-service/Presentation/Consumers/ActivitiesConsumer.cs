@@ -5,31 +5,27 @@ using MainService.Domain.UseCases;
 
 public class ActivitiesConsumer : IHostedService, IDisposable
 {
-    private readonly IConsumer<Null, string> _consumer;
+    private readonly IQueueRepository _queueRepository;
     private readonly string _topic;
     private readonly ILogger<ActivitiesConsumer> _logger;
     private readonly IServiceProvider _serviceProvider;
-    public ActivitiesConsumer(IConfiguration configuration, ILogger<ActivitiesConsumer> logger, IServiceProvider serviceProvider)
+
+    private IConfiguration _configuration;
+
+    public ActivitiesConsumer(IConfiguration configuration, IQueueRepository queueRepository, ILogger<ActivitiesConsumer> logger, IServiceProvider serviceProvider)
     {
-        var config = new ConsumerConfig
-        {
-            BootstrapServers = configuration.GetValue("KafkaHost", "localhost:9092"),
-            GroupId = "activities-group",
-            AutoOffsetReset = AutoOffsetReset.Earliest,
-            EnableAutoCommit = false
-        };
-        _consumer = new ConsumerBuilder<Null, string>(config).Build();
-        _topic = configuration.GetValue("ActivitiesTopicName", "activities");
+        _configuration = configuration;
+        _queueRepository = queueRepository;
         _logger = logger;
         _serviceProvider = serviceProvider;
+        _topic = configuration.GetValue<string>("ActivitiesTopicName");
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("ActivitiesConsumer is listening...");
-        _consumer.Subscribe(_topic);
-        Task.Run(() => ConsumeLoop(cancellationToken), cancellationToken);
-        return Task.CompletedTask;
+        await _queueRepository.StartAsync(cancellationToken, _topic);
+        _ = Task.Run(() => ConsumeLoop(cancellationToken), cancellationToken);
     }
 
     private async Task ConsumeLoop(CancellationToken cancellationToken)
@@ -38,11 +34,9 @@ public class ActivitiesConsumer : IHostedService, IDisposable
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var result = _consumer.Consume(cancellationToken);
-                if (result?.Message?.Value == null)
+                var queueMessage = await _queueRepository.ReceiveMessage();
+                if (queueMessage == null || string.IsNullOrEmpty(queueMessage.Payload))
                 {
-                    _logger.LogWarning("Received null message.");
-                    _consumer.Commit(result);
                     continue;
                 }
 
@@ -55,27 +49,25 @@ public class ActivitiesConsumer : IHostedService, IDisposable
                         Converters = { new JsonStringEnumConverter(null, allowIntegerValues: false) }
                     };
 
-                    var message = JsonSerializer.Deserialize<KafkaMessage<IActivitiesMessage>>(result.Message.Value, options);
+                    var message = JsonSerializer.Deserialize<QueueMessage<IActivitiesMessage>>(queueMessage.Payload, options);
 
                     if (message == null)
                     {
-                        _logger.LogWarning("Deserialized message is null.");
-                        _consumer.Commit(result);
+                        await _queueRepository.Commit(queueMessage.ReceiptHandle);
                         continue;
                     }
 
-                    _logger.LogInformation($"Received message: {message.Data.NewIssue.Title}");
 
                     using var scope = _serviceProvider.CreateScope();
                     var issueUseCase = scope.ServiceProvider.GetRequiredService<IssueUseCase>();
                     await handleActivitiesMessage(issueUseCase, message);
 
-                    _consumer.Commit(result);
+                    await _queueRepository.Commit(queueMessage.ReceiptHandle);
                 }
                 catch (JsonException jsonEx)
                 {
                     _logger.LogError(jsonEx, "Failed to deserialize Kafka message");
-                    _consumer.Commit(result);
+                    await _queueRepository.Commit(queueMessage.ReceiptHandle);
                 }
             }
         }
@@ -88,20 +80,24 @@ public class ActivitiesConsumer : IHostedService, IDisposable
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        _consumer.Close();
+        // await _queueRepository.Commit();
+        // return Task.CompletedTask;
         return Task.CompletedTask;
     }
 
-    public void Dispose() => _consumer.Dispose();
-
-    private async Task handleActivitiesMessage(IssueUseCase issueUseCase, KafkaMessage<IActivitiesMessage> message)
+    public void Dispose()
     {
-        if (Enum.TryParse<KafkaMessageAction>(message.EventType, out var action))
+        _queueRepository.Dispose();
+    }
+
+    private async Task handleActivitiesMessage(IssueUseCase issueUseCase, QueueMessage<IActivitiesMessage> message)
+    {
+        if (Enum.TryParse<QueueMessageAction>(message.EventType, out var action))
         {
             switch (action)
             {
-                case KafkaMessageAction.ACTIVITIES_ISSUE_CHANGED:
-                case KafkaMessageAction.ACTIVITIES_ISSUE_CREATED:
+                case QueueMessageAction.ACTIVITIES_ISSUE_CHANGED:
+                case QueueMessageAction.ACTIVITIES_ISSUE_CREATED:
                     await issueUseCase.OnIssueChanged(message);
                     break;
                 default:

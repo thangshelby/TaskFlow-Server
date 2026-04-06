@@ -42,6 +42,8 @@ public static class DependencyInjectionExtensions
         services.AddSingleton<IUserRepository, UserRepository>();
         services.AddSingleton<IProjectRepository, ProjectRepository>();
         services.AddSingleton<ISprintRepository, SprintRepository>();
+        // services.AddSingleton<IQueueRepository, KafkaRepository>();
+        services.AddSingleton<IQueueRepository, AWSQueueRepository>();
         // services.AddSingleton<IIssueRepository, IssueCacheDecorator>();
 
         // Register IssueRepository with Cache Decorator
@@ -67,7 +69,7 @@ public static class DependencyInjectionExtensions
         });
         services.AddSingleton<ICommentsRepository, CommentsRepository>();
         services.AddSingleton<IOtpTokenRepository, OtpTokenRepository>();
-        services.AddSingleton<IPublisherService, KafkaPublisher>();
+        services.AddSingleton<IPublisherService, QueuePublisher>();
         services.AddSingleton<IProjectTeamRepository, ProjectTeamRepository>();
         services.AddSingleton<IS3Repository, S3Repository>();
 

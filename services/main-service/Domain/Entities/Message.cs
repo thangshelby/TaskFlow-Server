@@ -1,5 +1,5 @@
 using MainService.Domain.Entities;
-public class KafkaMessage<T>
+public class QueueMessage<T>
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public required string EventType { get; set; }
@@ -9,7 +9,7 @@ public class KafkaMessage<T>
     public Dictionary<string, object>? extra { get; set; }
 }
 // [TOPIC NAME]_[ACTION]
-public enum KafkaMessageAction
+public enum QueueMessageAction
 {
     ACTIVITIES_ISSUE_CHANGED,
     ACTIVITIES_ISSUE_CREATED,
@@ -21,15 +21,17 @@ public enum KafkaMessageAction
 
     MAILS_SEND_VERIFY_OTP_USER,
 
+    MAILS_SEND_ACTIVITIES_CREATED,
+
     METADATA_CREATE_PRESIGNED_URL_IMAGE,
 }
 
-public readonly record struct TopicName(string Value)
+public readonly record struct QueueTopicName(string Value)
 {
-    public static readonly TopicName NOTIFICATIONS = new("notifications");
-    public static readonly TopicName ACTIVITIES = new("activities");
-    public static readonly TopicName MAILS = new("mails");
-    public static readonly TopicName METADATA = new("metadata");
+    public static readonly QueueTopicName NOTIFICATIONS = new("notifications");
+    public static readonly QueueTopicName ACTIVITIES = new("activities");
+    public static readonly QueueTopicName MAILS = new("mails");
+    public static readonly QueueTopicName METADATA = new("metadata");
 
     public override string ToString() => Value;
 }

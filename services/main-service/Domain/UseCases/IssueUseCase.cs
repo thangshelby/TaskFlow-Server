@@ -94,7 +94,7 @@ public class IssueUseCase
             return newIssue;
         });
 
-        await _publisher.EmitKafka(TopicName.ACTIVITIES, KafkaMessageAction.ACTIVITIES_ISSUE_CREATED, new IActivitiesMessage
+        await _publisher.EmitQueue(QueueTopicName.ACTIVITIES, QueueMessageAction.ACTIVITIES_ISSUE_CREATED, new IActivitiesMessage
         {
             NewIssue = result,
             OldIssue = null,
@@ -166,24 +166,36 @@ public class IssueUseCase
         });
 
         var notifyTask = Task.CompletedTask;
+        var emailTask  = Task.CompletedTask;
         // Check asignee change and actor_id different with recipient_id
         if (oldIssue.AssigneeId != updatedIssue.AssigneeId && !string.IsNullOrEmpty(updatedIssue.AssigneeId) && updateData.CreatorId != updatedIssue.AssigneeId)
         {
-            notifyTask = _publisher.EmitKafka(TopicName.NOTIFICATIONS, KafkaMessageAction.NOTIFICATIONS_CREATE_NEW_NOTIFICATION, new INotificationMessage
+            notifyTask = _publisher.EmitQueue(QueueTopicName.NOTIFICATIONS, QueueMessageAction.NOTIFICATIONS_CREATE_NEW_NOTIFICATION, new INotificationMessage
             {
                 Type = NotificationType.ASSIGNMENT.ToString(),
                 ActorId = updateData.CreatorId,
                 IssueId = updatedIssue.Id,
                 RecipientId = updatedIssue.AssigneeId
             });
+
+            emailTask = _publisher.EmitQueue(QueueTopicName.MAILS, QueueMessageAction.MAILS_SEND_ACTIVITIES_CREATED, new INotificationMessage
+            {
+                Type = NotificationType.ASSIGNMENT.ToString(),
+                ActorId = updateData.CreatorId,
+                IssueId = updatedIssue.Id,
+                RecipientId = updatedIssue.AssigneeId
+            });
+
         }
 
-        var activityTask = _publisher.EmitKafka(TopicName.ACTIVITIES, KafkaMessageAction.ACTIVITIES_ISSUE_CHANGED, new IActivitiesMessage
+        var activityTask = _publisher.EmitQueue(QueueTopicName.ACTIVITIES, QueueMessageAction.ACTIVITIES_ISSUE_CHANGED, new IActivitiesMessage
         {
             OldIssue = oldIssue,
             NewIssue = updatedIssue,
             UserId = updateData.CreatorId
         });
+
+
 
         await Task.WhenAll(notifyTask, activityTask);
         return updatedIssue;
@@ -211,7 +223,7 @@ public class IssueUseCase
         await _issueRepository.DeleteIssue(id);
     }
 
-    public async Task OnIssueChanged(KafkaMessage<IActivitiesMessage> message)
+    public async Task OnIssueChanged(QueueMessage<IActivitiesMessage> message)
     {
         var data = message.Data;
 
@@ -223,7 +235,7 @@ public class IssueUseCase
         var oldIssue = data.OldIssue;
         var newIssue = data.NewIssue;
         ActivityDomain activity;
-        if (message.EventType == KafkaMessageAction.ACTIVITIES_ISSUE_CREATED.ToString() || oldIssue == null)
+        if (message.EventType == QueueMessageAction.ACTIVITIES_ISSUE_CREATED.ToString() || oldIssue == null)
         {
             activity = new ActivityDomain
             {

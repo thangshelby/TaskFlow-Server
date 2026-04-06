@@ -56,7 +56,7 @@ public class ProjectMemberUseCase
         if (isPending)
         {
             // Send invitation notification if pending approval
-            await _publisher.EmitKafka(TopicName.NOTIFICATIONS, KafkaMessageAction.NOTIFICATIONS_CREATE_NEW_NOTIFICATION, new INotificationMessage
+            await _publisher.EmitQueue(QueueTopicName.NOTIFICATIONS, QueueMessageAction.NOTIFICATIONS_CREATE_NEW_NOTIFICATION, new INotificationMessage
             {
                 Type = NotificationType.PROJECT_INVITATION.ToString(),
                 ActorId = requesterId,
@@ -66,7 +66,7 @@ public class ProjectMemberUseCase
         else
         {
             // Send team member added notification if directly approved (added by owner)
-            await _publisher.EmitKafka(TopicName.NOTIFICATIONS, KafkaMessageAction.NOTIFICATIONS_CREATE_NEW_NOTIFICATION, new INotificationMessage
+            await _publisher.EmitQueue(QueueTopicName.NOTIFICATIONS, QueueMessageAction.NOTIFICATIONS_CREATE_NEW_NOTIFICATION, new INotificationMessage
             {
                 Type = NotificationType.PROJECT_TEAM_ADDED.ToString(),
                 ActorId = requesterId,
@@ -166,7 +166,7 @@ public class ProjectMemberUseCase
 
         var approvedMember = await _projectMemberRepository.ApproveMemberAsync(projectId, userId);
 
-        await _publisher.EmitKafka(TopicName.NOTIFICATIONS, KafkaMessageAction.NOTIFICATIONS_CREATE_NEW_NOTIFICATION, new INotificationMessage
+        await _publisher.EmitQueue(QueueTopicName.NOTIFICATIONS, QueueMessageAction.NOTIFICATIONS_CREATE_NEW_NOTIFICATION, new INotificationMessage
         {
             Type = NotificationType.PROJECT_TEAM_ADDED.ToString(),
             ActorId = userId,

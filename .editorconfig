@@ -5,3 +5,14 @@ dotnet_diagnostic.CA1711.severity = none
 
 # CS8601: Possible null reference assignment.
 dotnet_diagnostic.CS8601.severity = suggestion
+
+
+root = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+
+csharp_new_line_before_open_brace = all
+csharp_indent_case_contents = true
+dotnet_sort_system_directives_first = true
