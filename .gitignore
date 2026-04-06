@@ -1,6 +1,9 @@
 private_key.pem
 public_key.pem
 taskflow.pem
+
+.cursor/**
+
 # General OS Files
 .DS_Store
 Thumbs.db
@@ -82,12 +85,12 @@ services/main-service/appsettings.json
 **/build/
 **/.cache/
 
-# Environment Variables
-# Keep .env files specific to each service
-# Ignore global or sensitive env files
-# **/.env
-services/main-service/.env
-services/nest-service/.env
+# Environment variables (secrets — never commit)
+.env
+**/.env
+.env.*
+!.env.example
+!**/.env.example
 
 # TypeScript
 **/*.tsbuildinfo
