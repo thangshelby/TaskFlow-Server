@@ -1,0 +1,10 @@
+{
+  "description": "Manifest nội bộ cho TaskFlow: đường dẫn tới rules, commands, skills, agents. Không thay thế Cursor user settings toàn cục.",
+  "package_manager": "pnpm",
+  "paths": {
+    "rules": ".cursor/rules",
+    "commands": ".cursor/commands",
+    "skills": ".cursor/skills",
+    "agents": ".cursor/agents"
+  }
+}

@@ -48,9 +48,9 @@ public class OtpTokenUseCase
 
         var savedToken = await _otpTokenRepository.CreateAsync(otpToken);
 
-        await _publisher.EmitKafka(
-            TopicName.MAILS,
-            KafkaMessageAction.MAILS_SEND_VERIFY_OTP_USER,
+        await _publisher.EmitQueue(
+            QueueTopicName.MAILS,
+            QueueMessageAction.MAILS_SEND_VERIFY_OTP_USER,
             new IMailMessage
             {
                 UserId = user.Id!,
@@ -89,9 +89,9 @@ public class OtpTokenUseCase
             ResendCount = token.ResendCount + 1,
         });
 
-        await _publisher.EmitKafka(
-            TopicName.MAILS,
-            KafkaMessageAction.MAILS_SEND_VERIFY_OTP_USER,
+        await _publisher.EmitQueue(
+            QueueTopicName.MAILS,
+            QueueMessageAction.MAILS_SEND_VERIFY_OTP_USER,
             new IMailMessage
             {
                 UserId = userId,

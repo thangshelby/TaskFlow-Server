@@ -24,15 +24,16 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 __exportStar(__webpack_require__(2), exports);
 __exportStar(__webpack_require__(5), exports);
 __exportStar(__webpack_require__(6), exports);
-__exportStar(__webpack_require__(17), exports);
-__exportStar(__webpack_require__(19), exports);
-__exportStar(__webpack_require__(21), exports);
+__exportStar(__webpack_require__(13), exports);
+__exportStar(__webpack_require__(22), exports);
 __exportStar(__webpack_require__(24), exports);
-__exportStar(__webpack_require__(10), exports);
+__exportStar(__webpack_require__(26), exports);
+__exportStar(__webpack_require__(29), exports);
 __exportStar(__webpack_require__(15), exports);
-__exportStar(__webpack_require__(16), exports);
-__exportStar(__webpack_require__(14), exports);
-__exportStar(__webpack_require__(25), exports);
+__exportStar(__webpack_require__(20), exports);
+__exportStar(__webpack_require__(21), exports);
+__exportStar(__webpack_require__(19), exports);
+__exportStar(__webpack_require__(30), exports);
 
 
 /***/ }),
@@ -52,13 +53,17 @@ const config_1 = __webpack_require__(3);
 const common_1 = __webpack_require__(4);
 const log_service_1 = __webpack_require__(5);
 const kafka_service_1 = __webpack_require__(6);
-const mongoose_1 = __webpack_require__(9);
-const user_client_service_1 = __webpack_require__(10);
-const microservices_1 = __webpack_require__(11);
-const path_1 = __webpack_require__(13);
-const project_client_service_1 = __webpack_require__(14);
-const sprint_client_service_1 = __webpack_require__(15);
-const issue_client_service_1 = __webpack_require__(16);
+const aws_service_1 = __webpack_require__(9);
+const aws_queue_adapter_1 = __webpack_require__(11);
+const kafka_queue_adapter_1 = __webpack_require__(12);
+const queue_interface_1 = __webpack_require__(13);
+const mongoose_1 = __webpack_require__(14);
+const user_client_service_1 = __webpack_require__(15);
+const microservices_1 = __webpack_require__(16);
+const path_1 = __webpack_require__(18);
+const project_client_service_1 = __webpack_require__(19);
+const sprint_client_service_1 = __webpack_require__(20);
+const issue_client_service_1 = __webpack_require__(21);
 let CoreModule = class CoreModule {
 };
 exports.CoreModule = CoreModule;
@@ -144,8 +149,37 @@ exports.CoreModule = CoreModule = __decorate([
                 }),
             }),
         ],
-        providers: [log_service_1.LogService, kafka_service_1.KafkaService, user_client_service_1.UserClientService, project_client_service_1.ProjectClientService, sprint_client_service_1.SprintClientService, issue_client_service_1.IssueClientService],
-        exports: [log_service_1.LogService, kafka_service_1.KafkaService, user_client_service_1.UserClientService, project_client_service_1.ProjectClientService, sprint_client_service_1.SprintClientService, issue_client_service_1.IssueClientService],
+        providers: [
+            log_service_1.LogService,
+            kafka_service_1.KafkaService,
+            aws_service_1.AwsService,
+            kafka_queue_adapter_1.KafkaQueueAdapter,
+            aws_queue_adapter_1.AwsQueueAdapter,
+            {
+                provide: queue_interface_1.QUEUE_SERVICE_TOKEN,
+                useFactory: (configService, kafkaQueueAdapter, awsQueueAdapter) => {
+                    const provider = (configService.get('QUEUE_PROVIDER') ?? 'aws')
+                        .toLowerCase()
+                        .trim();
+                    return provider === 'kafka' ? kafkaQueueAdapter : awsQueueAdapter;
+                },
+                inject: [config_1.ConfigService, kafka_queue_adapter_1.KafkaQueueAdapter, aws_queue_adapter_1.AwsQueueAdapter],
+            },
+            user_client_service_1.UserClientService,
+            project_client_service_1.ProjectClientService,
+            sprint_client_service_1.SprintClientService,
+            issue_client_service_1.IssueClientService,
+        ],
+        exports: [
+            log_service_1.LogService,
+            kafka_service_1.KafkaService,
+            aws_service_1.AwsService,
+            queue_interface_1.QUEUE_SERVICE_TOKEN,
+            user_client_service_1.UserClientService,
+            project_client_service_1.ProjectClientService,
+            sprint_client_service_1.SprintClientService,
+            issue_client_service_1.IssueClientService,
+        ],
     })
 ], CoreModule);
 
@@ -228,11 +262,12 @@ let KafkaService = class KafkaService {
     kafka;
     producer;
     consumers = [];
+    producerConnected = false;
     constructor(logService, configService) {
         this.logService = logService;
         this.configService = configService;
         const clientId = this.configService.get('KAFKA_CLIENT_ID', 'taskflow-client');
-        const brokers = this.configService.get('KAFKA_BROKERS', 'kafka:9094').split(',');
+        const brokers = this.configService.get('KAFKA_BROKERS', 'localhost:29092').split(',');
         this.kafka = new kafkajs_1.Kafka({
             clientId,
             brokers,
@@ -241,18 +276,25 @@ let KafkaService = class KafkaService {
             createPartitioner: kafkajs_1.Partitioners.LegacyPartitioner,
         });
     }
-    async onModuleInit() {
+    async ensureProducerConnected() {
+        if (this.producerConnected) {
+            return;
+        }
         await this.producer.connect();
+        this.producerConnected = true;
         this.logService.log('Kafka Producer connected');
     }
     async onModuleDestroy() {
         for (const consumer of this.consumers) {
             await consumer.disconnect();
         }
-        await this.producer.disconnect();
+        if (this.producerConnected) {
+            await this.producer.disconnect();
+        }
         this.logService.log('Kafka disconnected');
     }
     async publish(topic, message, config = {}) {
+        await this.ensureProducerConnected();
         try {
             const kafkaMessage = {
                 value: JSON.stringify(message),
@@ -319,12 +361,239 @@ module.exports = require("uuid");
 
 /***/ }),
 /* 9 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AwsService = void 0;
+const common_1 = __webpack_require__(4);
+const client_sqs_1 = __webpack_require__(10);
+const config_1 = __webpack_require__(3);
+const log_service_1 = __webpack_require__(5);
+let AwsService = class AwsService {
+    logService;
+    configService;
+    sqsClient;
+    pollingFlags = new Map();
+    runningPollers = new Map();
+    credentialErrorLogged = new Set();
+    constructor(logService, configService) {
+        this.logService = logService;
+        this.configService = configService;
+        const region = this.configService.get('AWS_REGION', 'ap-southeast-1');
+        const accessKeyId = this.configService.get('AWS_ACCESS_KEY_ID');
+        const secretAccessKey = this.configService.get('AWS_SECRET_ACCESS_KEY');
+        this.sqsClient =
+            accessKeyId && secretAccessKey
+                ? new client_sqs_1.SQSClient({ region, credentials: { accessKeyId, secretAccessKey } })
+                : new client_sqs_1.SQSClient({ region });
+    }
+    async onModuleDestroy() {
+        for (const queueUrl of this.pollingFlags.keys()) {
+            this.pollingFlags.set(queueUrl, false);
+        }
+        await Promise.allSettled(this.runningPollers.values());
+        this.runningPollers.clear();
+        this.pollingFlags.clear();
+        this.logService.log('SQS consumers disconnected');
+    }
+    async subscribe(queueUrl, callback) {
+        if (!queueUrl) {
+            throw new Error('queueUrl is required');
+        }
+        if (this.pollingFlags.get(queueUrl)) {
+            this.logService.log(`Already subscribed to queue: ${queueUrl}`);
+            return;
+        }
+        this.pollingFlags.set(queueUrl, true);
+        const poller = this.runPollingLoop(queueUrl, callback);
+        this.runningPollers.set(queueUrl, poller);
+        this.logService.log(`Subscribed to SQS queue: ${queueUrl}`);
+    }
+    on(queueUrl, callback) {
+        void this.subscribe(queueUrl, callback);
+    }
+    async runPollingLoop(queueUrl, callback) {
+        while (this.pollingFlags.get(queueUrl)) {
+            try {
+                const response = await this.sqsClient.send(new client_sqs_1.ReceiveMessageCommand({
+                    QueueUrl: queueUrl,
+                    MaxNumberOfMessages: 1,
+                    WaitTimeSeconds: 20,
+                    VisibilityTimeout: 30,
+                }));
+                if (!response.Messages || response.Messages.length === 0) {
+                    continue;
+                }
+                for (const message of response.Messages) {
+                    const messageBody = message.Body ? JSON.parse(message.Body) : null;
+                    try {
+                        await callback(messageBody.Message);
+                        if (message.ReceiptHandle) {
+                            await this.sqsClient.send(new client_sqs_1.DeleteMessageCommand({
+                                QueueUrl: queueUrl,
+                                ReceiptHandle: message.ReceiptHandle,
+                            }));
+                        }
+                    }
+                    catch (error) {
+                        this.logService.error(`Error processing message from queue ${queueUrl}`, error?.stack);
+                    }
+                }
+            }
+            catch (error) {
+                if (this.isCredentialExpiredError(error)) {
+                    if (!this.credentialErrorLogged.has(queueUrl)) {
+                        this.credentialErrorLogged.add(queueUrl);
+                        this.logService.error(`AWS credentials expired while polling ${queueUrl}. Re-authenticate (for example: aws sso login --profile <profile>) and polling will resume automatically.`, error?.stack);
+                    }
+                    await this.sleep(15000);
+                    continue;
+                }
+                this.credentialErrorLogged.delete(queueUrl);
+                this.logService.error(`Error polling queue ${queueUrl}`, error?.stack);
+                await this.sleep(1000);
+            }
+        }
+        this.credentialErrorLogged.delete(queueUrl);
+        this.runningPollers.delete(queueUrl);
+    }
+    isCredentialExpiredError(error) {
+        const name = error?.name?.toLowerCase() ?? '';
+        const message = error?.message?.toLowerCase() ?? '';
+        return (name.includes('credentialsprovidererror') ||
+            message.includes('session has expired') ||
+            message.includes('security token included in the request is expired') ||
+            message.includes('invalidclienttokenid') ||
+            message.includes('expiredtoken'));
+    }
+    sleep(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+};
+exports.AwsService = AwsService;
+exports.AwsService = AwsService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof log_service_1.LogService !== "undefined" && log_service_1.LogService) === "function" ? _a : Object, typeof (_b = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _b : Object])
+], AwsService);
+
+
+/***/ }),
+/* 10 */
+/***/ ((module) => {
+
+module.exports = require("@aws-sdk/client-sqs");
+
+/***/ }),
+/* 11 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AwsQueueAdapter = void 0;
+const common_1 = __webpack_require__(4);
+const aws_service_1 = __webpack_require__(9);
+let AwsQueueAdapter = class AwsQueueAdapter {
+    awsService;
+    constructor(awsService) {
+        this.awsService = awsService;
+    }
+    async subscribe(queueName, callback) {
+        await this.awsService.subscribe(queueName, async (messageBodyMessage) => {
+            const normalized = typeof messageBodyMessage === 'string'
+                ? messageBodyMessage
+                : messageBodyMessage === null || messageBodyMessage === undefined
+                    ? ''
+                    : JSON.stringify(messageBodyMessage);
+            await callback(normalized);
+        });
+    }
+};
+exports.AwsQueueAdapter = AwsQueueAdapter;
+exports.AwsQueueAdapter = AwsQueueAdapter = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof aws_service_1.AwsService !== "undefined" && aws_service_1.AwsService) === "function" ? _a : Object])
+], AwsQueueAdapter);
+
+
+/***/ }),
+/* 12 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.KafkaQueueAdapter = void 0;
+const common_1 = __webpack_require__(4);
+const kafka_service_1 = __webpack_require__(6);
+let KafkaQueueAdapter = class KafkaQueueAdapter {
+    kafkaService;
+    constructor(kafkaService) {
+        this.kafkaService = kafkaService;
+    }
+    async subscribe(queueName, callback) {
+        await this.kafkaService.subscribe(queueName, async (payload) => {
+            const value = payload.message.value?.toString();
+            if (!value)
+                return;
+            await callback(value);
+        });
+    }
+};
+exports.KafkaQueueAdapter = KafkaQueueAdapter;
+exports.KafkaQueueAdapter = KafkaQueueAdapter = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof kafka_service_1.KafkaService !== "undefined" && kafka_service_1.KafkaService) === "function" ? _a : Object])
+], KafkaQueueAdapter);
+
+
+/***/ }),
+/* 13 */
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.QUEUE_SERVICE_TOKEN = void 0;
+exports.QUEUE_SERVICE_TOKEN = 'QUEUE_SERVICE_TOKEN';
+
+
+/***/ }),
+/* 14 */
 /***/ ((module) => {
 
 module.exports = require("@nestjs/mongoose");
 
 /***/ }),
-/* 10 */
+/* 15 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -344,8 +613,8 @@ var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.UserClientService = void 0;
 const common_1 = __webpack_require__(4);
-const microservices_1 = __webpack_require__(11);
-const rxjs_1 = __webpack_require__(12);
+const microservices_1 = __webpack_require__(16);
+const rxjs_1 = __webpack_require__(17);
 let UserClientService = class UserClientService {
     client;
     userGrpcService;
@@ -383,25 +652,25 @@ exports.UserClientService = UserClientService = __decorate([
 
 
 /***/ }),
-/* 11 */
+/* 16 */
 /***/ ((module) => {
 
 module.exports = require("@nestjs/microservices");
 
 /***/ }),
-/* 12 */
+/* 17 */
 /***/ ((module) => {
 
 module.exports = require("rxjs");
 
 /***/ }),
-/* 13 */
+/* 18 */
 /***/ ((module) => {
 
 module.exports = require("path");
 
 /***/ }),
-/* 14 */
+/* 19 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -421,8 +690,8 @@ var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ProjectClientService = void 0;
 const common_1 = __webpack_require__(4);
-const microservices_1 = __webpack_require__(11);
-const rxjs_1 = __webpack_require__(12);
+const microservices_1 = __webpack_require__(16);
+const rxjs_1 = __webpack_require__(17);
 let ProjectClientService = class ProjectClientService {
     client;
     projectGrpcService;
@@ -446,7 +715,7 @@ exports.ProjectClientService = ProjectClientService = __decorate([
 
 
 /***/ }),
-/* 15 */
+/* 20 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -466,8 +735,8 @@ var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SprintClientService = void 0;
 const common_1 = __webpack_require__(4);
-const microservices_1 = __webpack_require__(11);
-const rxjs_1 = __webpack_require__(12);
+const microservices_1 = __webpack_require__(16);
+const rxjs_1 = __webpack_require__(17);
 let SprintClientService = class SprintClientService {
     client;
     sprintGrpcService;
@@ -491,7 +760,7 @@ exports.SprintClientService = SprintClientService = __decorate([
 
 
 /***/ }),
-/* 16 */
+/* 21 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -511,8 +780,8 @@ var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.IssueClientService = void 0;
 const common_1 = __webpack_require__(4);
-const microservices_1 = __webpack_require__(11);
-const rxjs_1 = __webpack_require__(12);
+const microservices_1 = __webpack_require__(16);
+const rxjs_1 = __webpack_require__(17);
 let IssueClientService = class IssueClientService {
     client;
     issueGrpcService;
@@ -533,7 +802,8 @@ let IssueClientService = class IssueClientService {
             projectId: '',
             types: [],
             priorities: [],
-            teamId: [],
+            teamIds: [],
+            parentIds: [],
         }));
         return res.data;
     }
@@ -547,7 +817,7 @@ exports.IssueClientService = IssueClientService = __decorate([
 
 
 /***/ }),
-/* 17 */
+/* 22 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -565,7 +835,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CassandraService = void 0;
 const common_1 = __webpack_require__(4);
 const config_1 = __webpack_require__(3);
-const cassandra_driver_1 = __webpack_require__(18);
+const cassandra_driver_1 = __webpack_require__(23);
 const log_service_1 = __webpack_require__(5);
 let CassandraService = class CassandraService {
     configService;
@@ -628,13 +898,13 @@ exports.CassandraService = CassandraService = __decorate([
 
 
 /***/ }),
-/* 18 */
+/* 23 */
 /***/ ((module) => {
 
 module.exports = require("cassandra-driver");
 
 /***/ }),
-/* 19 */
+/* 24 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -648,9 +918,9 @@ var GlobalHandleErrorInterceptor_1;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GlobalHandleErrorInterceptor = void 0;
 const common_1 = __webpack_require__(4);
-const rxjs_1 = __webpack_require__(12);
-const microservices_1 = __webpack_require__(11);
-const grpc_js_1 = __webpack_require__(20);
+const rxjs_1 = __webpack_require__(17);
+const microservices_1 = __webpack_require__(16);
+const grpc_js_1 = __webpack_require__(25);
 let GlobalHandleErrorInterceptor = GlobalHandleErrorInterceptor_1 = class GlobalHandleErrorInterceptor {
     logger = new common_1.Logger(GlobalHandleErrorInterceptor_1.name);
     intercept(context, next) {
@@ -671,13 +941,13 @@ exports.GlobalHandleErrorInterceptor = GlobalHandleErrorInterceptor = GlobalHand
 
 
 /***/ }),
-/* 20 */
+/* 25 */
 /***/ ((module) => {
 
 module.exports = require("@grpc/grpc-js");
 
 /***/ }),
-/* 21 */
+/* 26 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -690,9 +960,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GrpcAuthInterceptor = void 0;
 const common_1 = __webpack_require__(4);
-const microservices_1 = __webpack_require__(11);
-const constants_1 = __webpack_require__(22);
-const jwt_decode_1 = __webpack_require__(23);
+const microservices_1 = __webpack_require__(16);
+const constants_1 = __webpack_require__(27);
+const jwt_decode_1 = __webpack_require__(28);
 let GrpcAuthInterceptor = class GrpcAuthInterceptor {
     intercept(context, next) {
         const metadata = context.getArgByIndex(1);
@@ -734,19 +1004,19 @@ exports.GrpcAuthInterceptor = GrpcAuthInterceptor = __decorate([
 
 
 /***/ }),
-/* 22 */
+/* 27 */
 /***/ ((module) => {
 
 module.exports = require("@grpc/grpc-js/build/src/constants");
 
 /***/ }),
-/* 23 */
+/* 28 */
 /***/ ((module) => {
 
 module.exports = require("jwt-decode");
 
 /***/ }),
-/* 24 */
+/* 29 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -759,7 +1029,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HttpAuthInterceptor = void 0;
 const common_1 = __webpack_require__(4);
-const jwt_decode_1 = __webpack_require__(23);
+const jwt_decode_1 = __webpack_require__(28);
 let HttpAuthInterceptor = class HttpAuthInterceptor {
     intercept(context, next) {
         const request = context.switchToHttp().getRequest();
@@ -800,7 +1070,7 @@ exports.HttpAuthInterceptor = HttpAuthInterceptor = __decorate([
 
 
 /***/ }),
-/* 25 */
+/* 30 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -819,13 +1089,13 @@ exports.UserMetadata = (0, common_1.createParamDecorator)((_, ctx) => {
 
 
 /***/ }),
-/* 26 */
+/* 31 */
 /***/ ((module) => {
 
 module.exports = require("@nestjs/core");
 
 /***/ }),
-/* 27 */
+/* 32 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -838,8 +1108,8 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.TransformResponseInterceptor = void 0;
 const common_1 = __webpack_require__(4);
-const convert_utils_1 = __webpack_require__(28);
-const operators_1 = __webpack_require__(29);
+const convert_utils_1 = __webpack_require__(33);
+const operators_1 = __webpack_require__(34);
 let TransformResponseInterceptor = class TransformResponseInterceptor {
     intercept(context, next) {
         return next.handle().pipe((0, operators_1.map)((data) => convert_utils_1.default.convertToSnakeCase(data)));
@@ -852,7 +1122,7 @@ exports.TransformResponseInterceptor = TransformResponseInterceptor = __decorate
 
 
 /***/ }),
-/* 28 */
+/* 33 */
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -881,13 +1151,13 @@ exports["default"] = convert;
 
 
 /***/ }),
-/* 29 */
+/* 34 */
 /***/ ((module) => {
 
 module.exports = require("rxjs/operators");
 
 /***/ }),
-/* 30 */
+/* 35 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -902,18 +1172,17 @@ exports.NotificationModule = void 0;
 const common_1 = __webpack_require__(4);
 const core_1 = __webpack_require__(1);
 const config_1 = __webpack_require__(3);
-const notification_service_1 = __webpack_require__(31);
-const notification_subcriber_service_1 = __webpack_require__(37);
-const mail_subcriber_service_1 = __webpack_require__(39);
-const notification_repo_1 = __webpack_require__(42);
-const mongoose_1 = __webpack_require__(9);
-const notification_repo_interface_1 = __webpack_require__(33);
-const notification_schema_1 = __webpack_require__(44);
-const notification_controller_1 = __webpack_require__(46);
-const notification_websocket_1 = __webpack_require__(34);
-const mail_service_1 = __webpack_require__(40);
-const mail_sender_interface_1 = __webpack_require__(41);
-const mail_sender_repo_1 = __webpack_require__(47);
+const notification_service_1 = __webpack_require__(36);
+const notification_subcriber_service_1 = __webpack_require__(42);
+const notification_repo_1 = __webpack_require__(44);
+const mongoose_1 = __webpack_require__(14);
+const notification_repo_interface_1 = __webpack_require__(38);
+const notification_schema_1 = __webpack_require__(46);
+const notification_controller_1 = __webpack_require__(48);
+const notification_websocket_1 = __webpack_require__(39);
+const mail_service_1 = __webpack_require__(49);
+const mail_sender_interface_1 = __webpack_require__(50);
+const mail_sender_repo_1 = __webpack_require__(51);
 let NotificationModule = class NotificationModule {
 };
 exports.NotificationModule = NotificationModule;
@@ -932,7 +1201,6 @@ exports.NotificationModule = NotificationModule = __decorate([
             notification_websocket_1.NotificationGateway,
             mail_service_1.MailService,
             notification_service_1.NotificationService,
-            mail_subcriber_service_1.MailSubscriberService,
             notification_subcriber_service_1.NotificationSubscriberService,
             notification_websocket_1.NotificationEmitterService,
             {
@@ -949,7 +1217,7 @@ exports.NotificationModule = NotificationModule = __decorate([
 
 
 /***/ }),
-/* 31 */
+/* 36 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -966,12 +1234,12 @@ var _a, _b, _c, _d, _e, _f;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NotificationService = void 0;
 const common_1 = __webpack_require__(4);
-const notification_1 = __webpack_require__(32);
-const notification_repo_interface_1 = __webpack_require__(33);
-const microservices_1 = __webpack_require__(11);
-const grpc_js_1 = __webpack_require__(20);
+const notification_1 = __webpack_require__(37);
+const notification_repo_interface_1 = __webpack_require__(38);
+const microservices_1 = __webpack_require__(16);
+const grpc_js_1 = __webpack_require__(25);
 const core_1 = __webpack_require__(1);
-const notification_websocket_1 = __webpack_require__(34);
+const notification_websocket_1 = __webpack_require__(39);
 let NotificationService = class NotificationService {
     notificationRepo;
     projectClientService;
@@ -1127,7 +1395,7 @@ exports.NotificationService = NotificationService = __decorate([
 
 
 /***/ }),
-/* 32 */
+/* 37 */
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -1159,7 +1427,7 @@ var ReferenceType;
 
 
 /***/ }),
-/* 33 */
+/* 38 */
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -1171,7 +1439,7 @@ exports.INotificationRepo = INotificationRepo;
 
 
 /***/ }),
-/* 34 */
+/* 39 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1191,10 +1459,10 @@ var _a, _b;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NotificationGateway = exports.NotificationEmitterService = void 0;
 const common_1 = __webpack_require__(4);
-const websockets_1 = __webpack_require__(35);
-const notification_service_1 = __webpack_require__(31);
-const socket_io_1 = __webpack_require__(36);
-const convert_utils_1 = __webpack_require__(28);
+const websockets_1 = __webpack_require__(40);
+const notification_service_1 = __webpack_require__(36);
+const socket_io_1 = __webpack_require__(41);
+const convert_utils_1 = __webpack_require__(33);
 let NotificationEmitterService = class NotificationEmitterService {
     notificationService;
     server;
@@ -1271,19 +1539,19 @@ exports.NotificationGateway = NotificationGateway = __decorate([
 
 
 /***/ }),
-/* 35 */
+/* 40 */
 /***/ ((module) => {
 
 module.exports = require("@nestjs/websockets");
 
 /***/ }),
-/* 36 */
+/* 41 */
 /***/ ((module) => {
 
 module.exports = require("socket.io");
 
 /***/ }),
-/* 37 */
+/* 42 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1296,43 +1564,40 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var _a, _b;
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.NotificationSubscriberService = exports.NOTIFICATION_KAFKA_TOPIC = void 0;
+exports.NotificationSubscriberService = void 0;
 const core_1 = __webpack_require__(1);
 const common_1 = __webpack_require__(4);
-const notification_service_1 = __webpack_require__(31);
-const validate_utils_1 = __webpack_require__(38);
-exports.NOTIFICATION_KAFKA_TOPIC = 'notifications';
+const notification_service_1 = __webpack_require__(36);
+const validate_utils_1 = __webpack_require__(43);
+const config_1 = __webpack_require__(3);
 let NotificationSubscriberService = class NotificationSubscriberService {
-    kafkaService;
+    queueService;
     notificationService;
-    constructor(kafkaService, notificationService) {
-        this.kafkaService = kafkaService;
+    configService;
+    constructor(queueService, notificationService, configService) {
+        this.queueService = queueService;
         this.notificationService = notificationService;
+        this.configService = configService;
     }
     async onModuleInit() {
-        this.kafkaService.on(exports.NOTIFICATION_KAFKA_TOPIC, this.handleNotificationReceiver.bind(this));
+        const queueName = this.configService.get('NOTIFICATION_QUEUE_NAME', 'https://sqs.ap-southeast-1.amazonaws.com/017263836577/notifications.fifo') || '';
+        await this.queueService.subscribe(queueName, this.handleNotificationReceiver.bind(this));
     }
-    async handleNotificationReceiver(payload) {
-        const { message } = payload;
-        const value = message.value?.toString();
+    async handleNotificationReceiver(queueMessage) {
         try {
-            const notificationMessage = value ? JSON.parse(value) : null;
-            switch (notificationMessage.eventType) {
-                case core_1.KafkaActionType.NOTIFICATIONS_CREATE_NEW_NOTIFICATION:
-                    await this.handleCreateNotification(notificationMessage);
-                    break;
-                default:
-                    console.error('❌ [NOTIFICATION_TOPIC] Unknown event type:', notificationMessage.eventType);
-                    break;
-            }
+            await this.handleCreateNotification(queueMessage);
         }
         catch (err) {
             console.error('❌ [NOTIFICATION_TOPIC] Failed to process notification message:', err);
         }
     }
-    async handleCreateNotification(kafkaMessage) {
+    async handleCreateNotification(queueMessage) {
+        const kafkaMessage = JSON.parse(queueMessage);
         const { isValid, message, data } = validate_utils_1.default.validateRequiredFields(kafkaMessage);
         if (!isValid || !data) {
             console.error('❌ Missing field:', message);
@@ -1354,12 +1619,13 @@ let NotificationSubscriberService = class NotificationSubscriberService {
 exports.NotificationSubscriberService = NotificationSubscriberService;
 exports.NotificationSubscriberService = NotificationSubscriberService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [typeof (_a = typeof core_1.KafkaService !== "undefined" && core_1.KafkaService) === "function" ? _a : Object, typeof (_b = typeof notification_service_1.NotificationService !== "undefined" && notification_service_1.NotificationService) === "function" ? _b : Object])
+    __param(0, (0, common_1.Inject)(core_1.QUEUE_SERVICE_TOKEN)),
+    __metadata("design:paramtypes", [typeof (_a = typeof core_1.IQueueService !== "undefined" && core_1.IQueueService) === "function" ? _a : Object, typeof (_b = typeof notification_service_1.NotificationService !== "undefined" && notification_service_1.NotificationService) === "function" ? _b : Object, typeof (_c = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _c : Object])
 ], NotificationSubscriberService);
 
 
 /***/ }),
-/* 38 */
+/* 43 */
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -1395,146 +1661,7 @@ exports["default"] = validator;
 
 
 /***/ }),
-/* 39 */
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var _a, _b;
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.MailSubscriberService = exports.MAIL_KAFKA_TOPIC = void 0;
-const core_1 = __webpack_require__(1);
-const common_1 = __webpack_require__(4);
-const mail_service_1 = __webpack_require__(40);
-const validate_utils_1 = __webpack_require__(38);
-exports.MAIL_KAFKA_TOPIC = 'mails';
-let MailSubscriberService = class MailSubscriberService {
-    kafkaService;
-    mailService;
-    constructor(kafkaService, mailService) {
-        this.kafkaService = kafkaService;
-        this.mailService = mailService;
-    }
-    async onModuleInit() {
-        this.kafkaService.on(exports.MAIL_KAFKA_TOPIC, this.handleMailMessageReceiver.bind(this));
-    }
-    async handleMailMessageReceiver(payload) {
-        const { message } = payload;
-        const value = message.value?.toString();
-        try {
-            const message = value ? JSON.parse(value) : null;
-            switch (message.eventType) {
-                case core_1.KafkaActionType.MAILS_SEND_VERIFY_OTP_USER:
-                    await this.handleSendMailVerifyOtp(message);
-                    break;
-                default:
-                    console.error('❌ [MAIL_TOPIC] Unknown event type:', message.eventType);
-                    break;
-            }
-        }
-        catch (err) {
-            console.error('❌ [MAIL_TOPIC] Failed to process notification message:', err);
-        }
-    }
-    async handleSendMailVerifyOtp(kafkaMessage) {
-        const { isValid, message, data: messageData } = validate_utils_1.default.validateRequiredFields(kafkaMessage);
-        if (!isValid || !messageData) {
-            console.error('❌ Missing field:', message);
-            return;
-        }
-        const { userId, data } = messageData;
-        await this.mailService.sendVerifyOtp({
-            userId: userId,
-            otp: data.otp,
-        });
-    }
-};
-exports.MailSubscriberService = MailSubscriberService;
-exports.MailSubscriberService = MailSubscriberService = __decorate([
-    (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [typeof (_a = typeof core_1.KafkaService !== "undefined" && core_1.KafkaService) === "function" ? _a : Object, typeof (_b = typeof mail_service_1.MailService !== "undefined" && mail_service_1.MailService) === "function" ? _b : Object])
-], MailSubscriberService);
-
-
-/***/ }),
-/* 40 */
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var _a, _b;
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.MailService = void 0;
-const core_1 = __webpack_require__(1);
-const common_1 = __webpack_require__(4);
-const mail_sender_interface_1 = __webpack_require__(41);
-let MailService = class MailService {
-    userClientService;
-    mailSender;
-    constructor(userClientService, mailSender) {
-        this.userClientService = userClientService;
-        this.mailSender = mailSender;
-    }
-    async sendVerifyOtp(input) {
-        const { userId, otp } = input;
-        if (!otp || !userId) {
-            throw new Error('Invalid OTP || User Id');
-        }
-        const user = await this.userClientService.getUserById({ userId: userId });
-        if (!user) {
-            throw new Error('User not found!');
-        }
-        const data = {
-            NAME: `${user.firstName} ${user.lastName}`,
-            OTP: otp,
-            EXPIRE_MINUTES: 5,
-            YEAR: 2025,
-        };
-        await this.mailSender.sendMail({
-            subject: 'test',
-            to: user.email,
-            template: 'verify-otp.hbs',
-            data,
-        });
-    }
-};
-exports.MailService = MailService;
-exports.MailService = MailService = __decorate([
-    (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [typeof (_a = typeof core_1.UserClientService !== "undefined" && core_1.UserClientService) === "function" ? _a : Object, typeof (_b = typeof mail_sender_interface_1.IMailSender !== "undefined" && mail_sender_interface_1.IMailSender) === "function" ? _b : Object])
-], MailService);
-
-
-/***/ }),
-/* 41 */
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.IMailSender = void 0;
-class IMailSender {
-}
-exports.IMailSender = IMailSender;
-
-
-/***/ }),
-/* 42 */
+/* 44 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1554,10 +1681,10 @@ var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NotificationRepo = void 0;
 const common_1 = __webpack_require__(4);
-const mongoose_1 = __webpack_require__(9);
-const mongoose_2 = __webpack_require__(43);
-const notification_schema_1 = __webpack_require__(44);
-const mapper_1 = __webpack_require__(45);
+const mongoose_1 = __webpack_require__(14);
+const mongoose_2 = __webpack_require__(45);
+const notification_schema_1 = __webpack_require__(46);
+const mapper_1 = __webpack_require__(47);
 let NotificationRepo = class NotificationRepo {
     notificationModel;
     constructor(notificationModel) {
@@ -1628,13 +1755,13 @@ exports.NotificationRepo = NotificationRepo = __decorate([
 
 
 /***/ }),
-/* 43 */
+/* 45 */
 /***/ ((module) => {
 
 module.exports = require("mongoose");
 
 /***/ }),
-/* 44 */
+/* 46 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1650,7 +1777,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NotificationSchema = exports.INotification = void 0;
-const mongoose_1 = __webpack_require__(9);
+const mongoose_1 = __webpack_require__(14);
 let INotification = class INotification {
     _id;
     recipientId;
@@ -1702,7 +1829,7 @@ exports.NotificationSchema = mongoose_1.SchemaFactory.createForClass(INotificati
 
 
 /***/ }),
-/* 45 */
+/* 47 */
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -1730,7 +1857,7 @@ exports.NotificationMapper = NotificationMapper;
 
 
 /***/ }),
-/* 46 */
+/* 48 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1750,7 +1877,7 @@ var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NotificationController = void 0;
 const common_1 = __webpack_require__(4);
-const notification_service_1 = __webpack_require__(31);
+const notification_service_1 = __webpack_require__(36);
 let NotificationController = class NotificationController {
     notificationService;
     constructor(notificationService) {
@@ -1863,7 +1990,76 @@ exports.NotificationController = NotificationController = __decorate([
 
 
 /***/ }),
-/* 47 */
+/* 49 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MailService = void 0;
+const core_1 = __webpack_require__(1);
+const common_1 = __webpack_require__(4);
+const mail_sender_interface_1 = __webpack_require__(50);
+let MailService = class MailService {
+    userClientService;
+    mailSender;
+    constructor(userClientService, mailSender) {
+        this.userClientService = userClientService;
+        this.mailSender = mailSender;
+    }
+    async sendVerifyOtp(input) {
+        const { userId, otp } = input;
+        if (!otp || !userId) {
+            throw new Error('Invalid OTP || User Id');
+        }
+        const user = await this.userClientService.getUserById({ userId: userId });
+        if (!user) {
+            throw new Error('User not found!');
+        }
+        const data = {
+            NAME: `${user.firstName} ${user.lastName}`,
+            OTP: otp,
+            EXPIRE_MINUTES: 5,
+            YEAR: 2025,
+        };
+        await this.mailSender.sendMail({
+            subject: 'test',
+            to: user.email,
+            template: 'verify-otp.hbs',
+            data,
+        });
+    }
+};
+exports.MailService = MailService;
+exports.MailService = MailService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof core_1.UserClientService !== "undefined" && core_1.UserClientService) === "function" ? _a : Object, typeof (_b = typeof mail_sender_interface_1.IMailSender !== "undefined" && mail_sender_interface_1.IMailSender) === "function" ? _b : Object])
+], MailService);
+
+
+/***/ }),
+/* 50 */
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.IMailSender = void 0;
+class IMailSender {
+}
+exports.IMailSender = IMailSender;
+
+
+/***/ }),
+/* 51 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1881,10 +2077,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MailSenderRepo = void 0;
 const common_1 = __webpack_require__(4);
 const config_1 = __webpack_require__(3);
-const nodemailer = __webpack_require__(48);
-const fs = __webpack_require__(49);
-const handlebars = __webpack_require__(50);
-const path_1 = __webpack_require__(13);
+const nodemailer = __webpack_require__(52);
+const fs = __webpack_require__(53);
+const handlebars = __webpack_require__(54);
+const path_1 = __webpack_require__(18);
 let MailSenderRepo = class MailSenderRepo {
     configService;
     transporter;
@@ -1925,19 +2121,19 @@ exports.MailSenderRepo = MailSenderRepo = __decorate([
 
 
 /***/ }),
-/* 48 */
+/* 52 */
 /***/ ((module) => {
 
 module.exports = require("nodemailer");
 
 /***/ }),
-/* 49 */
+/* 53 */
 /***/ ((module) => {
 
 module.exports = require("fs");
 
 /***/ }),
-/* 50 */
+/* 54 */
 /***/ ((module) => {
 
 module.exports = require("handlebars");
@@ -1978,9 +2174,9 @@ var exports = __webpack_exports__;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core_1 = __webpack_require__(1);
 const common_1 = __webpack_require__(4);
-const core_2 = __webpack_require__(26);
-const snakeCase_interceptor_1 = __webpack_require__(27);
-const notification_module_1 = __webpack_require__(30);
+const core_2 = __webpack_require__(31);
+const snakeCase_interceptor_1 = __webpack_require__(32);
+const notification_module_1 = __webpack_require__(35);
 async function bootstrap() {
     const app = await core_2.NestFactory.create(notification_module_1.NotificationModule);
     app.enableCors();

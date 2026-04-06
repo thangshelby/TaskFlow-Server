@@ -1,5 +1,9 @@
 private_key.pem
 public_key.pem
+taskflow.pem
+
+.cursor/**
+
 # General OS Files
 .DS_Store
 Thumbs.db
@@ -65,6 +69,8 @@ Thumbs.db
 # ASP.NET
 **/appsettings.*.json
 **/secrets.json
+# Copy from services/main-service/appsettings.json.example
+services/main-service/appsettings.json
 
 # ===================
 # Node.js
@@ -79,10 +85,12 @@ Thumbs.db
 **/build/
 **/.cache/
 
-# Environment Variables
-# Keep .env files specific to each service
-# Ignore global or sensitive env files
-# **/.env
+# Environment variables (secrets — never commit)
+.env
+**/.env
+.env.*
+!.env.example
+!**/.env.example
 
 # TypeScript
 **/*.tsbuildinfo
@@ -97,5 +105,9 @@ Thumbs.db
 # Express Service
 /services/express-service/**
 
-# Python
-**/lambda/**
+# Lambda
+**/lambda/__pycache__/**
+**/lambda/python/**
+**/lambda/python.zip
+**/lambda/env/
+

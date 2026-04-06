@@ -13,7 +13,6 @@ public class ProjectRepository : IProjectRepository
 {
     private readonly IMongoCollection<Project> _projects;
     private readonly IMongoCollection<ProjectColumn> _projectColumns;
-    private readonly IMongoCollection<ProjectTeam> _projectTeams;
     private readonly IMongoCollection<Issue> _issues;
     private readonly IMongoCollection<ProjectMember> _teamMembers;  // Changed to match DB collection name
     private readonly IMongoCollection<User> _users;
@@ -160,7 +159,7 @@ public class ProjectRepository : IProjectRepository
             activeSprintIds = activeSprints.Select(s => s.Id!).ToList();
         }
 
-        _logger.LogInformation("Active sprint IDs",activeSprintIds);
+        _logger.LogInformation("Active sprint IDs: {ActiveSprintIds}", string.Join(',', activeSprintIds ?? []));
 
         var issueQuery = MongoUtils.BuildExprMongo(param, new Dictionary<string, (string field, string op, string? extra)>
         {

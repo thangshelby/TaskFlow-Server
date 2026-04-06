@@ -92,7 +92,7 @@ public class ProjectUseCase
             }
         });
 
-        await _publisher.EmitKafka(TopicName.ACTIVITIES, KafkaMessageAction.ACTIVITIES_PROJECT_CREATED, new IProjectMessage
+        await _publisher.EmitQueue(QueueTopicName.ACTIVITIES, QueueMessageAction.ACTIVITIES_PROJECT_CREATED, new IProjectMessage
         {
             ProjectId = createdProject.Id,
             UserId = project.OwnerId,

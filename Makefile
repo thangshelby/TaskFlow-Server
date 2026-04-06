@@ -61,3 +61,8 @@ all:
 	make noti-service
 # 	make chat-service
 .PHONY: container-up container-down nest-server gen-protobuf sync cqlsh main-service	
+
+
+
+make-sync:
+	rsync -avzh -e "ssh -i taskflow.pem" . ubuntu@44.204.64.224:/home/ubuntu/github/Taskflow-Server/services/main-service

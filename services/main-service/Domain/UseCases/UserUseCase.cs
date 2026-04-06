@@ -11,7 +11,6 @@ public class UserUseCase
     private readonly IUserRepository _userRepository;
     private readonly IIssueRepository _issueRepository;
     private readonly OtpTokenUseCase _otpTokenUseCase;
-    private readonly IProjectMemberRepository _projectMemberRepository;
     private readonly ILogger<UserUseCase> _logger;
     private readonly IPublisherService _publisher;
 

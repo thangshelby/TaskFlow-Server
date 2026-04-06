@@ -13,63 +13,71 @@ services:
     networks:
       - taskflow-network
     depends_on:
-      # - grpc-server
+      grpc-service:
+        condition: service_healthy
+        required: false
+      kafka:
+        condition: service_started
+        required: false
+      notification-service:
+        condition: service_healthy
+        required: false
+
+  grpc-service:
+    build:
+      context: . # Build from root directory to access protos
+      dockerfile: ./services/main-service/Dockerfile
+    profiles: ["grpc_server"]
+    container_name: grpc_serverice
+    ports:
+      - "5001:5001"
+    networks:
+      - taskflow-network
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://0.0.0.0:5001
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  notification-service:
+    build:
+      context: ./services/nest-service
+      dockerfile: ./Dockerfile
+    profiles: ["notification_service"]
+    container_name: notification_service
+    ports:
+      - "5002:5002"
+    networks:
+      - taskflow-network
+    env_file:
+      - ./services/nest-service/.env # 👈 Load các biến môi trường từ file .env
+    environment:
+      - NODE_ENV=production
+      - PORT=5002
+    depends_on:
       - kafka
-      - zookeeper
-      # - notification-service
-
-  # grpc-server:
-  #   build:
-  #     context: . # Build from root directory to access protos
-  #     dockerfile: ./services/main-service/Dockerfile
-  #   container_name: grpc_server
-  #   ports:
-  #     - "5001:5001"
-  #   networks:
-  #     - taskflow-network
-  #   environment:
-  #     - ASPNETCORE_ENVIRONMENT=Development
-  #     - ASPNETCORE_URLS=http://0.0.0.0:5001
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 3
-
-  # notification-service:
-  #   build:
-  #     context: ./services/nest-service
-  #     dockerfile: ./Dockerfile
-  #   container_name: notification_service
-  #   ports:
-  #     - "5002:5002"
-  #   networks:
-  #     - taskflow-network
-  #   env_file:
-  #     - ./services/nest-service/.env # 👈 Load các biến môi trường từ file .env
-  #   environment:
-  #     - NODE_ENV=production
-  #     - PORT=5002
-  #   depends_on:
-  #     - kafka
-  #     - grpc-server
-  #   healthcheck:
-  #     test:
-  #       [
-  #         "CMD",
-  #         "wget",
-  #         "--no-verbose",
-  #         "--tries=1",
-  #         "--spider",
-  #         "http://localhost:5002/api/v1/notifications/health",
-  #       ]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 40s
+      - grpc-server
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:5002/api/v1/notifications/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
+    profiles: ["kafka"]
     container_name: zookeeper
     ports:
       - "2181:2181"
@@ -83,6 +91,7 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.4.0
+    profiles: ["kafka"]
     container_name: kafka
     ports:
       - "29092:29092"
@@ -106,12 +115,13 @@ services:
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
+    profiles: ["kafka"]
     container_name: kafka_ui
     ports:
       - "8888:8888"
     environment:
       - KAFKA_CLUSTERS_0_NAME=local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9094
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
       - SERVER_PORT=8888
     depends_on:
       - kafka
@@ -120,6 +130,7 @@ services:
 
   kafka-topic-creator:
     image: confluentinc/cp-kafka:7.4.0
+    profiles: ["kafka"]
     depends_on:
       - kafka
     entrypoint: ["/bin/sh", "-c"]
@@ -133,8 +144,10 @@ services:
       "
     networks:
       - taskflow-network
+
   redis:
     image: redis:latest
+    profiles: ["redis"]
     container_name: redis
     ports:
       - "6379:6379"

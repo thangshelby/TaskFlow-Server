@@ -1,22 +1,36 @@
+using AutoMapper;
 using MainService.Infras;
-
+using MainService.Presentation.MiddleWare;
+using Amazon.S3;
+using Amazon.SimpleNotificationService;
+using Amazon.SQS;
+using DotNetEnv;
 
 // using MainService.Presentation.Services;
 
 using Serilog;
+
+DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Logging
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));
+  
+// Register AWS Services
+builder.Services.AddDefaultAWSOptions(
+    builder.Configuration.GetAWSOptions()
+);
 
 // Register Services using Extensions
 builder.Services.AddProjectServices();    // Register Use Cases & Repositories
 builder.Services.AddGrpcServices();       // Register gRPC Services
 builder.Services.AddValidationServices(); // Register Validators
-builder.Services.AddAutoMapper(typeof(Program));
-
+builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(Program).Assembly));
+builder.Services.AddAWSService<IAmazonS3>();
+builder.Services.AddAWSService<IAmazonSimpleNotificationService>();
+builder.Services.AddAWSService<IAmazonSQS>();
 // Add Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -36,6 +50,8 @@ if (app.Environment.IsDevelopment())
   app.UseSwagger();
   app.UseSwaggerUI();
 }
+app.UseMiddleware<RateLimitingMiddleware>();
+
 
 // Map GRPC Services
 app.MapGrpcService<ProjectController>();
@@ -47,6 +63,7 @@ app.MapGrpcService<IssueController>();
 app.MapGrpcService<ProjectMemberController>();
 app.MapGrpcService<CommentController>();
 app.MapGrpcService<ProjectTeamController>();
+app.MapGrpcService<MetadataController>();
 
 if (app.Environment.IsDevelopment())
 {

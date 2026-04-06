@@ -4,7 +4,6 @@ package chat_service;
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/empty.proto";
 import "base.proto";
 
 service ChatService {
