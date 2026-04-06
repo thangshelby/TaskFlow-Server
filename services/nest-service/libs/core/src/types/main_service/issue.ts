@@ -5,12 +5,12 @@
 // source: main_service/issue.proto
 
 /* eslint-disable */
-import { GrpcMethod, GrpcStreamMethod } from "@nestjs/microservices";
-import { Observable } from "rxjs";
-import { ActivityRes, IssueRes, PaginationRes } from "../base";
-import { Empty } from "../google/protobuf/empty";
+import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
+import { Observable } from 'rxjs';
+import { ActivityRes, IssueRes, PaginationRes } from '../base';
+import { Empty } from '../google/protobuf/empty';
 
-export const protobufPackage = "project_service";
+export const protobufPackage = 'project_service';
 
 export interface GetActivitiesReq {
   issueId: string;
@@ -102,7 +102,7 @@ export interface CreateIssueRes {
   data: IssueRes | undefined;
 }
 
-export const PROJECT_SERVICE_PACKAGE_NAME = "project_service";
+export const PROJECT_SERVICE_PACKAGE_NAME = 'project_service';
 
 export interface IssueServiceClient {
   createIssue(request: CreateIssueReq): Observable<CreateIssueRes>;
@@ -134,24 +134,17 @@ export interface IssueServiceController {
 
 export function IssueServiceControllerMethods() {
   return function (constructor: Function) {
-    const grpcMethods: string[] = [
-      "createIssue",
-      "getIssue",
-      "updateIssue",
-      "deleteIssue",
-      "listIssues",
-      "getActivities",
-    ];
+    const grpcMethods: string[] = ['createIssue', 'getIssue', 'updateIssue', 'deleteIssue', 'listIssues', 'getActivities'];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
-      GrpcMethod("IssueService", method)(constructor.prototype[method], method, descriptor);
+      GrpcMethod('IssueService', method)(constructor.prototype[method], method, descriptor);
     }
     const grpcStreamMethods: string[] = [];
     for (const method of grpcStreamMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
-      GrpcStreamMethod("IssueService", method)(constructor.prototype[method], method, descriptor);
+      GrpcStreamMethod('IssueService', method)(constructor.prototype[method], method, descriptor);
     }
   };
 }
 
-export const ISSUE_SERVICE_NAME = "IssueService";
+export const ISSUE_SERVICE_NAME = 'IssueService';

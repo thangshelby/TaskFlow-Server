@@ -107,3 +107,4 @@ services/nest-service/.env
 **/lambda/python/**
 **/lambda/python.zip
 **/lambda/env/
+
