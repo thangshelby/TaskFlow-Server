@@ -18,7 +18,12 @@ public class MetadataUseCase
 
     public async Task<CreatePresignedtURLImageRes> CreatePresignedtURLImage(CreatePresignedURLImageReq req)
     {
-        _logger.LogInformation("Creating presigned URL for project {ProjectId} and user {UserId}", req.ProjectId, req.UserId, req.FileName, req.ContentType);
+        _logger.LogInformation(
+            "Creating presigned URL for project {ProjectId}, user {UserId}, file {FileName}, contentType {ContentType}",
+            req.ProjectId,
+            req.UserId,
+            req.FileName,
+            req.ContentType);
         var url = await _s3Repository.CreatePresignedURLImage(req.ProjectId, req.UserId, req.FileName, req.ContentType);
 
         _logger.LogInformation("Created presigned URL for {Url}", url);

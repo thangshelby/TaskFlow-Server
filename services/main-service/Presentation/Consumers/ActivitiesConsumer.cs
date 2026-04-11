@@ -18,7 +18,8 @@ public class ActivitiesConsumer : IHostedService, IDisposable
         _queueRepository = queueRepository;
         _logger = logger;
         _serviceProvider = serviceProvider;
-        _topic = configuration.GetValue<string>("ActivitiesTopicName");
+        _topic = configuration.GetValue<string>("ActivitiesTopicName")
+            ?? throw new InvalidOperationException("Configuration ActivitiesTopicName is required.");
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)

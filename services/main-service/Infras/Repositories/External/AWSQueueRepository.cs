@@ -14,8 +14,8 @@ public class AWSQueueRepository: IQueueRepository {
     private readonly ILogger<AWSQueueRepository> _logger;
     private readonly IConfiguration _configuration;
 
-    private readonly string _topicArn;
-    private string _queueName;
+    private readonly string _topicArn = string.Empty;
+    private string _queueName = string.Empty;
     private string? _queueUrl;
 
     public AWSQueueRepository(IAmazonSimpleNotificationService snsClient, IAmazonSQS sqsClient, ILogger<AWSQueueRepository> logger, IConfiguration configuration)
@@ -24,12 +24,17 @@ public class AWSQueueRepository: IQueueRepository {
         _sqsClient = sqsClient;
         _logger = logger;
         _configuration = configuration;
-        _topicArn = _configuration.GetValue<string>("AWS:SNS:TopicArn");
-        _queueName = _configuration.GetValue<string>("AWS:SQS:QueueName");
+        _topicArn = _configuration.GetValue<string>("AWS:SNS:TopicArn") ?? string.Empty;
+        _queueName = _configuration.GetValue<string>("AWS:SQS:QueueName") ?? string.Empty;
     }
 
     public async Task<bool> SendMessage(QueueTopicName topicName, QueueMessageAction action, string message){
-        _logger.LogInformation("Sending message to SNS", _topicArn, message, action.ToString(), topicName.ToString());
+        _logger.LogInformation(
+            "Sending message to SNS. TopicArn={TopicArn}, Action={Action}, TopicName={TopicName}, MessageLength={MessageLength}",
+            _topicArn,
+            action,
+            topicName,
+            message.Length);
         try {
             var request = new PublishRequest 
             {

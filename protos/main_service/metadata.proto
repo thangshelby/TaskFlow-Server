@@ -2,10 +2,7 @@ syntax = "proto3";
 
 option csharp_namespace = "TaskFlow.MetadataService";
 package project_service;
-import "google/protobuf/empty.proto";
-import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
-import "base.proto";
 
 service MetadataService {
     rpc CreatePresignedtURLImage (CreatePresignedURLImageReq) returns (CreatePresignedtURLImageRes)  {

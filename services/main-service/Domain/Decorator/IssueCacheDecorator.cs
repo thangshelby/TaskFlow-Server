@@ -101,7 +101,7 @@ public class IssueCacheDecorator : IIssueRepository
 
             var cachedList = new CachedIssueList
             {
-                IssueIds = dbResult.Items.Select(i => i.Id).ToList(),
+                IssueIds = dbResult.Items.Where(i => i.Id != null).Select(i => i.Id!).ToList(),
                 TotalCount = dbResult.TotalCount
             };
 
@@ -182,6 +182,9 @@ public class IssueCacheDecorator : IIssueRepository
     /// </summary>
     private async Task UpsertIssueDetailCacheAsync(IssueDomain issue)
     {
+        if (string.IsNullOrEmpty(issue.Id))
+            return;
+
         var cacheKey = CacheKeys.Issues.Detail(issue.Id);
 
         try

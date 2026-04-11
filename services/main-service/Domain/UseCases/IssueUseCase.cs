@@ -295,10 +295,10 @@ public class IssueUseCase
 
             await Task.WhenAll(oldColumnTask, newColumnTask);
 
-            var oldStatus = oldColumnTask.Result;
-            var newStatus = newColumnTask.Result;
+            var oldStatus = await oldColumnTask;
+            var newStatus = await newColumnTask;
 
-            Compare("Status", oldStatus.Name, newStatus.Name);
+            Compare("Status", oldStatus?.Name, newStatus?.Name);
         }
         if (oldIssue.AssigneeId != newIssue.AssigneeId && oldIssue.AssigneeId != null && newIssue.AssigneeId != null)
         {
@@ -313,10 +313,10 @@ public class IssueUseCase
 
             await Task.WhenAll(oldAsigneeTask, newAsigneeTask);
 
-            var oldAsignee = oldAsigneeTask.Result;
-            var newAsignee = newAsigneeTask.Result;
+            var oldAsignee = await oldAsigneeTask;
+            var newAsignee = await newAsigneeTask;
 
-            Compare("Assignee", oldAsignee.FullName, newAsignee.FullName);
+            Compare("Assignee", oldAsignee?.FullName, newAsignee?.FullName);
         }
         if (oldIssue.ReporterId != newIssue.ReporterId && oldIssue.ReporterId != null && newIssue.ReporterId != null)
         {
@@ -331,10 +331,10 @@ public class IssueUseCase
 
             await Task.WhenAll(oldReporterTask, newReporterTask);
 
-            var oldReporter = oldReporterTask.Result;
-            var newReporter = newReporterTask.Result;
+            var oldReporter = await oldReporterTask;
+            var newReporter = await newReporterTask;
 
-            Compare("Reporter", oldReporter.FullName, newReporter.FullName);
+            Compare("Reporter", oldReporter?.FullName, newReporter?.FullName);
         }
         if (oldIssue.SprintId != newIssue.SprintId && oldIssue.SprintId != null && newIssue.SprintId != null)
         {
@@ -343,10 +343,10 @@ public class IssueUseCase
 
             await Task.WhenAll(oldSprintTask, newSprintTask);
 
-            var oldSprint = oldSprintTask.Result;
-            var newSprint = newSprintTask.Result;
+            var oldSprint = await oldSprintTask;
+            var newSprint = await newSprintTask;
 
-            Compare("Sprint", oldSprint.Name, newSprint.Name);
+            Compare("Sprint", oldSprint?.Name, newSprint?.Name);
         }
 
         Compare("Title", oldIssue.Title, newIssue.Title);

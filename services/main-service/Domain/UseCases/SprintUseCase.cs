@@ -117,6 +117,8 @@ public class SprintUseCase
 
     private async Task<List<SprintDailyStats>> GetSprintDailyStats(SprintDomain sprint)
     {
+        if (string.IsNullOrEmpty(sprint.Id))
+            throw new ArgumentException("Sprint Id is required for daily stats.", nameof(sprint));
 
         var issues = await _issueRepository.ListIssues(new GetIssuesParams
         {

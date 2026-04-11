@@ -87,7 +87,7 @@ public class ProjectTeamRepository : IProjectTeamRepository
         {
             var teamDomain = new ProjectTeamDomain
             {
-                Id = team.Id.ToString(),
+                Id = team.Id ?? string.Empty,
                 ProjectId = team.ProjectId,
                 Name = team.Name,
                 Description = team.Description ?? string.Empty,

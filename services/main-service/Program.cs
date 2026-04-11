@@ -1,3 +1,4 @@
+using AutoMapper;
 using MainService.Infras;
 using MainService.Presentation.MiddleWare;
 using Amazon.S3;
@@ -26,7 +27,7 @@ builder.Services.AddDefaultAWSOptions(
 builder.Services.AddProjectServices();    // Register Use Cases & Repositories
 builder.Services.AddGrpcServices();       // Register gRPC Services
 builder.Services.AddValidationServices(); // Register Validators
-builder.Services.AddAutoMapper(typeof(Program));
+builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(Program).Assembly));
 builder.Services.AddAWSService<IAmazonS3>();
 builder.Services.AddAWSService<IAmazonSimpleNotificationService>();
 builder.Services.AddAWSService<IAmazonSQS>();
@@ -73,24 +74,3 @@ if (app.Environment.IsDevelopment())
 app.MapGet("/", () => "This is a gRPC service. Use a gRPC client to communicate.");
 
 app.Run();
-
-static void LoadLocalEnv()
-{
-    static IEnumerable<string> EnvFileCandidates()
-    {
-        yield return Path.Combine(Directory.GetCurrentDirectory(), ".env");
-        var asmDir = AppContext.BaseDirectory;
-        yield return Path.GetFullPath(Path.Combine(asmDir, "..", "..", "..", ".env"));
-    }
-
-    foreach (var path in EnvFileCandidates())
-    {
-        if (!File.Exists(path))
-        {
-            continue;
-        }
-
-        Env.Load(path);
-        return;
-    }
-}
