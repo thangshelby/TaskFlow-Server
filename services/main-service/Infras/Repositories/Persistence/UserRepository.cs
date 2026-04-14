@@ -88,7 +88,14 @@ public class UserRepository : IUserRepository
         // Convert Domain to Entity
         var userEntity = _mapper.Map<User>(userDomain);
 
-        await _users.InsertOneAsync(userEntity);
+        try
+        {
+            await _users.InsertOneAsync(userEntity);
+        }
+        catch (MongoWriteException ex) when (ex.WriteError?.Code == 11000)
+        {
+            throw new UserAlreadyExistsException("An account with this email already exists.");
+        }
 
         // Update domain with new ID
         userDomain.Id = userEntity.Id;
@@ -122,10 +129,18 @@ public class UserRepository : IUserRepository
             Data = param,
         });
 
-        var result = await _users.UpdateOneAsync(
-            u => u.Id == param.Id,
-            update
-        );
+        UpdateResult result;
+        try
+        {
+            result = await _users.UpdateOneAsync(
+                u => u.Id == param.Id,
+                update
+            );
+        }
+        catch (MongoWriteException ex) when (ex.WriteError?.Code == 11000)
+        {
+            throw new UserAlreadyExistsException("An account with this email already exists.");
+        }
 
         if (result.MatchedCount == 0)
         {

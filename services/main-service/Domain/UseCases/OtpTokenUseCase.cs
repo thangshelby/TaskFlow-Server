@@ -11,15 +11,17 @@ public class OtpTokenUseCase
     private readonly IOtpTokenRepository _otpTokenRepository;
     private readonly ILogger<OtpTokenUseCase> _logger;
     private readonly IPublisherService _publisher;
-
+    private readonly IUserRepository _userRepository;
     public OtpTokenUseCase(
         IOtpTokenRepository otpTokenRepository,
         ILogger<OtpTokenUseCase> logger,
-        IPublisherService publisher)
+        IPublisherService publisher,
+        IUserRepository userRepository)
     {
         _otpTokenRepository = otpTokenRepository;
         _logger = logger;
         _publisher = publisher;
+        _userRepository = userRepository;
     }
 
     public async Task<OtpTokenDomain> GenerateOtpAsync(UserDomain user, int otpLength = 6, int expireMinutes = 5)
@@ -56,6 +58,7 @@ public class OtpTokenUseCase
                 UserId = user.Id!,
                 Data = new
                 {
+                    RecipentEmail = user.Email,
                     OTP = otp,
                 }
             }
@@ -89,6 +92,10 @@ public class OtpTokenUseCase
             ResendCount = token.ResendCount + 1,
         });
 
+        var user = await _userRepository.FindUserAsync(new UserQueryParams { UserId = userId });
+        if (user == null)
+            throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
+
         await _publisher.EmitQueue(
             QueueTopicName.MAILS,
             QueueMessageAction.MAILS_SEND_VERIFY_OTP_USER,
@@ -97,6 +104,7 @@ public class OtpTokenUseCase
                 UserId = userId,
                 Data = new
                 {
+                    RecipentEmail = user.Email!,
                     OTP = newOtp,
                 }
             }
