@@ -1,6 +1,7 @@
 private_key.pem
 public_key.pem
 taskflow.pem
+taskflow_backend.pem
 
 .cursor/**
 
