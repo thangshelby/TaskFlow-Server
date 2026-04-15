@@ -227,7 +227,6 @@ static_resources:
                                   value:
                                     string_match:
                                       exact: "true"
-
                   - name: envoy.filters.http.lua
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
@@ -345,7 +344,7 @@ static_resources:
                         function envoy_on_response(response_handle)
                           local token = response_handle:headers():get("authorization")
                           if token then
-                            response_handle:headers():add("Set-Cookie", "token=" .. token .. "; Path=/; HttpOnly; Secure; SameSite=None")
+                            response_handle:headers():add("Set-Cookie", "token=" .. token .. "; Path=/; HttpOnly; Secure; SameSite=Lax")
                           end
                         end
                   - name: envoy.filters.http.router

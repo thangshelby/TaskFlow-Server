@@ -302,7 +302,7 @@ public class UserController : UserService.UserServiceBase
     {
         var metadata = new Metadata
         {
-            { "Set-Cookie", "token=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0" }
+            { "Set-Cookie", "token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0" }
         };
         await context.WriteResponseHeadersAsync(metadata);
 
@@ -395,7 +395,7 @@ public class UserController : UserService.UserServiceBase
 
         var metadata = new Metadata
         {
-            { "Set-Cookie", $"token={jwtToken}; Path=/; HttpOnly; Secure; SameSite=Strict" }
+            { "Set-Cookie", $"token={jwtToken}; Path=/; HttpOnly; Secure; SameSite=Lax" }
         };
         await context.WriteResponseHeadersAsync(metadata);
     }
