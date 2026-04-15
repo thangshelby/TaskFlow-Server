@@ -197,7 +197,7 @@ public class IssueUseCase
 
 
 
-        await Task.WhenAll(notifyTask, activityTask);
+        await Task.WhenAll(notifyTask, activityTask, emailTask);
         return updatedIssue;
     }
 

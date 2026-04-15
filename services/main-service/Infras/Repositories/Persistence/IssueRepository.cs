@@ -437,38 +437,36 @@ public class IssueRepository : IIssueRepository
         return new PagedResult<IssueDomain>(_mapper.Map<List<IssueDomain>>(issues), (int)totalCount);
     }
     
-    private static FilterDefinition<Issue> BuildDueDateFilter(string dueDateParam, FilterDefinitionBuilder<Issue> filterBuilder)
-{
-    if (string.IsNullOrWhiteSpace(dueDateParam))
-        return FilterDefinition<Issue>.Empty;
-
-    var param = dueDateParam.Trim().ToLower();
-
-    // Case 1: unassigned → DueDateTo == null hoặc DateTime.MinValue
-    if (param == "unassigned")
+    private FilterDefinition<Issue> BuildDueDateFilter(string dueDateParam, FilterDefinitionBuilder<Issue> filterBuilder)
     {
-        return filterBuilder.Or(
-            // filterBuilder.Eq(i => i.DueDateTo, null),
-            filterBuilder.Eq(i => i.DueDateTo, DateTime.MinValue)
-        );
+        if (string.IsNullOrWhiteSpace(dueDateParam))
+            return FilterDefinition<Issue>.Empty;
+
+        var param = dueDateParam.Trim().ToLower();
+
+        // Case 1: unassigned → DueDateTo == null hoặc DateTime.MinValue
+        if (param == "unassigned")
+        {
+            return filterBuilder.Or(
+                filterBuilder.Eq(i => i.DueDateTo, DateTime.MinValue)
+            );
+        }
+
+        // Case 2: assigned → DueDateTo != null và != MinValue
+        if (param == "assigned")
+        {
+            return filterBuilder.And(
+                filterBuilder.Ne(i => i.DueDateTo, DateTime.MinValue)
+            );
+        }
+
+        // Case 3: cụ thể due date
+        var dueTo = ParseToUtc(dueDateParam);
+        if (dueTo == DateTime.MinValue)
+            return FilterDefinition<Issue>.Empty;
+
+        var inclusiveEnd = dueTo.Date.AddDays(1).AddTicks(-1);
+        return filterBuilder.Lte(i => i.DueDateTo, inclusiveEnd);
     }
-
-    // Case 2: assigned → DueDateTo != null và != MinValue
-    if (param == "assigned")
-    {
-        return filterBuilder.And(
-            // filterBuilder.Ne(i => i.DueDateTo, null),
-            filterBuilder.Ne(i => i.DueDateTo, DateTime.MinValue)
-        );
-    }
-
-    // Case 3: cụ thể due date
-    var dueTo = ParseToUtc(dueDateParam);
-    if (dueTo == DateTime.MinValue)
-        return FilterDefinition<Issue>.Empty;
-
-    var inclusiveEnd = dueTo.Date.AddDays(1).AddTicks(-1);
-    return filterBuilder.Lte(i => i.DueDateTo, inclusiveEnd);
-}
 
 }

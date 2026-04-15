@@ -40,49 +40,56 @@ public class IssueCacheDecorator : IIssueRepository
         }
 
         var listCacheKey = CacheKeys.Issues.List(param);
+        PagedResult<IssueDomain>? dbResult = null;
 
         try
         {
             var cachedList = await _cacheRepository.GetAsync<CachedIssueList>(listCacheKey);
 
-            if (cachedList?.IssueIds?.Any() == true)
-            {
-                var result = new PagedResult<IssueDomain>
-                {
-                    Items = new List<IssueDomain>(),
-                    TotalCount = cachedList.TotalCount
-                };
+            // if (cachedList?.IssueIds?.Any() == true)
+            // {
+            //     var result = new PagedResult<IssueDomain>
+            //     {
+            //         Items = new List<IssueDomain>(),
+            //         TotalCount = cachedList.TotalCount
+            //     };
 
-                foreach (var issueId in cachedList.IssueIds)
-                {
-                    var detailKey = CacheKeys.Issues.Detail(issueId);
-                    var cachedIssue = await _cacheRepository.GetAsync<IssueDomain>(detailKey);
+            //     var listFullyResolvedFromCache = true;
+            //     foreach (var issueId in cachedList.IssueIds)
+            //     {
+            //         var detailKey = CacheKeys.Issues.Detail(issueId);
+            //         var cachedIssue = await _cacheRepository.GetAsync<IssueDomain>(detailKey);
 
-                    // Cache list exists but detail missing → fallback DB
-                    if (cachedIssue == null)
-                    {
-                        _logger.LogWarning(
-                            "Cache inconsistency detected. Missing issue detail: {IssueId}",
-                            issueId);
+            //         // Cache list exists but detail missing → remove stale list, load DB, repopulate cache below
+            //         if (cachedIssue == null)
+            //         {
+            //             _logger.LogWarning(
+            //                 "Cache inconsistency detected. Missing issue detail: {IssueId}",
+            //                 issueId);
 
-                        await _cacheRepository.RemoveAsync(listCacheKey);
-                        return await _innerRepository.ListIssues(param);
-                    }
+            //             await _cacheRepository.RemoveAsync(listCacheKey);
+            //             dbResult = await _innerRepository.ListIssues(param);
+            //             listFullyResolvedFromCache = false;
+            //             break;
+            //         }
 
-                    result.Items.Add(cachedIssue);
-                }
+            //         result.Items.Add(cachedIssue);
+            //     }
 
-                _logger.LogDebug("Cache hit: {CacheKey}", listCacheKey);
-                return result;
-            }
+            //     if (listFullyResolvedFromCache)
+            //     {
+            //         _logger.LogDebug("Cache hit: {CacheKey}", listCacheKey);
+            //         return result;
+            //     }
+            // }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error reading cache: {CacheKey}", listCacheKey);
         }
 
-        // Cache miss → DB
-        var dbResult = await _innerRepository.ListIssues(param);
+        // Cache miss or inconsistency recovery → DB (if not already loaded)
+        dbResult ??= await _innerRepository.ListIssues(param);
 
         try
         {
@@ -134,7 +141,11 @@ public class IssueCacheDecorator : IIssueRepository
 
         await UpsertIssueDetailCacheAsync(createdIssue);
 
-   
+        if (!string.IsNullOrEmpty(createdIssue.ProjectId))
+        {
+            await InvalidateProjectIssueListsAsync(createdIssue.ProjectId);
+        }
+
         return createdIssue;
     }
 
@@ -142,6 +153,7 @@ public class IssueCacheDecorator : IIssueRepository
     {
         var updatedIssue = await _innerRepository.UpdateIssue(issue);
 
+        // List cache stores page IDs + total; upserting detail refreshes item payloads on list hits, not membership/order/filter.
         await UpsertIssueDetailCacheAsync(updatedIssue);
 
         return updatedIssue;
@@ -225,6 +237,5 @@ public class IssueCacheDecorator : IIssueRepository
             _logger.LogError(ex, "Error invalidating issue list caches: {ProjectId}", projectId);
         }
     }
-
     #endregion
 }

@@ -154,6 +154,96 @@ services:
     networks:
       - taskflow-network
 
+  elasticsearch:
+    image: elasticsearch:8.19.14
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      # Minimal dev security: auth on, plain HTTP between containers. Kibana needs ES security APIs (avoids
+      # "security plugin is not ready"). Log in to Kibana as elastic / ELASTIC_PASSWORD.
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-changeme}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -sf -u elastic:$$ELASTIC_PASSWORD http://localhost:9200/_cluster/health || exit 1",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 60s
+    ports:
+      - "9200:9200"
+    networks:
+      - taskflow-network
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+
+  # Kibana 8.19+ must use a service account token to Elasticsearch (not user "elastic"). Creates/refreshes token on each compose up.
+  kibana-token-init:
+    image: elasticsearch:8.19.14
+    container_name: kibana_token_init
+    restart: "no"
+    networks:
+      - taskflow-network
+    environment:
+      # Must match elasticsearch service (same ELASTIC_PASSWORD / default changeme).
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+    volumes:
+      - kibana-sa-token:/tokenvol
+    user: "0"
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -euo pipefail
+        PASS="$$ELASTIC_PASSWORD"
+        # 404 on delete is expected when the token does not exist; do not use curl -f here.
+        curl -sS -u "elastic:$$PASS" -X DELETE \
+          "http://elasticsearch:9200/_security/service/elastic/kibana/credential/token/taskflow-kibana" \
+          -o /dev/null || true
+        for i in $$(seq 1 30); do
+          HTTP=$$(curl -sS -o /tmp/kibana-sa.json -w '%{http_code}' -u "elastic:$$PASS" -X POST \
+            "http://elasticsearch:9200/_security/service/elastic/kibana/credential/token/taskflow-kibana") || true
+          if [ "$$HTTP" = "200" ]; then
+            perl -ne 'print $$1 if /"value"\s*:\s*"([^"]+)"/' /tmp/kibana-sa.json > /tokenvol/token
+            test -s /tokenvol/token && exit 0
+          fi
+          sleep 2
+        done
+        echo "kibana-token-init: failed to create service token (last HTTP $$HTTP): $$(cat /tmp/kibana-sa.json 2>/dev/null || true)" >&2
+        exit 1
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  kibana:
+    image: elastic/kibana:8.19.14
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        export ELASTICSEARCH_SERVICEACCOUNTTOKEN=$$(tr -d '\n' < /run/kibana-sa/token)
+        exec /usr/local/bin/kibana-docker
+    volumes:
+      - kibana-sa-token:/run/kibana-sa:ro
+    networks:
+      - taskflow-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kibana-token-init:
+        condition: service_completed_successfully
+
 networks:
   taskflow-network:
     driver: bridge
@@ -161,3 +251,5 @@ networks:
 volumes:
   kafka-data: {}
   zookeeper-data: {}
+  elasticsearch-data: {}
+  kibana-sa-token: {}
