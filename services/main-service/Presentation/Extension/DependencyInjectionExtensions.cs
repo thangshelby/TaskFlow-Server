@@ -19,7 +19,7 @@ public static class DependencyInjectionExtensions
         services.AddSingleton<IConnectionMultiplexer>(sp =>
         {
             var configuration = sp.GetRequiredService<IConfiguration>();
-            var redisConnection = configuration.GetValue<string>("Redis:ConnectionString") ?? "localhost:6379";
+            var redisConnection = configuration.GetValue<string>("Redis:ConnectionString") ?? "redis:6379";
             return ConnectionMultiplexer.Connect(redisConnection);
         });
         
