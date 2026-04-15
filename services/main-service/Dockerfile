@@ -1,5 +1,5 @@
-# Use the official .NET 9 SDK image for building
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+# Use the official .NET 10 SDK image for building
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 # Set working directory
 WORKDIR /app
@@ -22,8 +22,8 @@ RUN dotnet build services/main-service/NetService.csproj -c Release
 # Publish the application
 RUN dotnet publish services/main-service/NetService.csproj -c Release -o /out
 
-# Use the official .NET 9 runtime image for the final stage
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+# Use the official .NET 10 runtime image for the final stage
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 
 # Set working directory
 WORKDIR /app
@@ -37,6 +37,10 @@ EXPOSE 5001
 # Set environment variables
 ENV ASPNETCORE_ENVIRONMENT=Development
 ENV ASPNETCORE_URLS=http://0.0.0.0:5001
+ENV AWS_REGION=ap-southeast-1
+ENV AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+ENV AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+ENV REDIS_CONNECTIONSTRING=${REDIS_CONNECTIONSTRING}
 
 # Add health check
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
