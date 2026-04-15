@@ -44,37 +44,41 @@ services:
       timeout: 5s
       retries: 3
 
-  notification-service:
-    build:
-      context: ./services/nest-service
-      dockerfile: ./Dockerfile
-    # profiles: ["notification_service"]
-    container_name: notification_service
-    ports:
-      - "5002:5002"
-    networks:
-      - taskflow-network
-    env_file:
-      - ./services/nest-service/.env # 👈 Load các biến môi trường từ file .env
-    environment:
-      - NODE_ENV=production
-      - PORT=5002
-    depends_on:
-      - grpc-service
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:5002/api/v1/notifications/health",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+  # notification-service:
+  #   build:
+  #     context: ./services/nest-service
+  #     dockerfile: ./Dockerfile
+  #   # profiles: ["notification_service"]
+  #   container_name: notification_service
+  #   ports:
+  #     - "5002:5002"
+  #   dns:
+  #     - 1.1.1.1
+  #     - 8.8.8.8
+  #   networks:
+  #     - taskflow-network
+  #   env_file:
+  #     - ./services/nest-service/.env # 👈 Load các biến môi trường từ file .env
+  #   environment:
+  #     - NODE_ENV=production
+  #     - PORT=5002
+  #     - NODE_OPTIONS=--dns-result-order=ipv4first
+  #   depends_on:
+  #     - grpc-service
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD",
+  #         "wget",
+  #         "--no-verbose",
+  #         "--tries=1",
+  #         "--spider",
+  #         "http://localhost:5002/api/v1/notifications/health",
+  #       ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
 
   # zookeeper:
   #   image: confluentinc/cp-zookeeper:latest
