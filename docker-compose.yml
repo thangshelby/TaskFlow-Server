@@ -16,12 +16,12 @@ services:
       grpc-service:
         condition: service_healthy
         required: false
-      kafka:
-        condition: service_started
-        required: false
-      notification-service:
-        condition: service_healthy
-        required: false
+      # kafka:
+      #   condition: service_started
+      #   required: false
+      # notification-service:
+      #   condition: service_healthy
+      #   required: false
 
   grpc-service:
     build:
@@ -44,108 +44,108 @@ services:
       timeout: 5s
       retries: 3
 
-  notification-service:
-    build:
-      context: ./services/nest-service
-      dockerfile: ./Dockerfile
-    profiles: ["notification_service"]
-    container_name: notification_service
-    ports:
-      - "5002:5002"
-    networks:
-      - taskflow-network
-    env_file:
-      - ./services/nest-service/.env # 👈 Load các biến môi trường từ file .env
-    environment:
-      - NODE_ENV=production
-      - PORT=5002
-    depends_on:
-      - kafka
-      - grpc-server
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:5002/api/v1/notifications/health",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+  # notification-service:
+  #   build:
+  #     context: ./services/nest-service
+  #     dockerfile: ./Dockerfile
+  #   profiles: ["notification_service"]
+  #   container_name: notification_service
+  #   ports:
+  #     - "5002:5002"
+  #   networks:
+  #     - taskflow-network
+  #   env_file:
+  #     - ./services/nest-service/.env # 👈 Load các biến môi trường từ file .env
+  #   environment:
+  #     - NODE_ENV=production
+  #     - PORT=5002
+  #   depends_on:
+  #     - kafka
+  #     - grpc-server
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD",
+  #         "wget",
+  #         "--no-verbose",
+  #         "--tries=1",
+  #         "--spider",
+  #         "http://localhost:5002/api/v1/notifications/health",
+  #       ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    profiles: ["kafka"]
-    container_name: zookeeper
-    ports:
-      - "2181:2181"
-    environment:
-      - ZOOKEEPER_CLIENT_PORT=2181
-      - ZOOKEEPER_TICK_TIME=2000
-    volumes:
-      - zookeeper-data:/var/lib/zookeeper/data
-    networks:
-      - taskflow-network
+  # zookeeper:
+  #   image: confluentinc/cp-zookeeper:latest
+  #   profiles: ["kafka"]
+  #   container_name: zookeeper
+  #   ports:
+  #     - "2181:2181"
+  #   environment:
+  #     - ZOOKEEPER_CLIENT_PORT=2181
+  #     - ZOOKEEPER_TICK_TIME=2000
+  #   volumes:
+  #     - zookeeper-data:/var/lib/zookeeper/data
+  #   networks:
+  #     - taskflow-network
 
-  kafka:
-    image: confluentinc/cp-kafka:7.4.0
-    profiles: ["kafka"]
-    container_name: kafka
-    ports:
-      - "29092:29092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+  # kafka:
+  #   image: confluentinc/cp-kafka:7.4.0
+  #   profiles: ["kafka"]
+  #   container_name: kafka
+  #   ports:
+  #     - "29092:29092"
+  #   environment:
+  #     KAFKA_BROKER_ID: 1
+  #     KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
 
-      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+  #     KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
+  #     KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
+  #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+  #     KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
 
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-    volumes:
-      - kafka-data:/var/lib/kafka/data
-    networks:
-      - taskflow-network
-    depends_on:
-      - zookeeper
+  #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  #     KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+  #   volumes:
+  #     - kafka-data:/var/lib/kafka/data
+  #   networks:
+  #     - taskflow-network
+  #   depends_on:
+  #     - zookeeper
 
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    profiles: ["kafka"]
-    container_name: kafka_ui
-    ports:
-      - "8888:8888"
-    environment:
-      - KAFKA_CLUSTERS_0_NAME=local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
-      - SERVER_PORT=8888
-    depends_on:
-      - kafka
-    networks:
-      - taskflow-network
+  # kafka-ui:
+  #   image: provectuslabs/kafka-ui:latest
+  #   profiles: ["kafka"]
+  #   container_name: kafka_ui
+  #   ports:
+  #     - "8888:8888"
+  #   environment:
+  #     - KAFKA_CLUSTERS_0_NAME=local
+  #     - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+  #     - SERVER_PORT=8888
+  #   depends_on:
+  #     - kafka
+  #   networks:
+  #     - taskflow-network
 
-  kafka-topic-creator:
-    image: confluentinc/cp-kafka:7.4.0
-    profiles: ["kafka"]
-    depends_on:
-      - kafka
-    entrypoint: ["/bin/sh", "-c"]
-    command: >
-      "
-      echo '⏳ Waiting for Kafka to be available...' &&
-      while ! kafka-topics --bootstrap-server kafka:9092 --list; do sleep 2; done &&
-      echo '✅ Kafka is up!' &&
-      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic activities --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic notifications --partitions 3 --replication-factor 1
-      "
-    networks:
-      - taskflow-network
+  # kafka-topic-creator:
+  #   image: confluentinc/cp-kafka:7.4.0
+  #   profiles: ["kafka"]
+  #   depends_on:
+  #     - kafka
+  #   entrypoint: ["/bin/sh", "-c"]
+  #   command: >
+  #     "
+  #     echo '⏳ Waiting for Kafka to be available...' &&
+  #     while ! kafka-topics --bootstrap-server kafka:9092 --list; do sleep 2; done &&
+  #     echo '✅ Kafka is up!' &&
+  #     kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic activities --partitions 3 --replication-factor 1 &&
+  #     kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic notifications --partitions 3 --replication-factor 1
+  #     "
+  #   networks:
+  #     - taskflow-network
 
   redis:
     image: redis:latest
@@ -156,105 +156,105 @@ services:
     networks:
       - taskflow-network
 
-  elasticsearch:
-    image: elasticsearch:8.19.14
-    profiles: ["elasticsearch"]
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-      # Minimal dev security: auth on, plain HTTP between containers. Kibana needs ES security APIs (avoids
-      # "security plugin is not ready"). Log in to Kibana as elastic / ELASTIC_PASSWORD.
-      - xpack.security.enabled=true
-      - xpack.security.http.ssl.enabled=false
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-changeme}
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "curl -sf -u elastic:$$ELASTIC_PASSWORD http://localhost:9200/_cluster/health || exit 1",
-        ]
-      interval: 10s
-      timeout: 10s
-      retries: 30
-      start_period: 60s
-    ports:
-      - "9200:9200"
-    networks:
-      - taskflow-network
-    volumes:
-      - elasticsearch-data:/usr/share/elasticsearch/data
+  # elasticsearch:
+  #   image: elasticsearch:8.19.14
+  #   profiles: ["elasticsearch"]
+  #   container_name: elasticsearch
+  #   environment:
+  #     - discovery.type=single-node
+  #     # Minimal dev security: auth on, plain HTTP between containers. Kibana needs ES security APIs (avoids
+  #     # "security plugin is not ready"). Log in to Kibana as elastic / ELASTIC_PASSWORD.
+  #     - xpack.security.enabled=true
+  #     - xpack.security.http.ssl.enabled=false
+  #     - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-changeme}
+  #   ulimits:
+  #     memlock:
+  #       soft: -1
+  #       hard: -1
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD-SHELL",
+  #         "curl -sf -u elastic:$$ELASTIC_PASSWORD http://localhost:9200/_cluster/health || exit 1",
+  #       ]
+  #     interval: 10s
+  #     timeout: 10s
+  #     retries: 30
+  #     start_period: 60s
+  #   ports:
+  #     - "9200:9200"
+  #   networks:
+  #     - taskflow-network
+  #   volumes:
+  #     - elasticsearch-data:/usr/share/elasticsearch/data
 
-  # Kibana 8.19+ must use a service account token to Elasticsearch (not user "elastic"). Creates/refreshes token on each compose up.
-  kibana-token-init:
-    image: elasticsearch:8.19.14
-    profiles: ["elasticsearch"]
-    container_name: kibana_token_init
-    restart: "no"
-    networks:
-      - taskflow-network
-    environment:
-      # Must match elasticsearch service (same ELASTIC_PASSWORD / default changeme).
-      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
-    volumes:
-      - kibana-sa-token:/tokenvol
-    user: "0"
-    entrypoint: ["/bin/bash", "-c"]
-    command:
-      - |
-        set -euo pipefail
-        PASS="$$ELASTIC_PASSWORD"
-        # 404 on delete is expected when the token does not exist; do not use curl -f here.
-        curl -sS -u "elastic:$$PASS" -X DELETE \
-          "http://elasticsearch:9200/_security/service/elastic/kibana/credential/token/taskflow-kibana" \
-          -o /dev/null || true
-        for i in $$(seq 1 30); do
-          HTTP=$$(curl -sS -o /tmp/kibana-sa.json -w '%{http_code}' -u "elastic:$$PASS" -X POST \
-            "http://elasticsearch:9200/_security/service/elastic/kibana/credential/token/taskflow-kibana") || true
-          if [ "$$HTTP" = "200" ]; then
-            perl -ne 'print $$1 if /"value"\s*:\s*"([^"]+)"/' /tmp/kibana-sa.json > /tokenvol/token
-            test -s /tokenvol/token && exit 0
-          fi
-          sleep 2
-        done
-        echo "kibana-token-init: failed to create service token (last HTTP $$HTTP): $$(cat /tmp/kibana-sa.json 2>/dev/null || true)" >&2
-        exit 1
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
+  # # Kibana 8.19+ must use a service account token to Elasticsearch (not user "elastic"). Creates/refreshes token on each compose up.
+  # kibana-token-init:
+  #   image: elasticsearch:8.19.14
+  #   profiles: ["elasticsearch"]
+  #   container_name: kibana_token_init
+  #   restart: "no"
+  #   networks:
+  #     - taskflow-network
+  #   environment:
+  #     # Must match elasticsearch service (same ELASTIC_PASSWORD / default changeme).
+  #     ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+  #   volumes:
+  #     - kibana-sa-token:/tokenvol
+  #   user: "0"
+  #   entrypoint: ["/bin/bash", "-c"]
+  #   command:
+  #     - |
+  #       set -euo pipefail
+  #       PASS="$$ELASTIC_PASSWORD"
+  #       # 404 on delete is expected when the token does not exist; do not use curl -f here.
+  #       curl -sS -u "elastic:$$PASS" -X DELETE \
+  #         "http://elasticsearch:9200/_security/service/elastic/kibana/credential/token/taskflow-kibana" \
+  #         -o /dev/null || true
+  #       for i in $$(seq 1 30); do
+  #         HTTP=$$(curl -sS -o /tmp/kibana-sa.json -w '%{http_code}' -u "elastic:$$PASS" -X POST \
+  #           "http://elasticsearch:9200/_security/service/elastic/kibana/credential/token/taskflow-kibana") || true
+  #         if [ "$$HTTP" = "200" ]; then
+  #           perl -ne 'print $$1 if /"value"\s*:\s*"([^"]+)"/' /tmp/kibana-sa.json > /tokenvol/token
+  #           test -s /tokenvol/token && exit 0
+  #         fi
+  #         sleep 2
+  #       done
+  #       echo "kibana-token-init: failed to create service token (last HTTP $$HTTP): $$(cat /tmp/kibana-sa.json 2>/dev/null || true)" >&2
+  #       exit 1
+  #   depends_on:
+  #     elasticsearch:
+  #       condition: service_healthy
 
-  kibana:
-    image: elastic/kibana:8.19.14
-    profiles: ["elasticsearch"]
-    container_name: kibana
-    ports:
-      - "5601:5601"
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    entrypoint: ["/bin/bash", "-c"]
-    command:
-      - |
-        export ELASTICSEARCH_SERVICEACCOUNTTOKEN=$$(tr -d '\n' < /run/kibana-sa/token)
-        exec /usr/local/bin/kibana-docker
-    volumes:
-      - kibana-sa-token:/run/kibana-sa:ro
-    networks:
-      - taskflow-network
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-      kibana-token-init:
-        condition: service_completed_successfully
+  # kibana:
+  #   image: elastic/kibana:8.19.14
+  #   profiles: ["elasticsearch"]
+  #   container_name: kibana
+  #   ports:
+  #     - "5601:5601"
+  #   environment:
+  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+  #   entrypoint: ["/bin/bash", "-c"]
+  #   command:
+  #     - |
+  #       export ELASTICSEARCH_SERVICEACCOUNTTOKEN=$$(tr -d '\n' < /run/kibana-sa/token)
+  #       exec /usr/local/bin/kibana-docker
+  #   volumes:
+  #     - kibana-sa-token:/run/kibana-sa:ro
+  #   networks:
+  #     - taskflow-network
+  #   depends_on:
+  #     elasticsearch:
+  #       condition: service_healthy
+  #     kibana-token-init:
+  #       condition: service_completed_successfully
 
 networks:
   taskflow-network:
     driver: bridge
 
-volumes:
-  kafka-data: {}
-  zookeeper-data: {}
-  elasticsearch-data: {}
-  kibana-sa-token: {}
+# volumes:
+  # kafka-data: {}
+  # zookeeper-data: {}
+  # elasticsearch-data: {}
+  # kibana-sa-token: {}
