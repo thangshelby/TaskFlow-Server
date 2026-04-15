@@ -357,7 +357,12 @@ static_resources:
       type: LOGICAL_DNS
       connect_timeout: 5s
       lb_policy: ROUND_ROBIN
-      http2_protocol_options: {}
+      # Cách mới để cấu hình HTTP/2 (thay thế http2_protocol_options: {})
+      typed_extension_protocol_options:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          explicit_http_config:
+            http2_protocol_options: {}
       load_assignment:
         cluster_name: main_service
         endpoints:
@@ -367,10 +372,12 @@ static_resources:
                     socket_address:
                       address: host.docker.internal
                       port_value: 5001
+
     - name: notification_service
       type: LOGICAL_DNS
       connect_timeout: 5s
       lb_policy: ROUND_ROBIN
+      # Nếu service này cũng là gRPC, hãy thêm cụm typed_extension_protocol_options giống bên trên
       load_assignment:
         cluster_name: notification_service
         endpoints:
