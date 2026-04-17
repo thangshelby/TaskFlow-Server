@@ -10,7 +10,7 @@ static_resources:
     - name: listener_main_service
       address:
         socket_address:
-          address: 0.0.0.0
+          address: ${GRPC_SERVICE_HOST}
           port_value: 8081
       filter_chains:
         - filters:
@@ -43,7 +43,9 @@ static_resources:
                         envoy.filters.http.cors:
                           "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
                           allow_origin_string_match:
-                            - prefix: "*"
+                            - prefix: "http://localhost:5173"
+                            - prefix: "http://localhost:4173"
+                            - prefix: "${FRONTEND_URL}"
                           allow_methods: "GET, POST, PUT, DELETE, OPTIONS"
                           allow_headers: "content-type, authorization"
                           expose_headers: "x-custom-header"
@@ -58,7 +60,7 @@ static_resources:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
                       providers:
                         my_jwt_provider:
-                          issuer: "127.0.0.1"
+                          issuer: "${GRPC_SERVICE_HOST}"
                           local_jwks:
                             inline_string: |
                               {
@@ -243,7 +245,7 @@ static_resources:
                         function envoy_on_response(response_handle)
                           local token = response_handle:headers():get("authorization")
                           if token then
-                            response_handle:headers():add("Set-Cookie", "token=" .. token .. "; Path=/; HttpOnly; SameSite=Lax")
+                            response_handle:headers():add("Set-Cookie", "token=" .. token .. "; Path=/; HttpOnly; Secure; SameSite=None")
                           end
                         end
                   - name: envoy.filters.http.grpc_json_transcoder
@@ -271,7 +273,7 @@ static_resources:
     - name: listener_notification_service
       address:
         socket_address:
-          address: 0.0.0.0
+          address: 127.0.0.1
           port_value: 8082
       filter_chains:
         - filters:
@@ -296,7 +298,9 @@ static_resources:
                         envoy.filters.http.cors:
                           "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
                           allow_origin_string_match:
-                            -  exact: "http://localhost:5173"
+                            - prefix: "http://localhost:5173"
+                            - prefix: "https://yourfrontend.com"
+                            - prefix: "http://localhost:4173"
                           allow_methods: "GET, POST, PUT, DELETE, OPTIONS"
                           allow_headers: "content-type, authorization"
                           expose_headers: "x-custom-header"
@@ -353,7 +357,7 @@ static_resources:
                         function envoy_on_response(response_handle)
                           local token = response_handle:headers():get("authorization")
                           if token then
-                            response_handle:headers():add("Set-Cookie", "token=" .. token .. "; Path=/; HttpOnly; Secure; SameSite=Lax")
+                            response_handle:headers():add("Set-Cookie", "token=" .. token .. "; Path=/; HttpOnly; Secure; SameSite=None")
                           end
                         end
                   - name: envoy.filters.http.router
@@ -365,12 +369,7 @@ static_resources:
       type: LOGICAL_DNS
       connect_timeout: 5s
       lb_policy: ROUND_ROBIN
-      # Cách mới để cấu hình HTTP/2 (thay thế http2_protocol_options: {})
-      typed_extension_protocol_options:
-        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-          explicit_http_config:
-            http2_protocol_options: {}
+      http2_protocol_options: {}
       load_assignment:
         cluster_name: main_service
         endpoints:
@@ -378,7 +377,7 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: grpc_service
+                      address: ${GRPC_SERVICE_HOST}
                       port_value: 5001
 
     - name: notification_service
@@ -392,5 +391,5 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: notification_service
+                      address: ${NOTIFICATION_SERVICE_HOST}
                       port_value: 5002
