@@ -3,6 +3,14 @@ services:
     image: envoyproxy/envoy:v1.33.0
     profiles: ["envoy"]
     container_name: envoy_proxy
+    env_file:
+      - .env
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        perl -pe 's/\$\{GRPC_SERVICE_HOST\}/$$ENV{"GRPC_SERVICE_HOST"}/g; s/\$\{NOTIFICATION_SERVICE_HOST\}/$$ENV{"NOTIFICATION_SERVICE_HOST"}/g; s/\$\{FRONTEND_URL\}/$$ENV{"FRONTEND_URL"}/g;' \
+            /etc/envoy/envoy.yaml > /tmp/envoy.rendered.yaml
+        exec envoy -c /tmp/envoy.rendered.yaml
     ports:
       - "8081:8081" # HTTP (REST to gRPC)
       - "8082:8082"
