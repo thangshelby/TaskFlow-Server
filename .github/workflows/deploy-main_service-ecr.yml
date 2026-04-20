@@ -1,0 +1,127 @@
+name: TaskFlow CI/CD
+
+on:
+  push:
+    branches: [taskflow/deploy]
+    paths:
+      - "services/main-service/**"
+      - "envoy/**"
+      - ".github/workflows/deploy-main_service-ecr.yml"
+
+jobs:
+  build-main-service:
+    name: Build main-service image
+    if: always()
+    # if: contains(toJson(github.event.commits), 'services/main-service/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push main-service image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: main-service
+          IMAGE_TAG: latest
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          REDIS_CONNECTIONSTRING: ${{ secrets.REDIS_CONNECTIONSTRING }}
+        run: |
+          docker build \
+            --build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+            --build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+            --build-arg REDIS_CONNECTIONSTRING=$REDIS_CONNECTIONSTRING \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -f services/main-service/Dockerfile .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+  build-envoy:
+    name: Build envoy image
+    if: contains(toJson(github.event.commits), 'envoy.yaml')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push envoy image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: envoy-gateway
+          IMAGE_TAG: latest
+          # Keep build args consistent with main-service in case Dockerfile requires them.
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          REDIS_CONNECTIONSTRING: ${{ secrets.REDIS_CONNECTIONSTRING }}
+        run: |
+          docker build \
+            --build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+            --build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+            --build-arg REDIS_CONNECTIONSTRING=$REDIS_CONNECTIONSTRING \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -f envoy/Dockerfile .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+  deploy:
+    name: Deploy to EC2
+    needs: [build-main-service, build-envoy]
+    if: >
+      always() &&
+      (needs.build-main-service.result == 'success' ||
+      needs.build-envoy.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            REGION="${{ secrets.AWS_REGION }}"
+            ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+            REGISTRY="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
+
+            aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+            cd ~/TaskFlow-Server
+            SERVICES=""
+            if [ "${{ needs.build-main-service.result }}" = "success" ]; then
+              SERVICES="$SERVICES grpc-service"
+            fi
+
+            if [ "${{ needs.build-envoy.result }}" = "success" ]; then
+              SERVICES="$SERVICES envoy"
+            fi
+
+            SERVICES="$(echo "$SERVICES" | xargs)"
+            if [ -z "$SERVICES" ]; then
+              echo "No service changed successfully, skip deploy."
+              exit 0
+            fi
+
+            for service in $SERVICES; do
+              sudo docker compose pull "$service"
+            done
+            sudo docker compose up -d $SERVICES
