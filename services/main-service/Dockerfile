@@ -34,6 +34,9 @@ COPY --from=build /out .
 # Expose the port that the app runs on
 EXPOSE 5001
 
+ARG AWS_ACCESS_KEY_ID
+ARG AWS_SECRET_ACCESS_KEY
+ARG REDIS_CONNECTIONSTRING
 # Set environment variables
 ENV ASPNETCORE_ENVIRONMENT=Development
 ENV ASPNETCORE_URLS=http://0.0.0.0:5001
