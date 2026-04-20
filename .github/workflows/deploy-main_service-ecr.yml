@@ -11,8 +11,7 @@ on:
 jobs:
   build-main-service:
     name: Build main-service image
-    if: always()
-    # if: contains(toJson(github.event.commits), 'services/main-service/')
+    if: contains(toJson(github.event.commits), 'services/main-service/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
