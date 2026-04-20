@@ -1,17 +1,15 @@
 services:
   envoy:
-    build:
-      context: .
-      dockerfile: dockerfile
-    profiles: ["envoy"]
+    image: envoyproxy/envoy:v1.33.0
     container_name: envoy_proxy
-    env_file:
-      - .env
     ports:
       - "8081:8081" # HTTP (REST to gRPC)
       - "8082:8082"
       - "8083:8083"
       - "9901:9901" # Admin Panel
+    volumes:
+      - ./envoy.yaml:/etc/envoy/envoy.yaml
+      - ./proto.pb:/etc/envoy/proto.pb
     networks:
       - taskflow-network
     depends_on:
