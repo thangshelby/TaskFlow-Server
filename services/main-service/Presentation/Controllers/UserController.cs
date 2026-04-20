@@ -115,7 +115,8 @@ public class UserController : UserService.UserServiceBase
         if (string.IsNullOrEmpty(userId))
         {
             // User is not authenticated, use default user id.
-            userId = "69ddde504572e3dbb15dacc0";
+            // userId = "69ddde504572e3dbb15dacc0";
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User is not authenticated."));
         }
 
         var user = await _userUseCase.GetById(userId);
@@ -397,7 +398,7 @@ public class UserController : UserService.UserServiceBase
 
         var metadata = new Metadata
         {
-            { "Set-Cookie", $"token={jwtToken}; Path=/; HttpOnly; Secure; SameSite=Lax" }
+            { "Set-Cookie", $"token={jwtToken}; Path=/; HttpOnly; Secure; SameSite=None" }
         };
         await context.WriteResponseHeadersAsync(metadata);
     }
