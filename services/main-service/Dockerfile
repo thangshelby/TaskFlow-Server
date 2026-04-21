@@ -47,7 +47,7 @@ ENV REDIS_CONNECTIONSTRING=${REDIS_CONNECTIONSTRING}
 
 # Add health check
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:5001/health || exit 1
+  CMD bash -c "exec 3<>/dev/tcp/127.0.0.1/5001" || exit 1
 
 # Start the application
 ENTRYPOINT ["dotnet", "NetService.dll"]

@@ -398,7 +398,7 @@ public class UserController : UserService.UserServiceBase
 
         var metadata = new Metadata
         {
-            { "Set-Cookie", $"token={jwtToken}; Path=/" }
+            { "Set-Cookie", $"token={jwtToken}; Path=/; HttpOnly; Secure; SameSite=None" }
         };
         await context.WriteResponseHeadersAsync(metadata);
     }

@@ -39,7 +39,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://0.0.0.0:5001
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      test:
+        ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/5001'"]
       interval: 10s
       timeout: 5s
       retries: 3
