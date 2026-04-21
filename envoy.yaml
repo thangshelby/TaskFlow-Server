@@ -35,6 +35,30 @@ static_resources:
                       routes:
                         - match:
                             prefix: "/"
+                            headers:
+                              - name: ":method"
+                                exact_match: "OPTIONS"
+                          direct_response:
+                            status: 204
+                          response_headers_to_add:
+                            - header:
+                                key: "access-control-allow-origin"
+                                value: "%REQ(ORIGIN)%"
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header:
+                                key: "access-control-allow-methods"
+                                value: "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+                            - header:
+                                key: "access-control-allow-headers"
+                                value: "content-type, authorization, x-requested-with"
+                            - header:
+                                key: "access-control-allow-credentials"
+                                value: "true"
+                            - header:
+                                key: "access-control-max-age"
+                                value: "86400"
+                        - match:
+                            prefix: "/"
                           route:
                             cluster: main_service
                           decorator:
@@ -114,7 +138,29 @@ static_resources:
                               "Redirecting to HTTP..."
                             )
                           end
-                        end                        
+                        end
+                        function envoy_on_request(request_handle)
+                          local method = request_handle:headers():get(":method")
+                          local origin = request_handle:headers():get("origin")
+                          local req_headers = request_handle:headers():get("access-control-request-headers")
+
+                          if method == "OPTIONS" then
+                            local allow_origin = origin or "*"
+                            request_handle:respond(
+                              {
+                                [":status"] = "204",
+                                ["access-control-allow-origin"] = allow_origin,
+                                ["access-control-allow-methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+                                ["access-control-allow-headers"] = req_headers or "content-type, authorization, x-requested-with",
+                                ["access-control-allow-credentials"] = "true",
+                                ["access-control-max-age"] = "86400",
+                                ["vary"] = "Origin"
+                              },
+                              ""
+                            )
+                            return
+                          end
+                        end
                         function envoy_on_response(response_handle)
                           local token = response_handle:headers():get("authorization")
                           if token then
