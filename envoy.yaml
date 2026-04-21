@@ -122,38 +122,22 @@ static_resources:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
                       inline_code: |
-                        function redirect_to_http(request_handle)
-                          local proto = request_handle:headers():get("x-forwarded-proto")
-                          
-                          if proto == "https" then
-                            local host = request_handle:headers():get(":authority")
-                            local path = request_handle:headers():get(":path")
-                            
-                            request_handle:respond(
-                              {
-                                [":status"] = "301",
-                                ["location"] = "http://" .. host .. path,
-                                ["content-type"] = "text/plain"
-                              },
-                              "Redirecting to HTTP..."
-                            )
-                          end
-                        end
                         function envoy_on_request(request_handle)
                           local method = request_handle:headers():get(":method")
                           local origin = request_handle:headers():get("origin")
                           local req_headers = request_handle:headers():get("access-control-request-headers")
                           local proto = request_handle:headers():get("x-forwarded-proto")
-                          if method == "OPTIONS" then
-                            local allow_origin = origin or "*"
-                            request_handle:respond(
-                           -- Upstream gRPC service runs h2c (no TLS). When ALB forwards
-                          -- x-forwarded-proto=https, keep external semantics but normalize
-                          -- forwarded scheme for upstream hop to avoid stream reset.
+
+                          -- Upstream gRPC service is h2c (no TLS), normalize forwarded scheme.
                           if proto == "https" then
                             request_handle:headers():replace("x-forwarded-proto", "http")
                             request_handle:headers():replace(":scheme", "http")
-                          end   {
+                          end
+
+                          if method == "OPTIONS" then
+                            local allow_origin = origin or "*"
+                            request_handle:respond(
+                              {
                                 [":status"] = "204",
                                 ["access-control-allow-origin"] = allow_origin,
                                 ["access-control-allow-methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS",
@@ -165,13 +149,6 @@ static_resources:
                               ""
                             )
                             return
-                          end
-                          -- Upstream gRPC service runs h2c (no TLS). When ALB forwards
-                          -- x-forwarded-proto=https, keep external semantics but normalize
-                          -- forwarded scheme for upstream hop to avoid stream reset.
-                          if proto == "https" then
-                            request_handle:headers():replace("x-forwarded-proto", "http")
-                            request_handle:headers():replace(":scheme", "http")
                           end
                         end
                         function envoy_on_response(response_handle)
