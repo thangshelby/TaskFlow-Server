@@ -1,15 +1,9 @@
 services:
   envoy:
-    image: envoyproxy/envoy:v1.33.0
+    build:
+      context: .
+      dockerfile: dockerfile
     container_name: envoy_proxy
-    ports:
-      - "8081:8081" # HTTP (REST to gRPC)
-      - "8082:8082"
-      - "8083:8083"
-      - "9901:9901" # Admin Panel
-    volumes:
-      - ./envoy.yaml:/etc/envoy/envoy.yaml
-      - ./proto.pb:/etc/envoy/proto.pb
     networks:
       - taskflow-network
     depends_on:
@@ -27,20 +21,18 @@ services:
     build:
       context: . # Build from root directory to access protos
       dockerfile: ./services/main-service/Dockerfile
-    profiles: ["grpc_server"]
-    container_name: grpc_serverice
-    ports:
-      - "5001:5001"
+    profiles: ["grpc_service"]
+    container_name: grpc_service
     networks:
       - taskflow-network
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://0.0.0.0:5001
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:5001/health"]
       interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 10s
 
   notification-service:
     build:
@@ -48,18 +40,14 @@ services:
       dockerfile: ./Dockerfile
     profiles: ["notification_service"]
     container_name: notification_service
-    ports:
-      - "5002:5002"
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     networks:
       - taskflow-network
-    env_file:
-      - ./services/nest-service/.env # 👈 Load các biến môi trường từ file .env
     environment:
-      - NODE_ENV=production
       - PORT=5002
-    depends_on:
-      - kafka
-      - grpc-server
+      - NODE_OPTIONS=--dns-result-order=ipv4first
     healthcheck:
       test:
         [
@@ -79,8 +67,6 @@ services:
     image: confluentinc/cp-zookeeper:latest
     profiles: ["kafka"]
     container_name: zookeeper
-    ports:
-      - "2181:2181"
     environment:
       - ZOOKEEPER_CLIENT_PORT=2181
       - ZOOKEEPER_TICK_TIME=2000
@@ -93,8 +79,6 @@ services:
     image: confluentinc/cp-kafka:7.4.0
     profiles: ["kafka"]
     container_name: kafka
-    ports:
-      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -117,8 +101,6 @@ services:
     image: provectuslabs/kafka-ui:latest
     profiles: ["kafka"]
     container_name: kafka_ui
-    ports:
-      - "8888:8888"
     environment:
       - KAFKA_CLUSTERS_0_NAME=local
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
@@ -149,18 +131,16 @@ services:
     image: redis:latest
     profiles: ["redis"]
     container_name: redis
-    ports:
-      - "6379:6379"
     networks:
       - taskflow-network
 
   elasticsearch:
     image: elasticsearch:8.19.14
+    profiles: ["elasticsearch"]
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
-      # Minimal dev security: auth on, plain HTTP between containers. Kibana needs ES security APIs (avoids
-      # "security plugin is not ready"). Log in to Kibana as elastic / ELASTIC_PASSWORD.
+      # Minimal dev security
       - xpack.security.enabled=true
       - xpack.security.http.ssl.enabled=false
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-changeme}
@@ -178,22 +158,19 @@ services:
       timeout: 10s
       retries: 30
       start_period: 60s
-    ports:
-      - "9200:9200"
     networks:
       - taskflow-network
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
 
-  # Kibana 8.19+ must use a service account token to Elasticsearch (not user "elastic"). Creates/refreshes token on each compose up.
   kibana-token-init:
     image: elasticsearch:8.19.14
+    profiles: ["elasticsearch"]
     container_name: kibana_token_init
     restart: "no"
     networks:
       - taskflow-network
     environment:
-      # Must match elasticsearch service (same ELASTIC_PASSWORD / default changeme).
       ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
     volumes:
       - kibana-sa-token:/tokenvol
@@ -203,7 +180,6 @@ services:
       - |
         set -euo pipefail
         PASS="$$ELASTIC_PASSWORD"
-        # 404 on delete is expected when the token does not exist; do not use curl -f here.
         curl -sS -u "elastic:$$PASS" -X DELETE \
           "http://elasticsearch:9200/_security/service/elastic/kibana/credential/token/taskflow-kibana" \
           -o /dev/null || true
@@ -224,9 +200,8 @@ services:
 
   kibana:
     image: elastic/kibana:8.19.14
+    profiles: ["elasticsearch"]
     container_name: kibana
-    ports:
-      - "5601:5601"
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     entrypoint: ["/bin/bash", "-c"]

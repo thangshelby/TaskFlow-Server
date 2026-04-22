@@ -15,16 +15,8 @@ public static class DependencyInjectionExtensions
         // Database Service
         services.AddSingleton<MongoDbService>();
         
-        // Redis Service
-        services.AddSingleton<IConnectionMultiplexer>(sp =>
-        {
-            var configuration = sp.GetRequiredService<IConfiguration>();
-            var redisConnection = configuration.GetValue<string>("Redis:ConnectionString") ?? "localhost:6379";
-            return ConnectionMultiplexer.Connect(redisConnection);
-        });
-        
-        // Cache Repository
-        services.AddSingleton<ICacheRepository, CacheRepository>();
+        // Redis & Cache Service (conditional)
+        services.AddRedisServices();
         
         // Use Cases
         services.AddScoped<UserUseCase>();
@@ -44,7 +36,6 @@ public static class DependencyInjectionExtensions
         services.AddSingleton<ISprintRepository, SprintRepository>();
         // services.AddSingleton<IQueueRepository, KafkaRepository>();
         services.AddSingleton<IQueueRepository, AWSQueueRepository>();
-        // services.AddSingleton<IIssueRepository, IssueCacheDecorator>();
 
         // Register IssueRepository with Cache Decorator
         services.AddSingleton<IssueRepository>();
@@ -82,9 +73,68 @@ public static class DependencyInjectionExtensions
             Capacity = 100,
             RefillPerSecond = 20
         });
-        services.AddSingleton<IRateLimiter, RedisTokenBucketRateLimiter>();
 
         return services;
+    }
+
+    /// <summary>
+    /// Conditionally registers Redis-backed or in-memory/no-op services
+    /// based on whether "Redis:ConnectionString" is configured.
+    /// </summary>
+    private static void AddRedisServices(this IServiceCollection services)
+    {
+        services.AddSingleton<ICacheRepository>(sp =>
+        {
+            var configuration = sp.GetRequiredService<IConfiguration>();
+            var redisConnection = configuration.GetValue<string>("Redis:ConnectionString");
+            var composeProfiles = Environment.GetEnvironmentVariable("COMPOSE_PROFILES") ?? "";
+            var isRedis = composeProfiles.Contains("redis");
+            if (string.IsNullOrWhiteSpace(redisConnection) || !isRedis)
+            {
+                var logger = sp.GetRequiredService<ILogger<NoOpCacheRepository>>();
+                return new NoOpCacheRepository(logger);
+            }
+
+            try
+            {
+                var redis = ConnectionMultiplexer.Connect(redisConnection);
+                var logger = sp.GetRequiredService<ILogger<CacheRepository>>();
+                logger.LogInformation("Connected to Redis at '{ConnectionString}'. Using CacheRepository.", redisConnection);
+                return new CacheRepository(redis, logger);
+            }
+            catch (Exception ex)
+            {
+                var logger = sp.GetRequiredService<ILogger<NoOpCacheRepository>>();
+                logger.LogWarning(ex, "Failed to connect to Redis at '{ConnectionString}'. Falling back to NoOp cache.", redisConnection);
+                return new NoOpCacheRepository(logger);
+            }
+        });
+
+        services.AddSingleton<IRateLimiter>(sp =>
+        {
+            var configuration = sp.GetRequiredService<IConfiguration>();
+            var redisConnection = configuration.GetValue<string>("Redis:ConnectionString");
+            var options = sp.GetRequiredService<RateLimitOptions>();
+            var composeProfiles = Environment.GetEnvironmentVariable("COMPOSE_PROFILES") ?? "";
+            var isRedis = composeProfiles.Contains("redis");
+
+            if (string.IsNullOrWhiteSpace(redisConnection) || !isRedis)
+            {
+                return new InMemoryRateLimiter(options);
+            }
+
+            try
+            {
+                var redis = ConnectionMultiplexer.Connect(redisConnection);
+                return new RedisTokenBucketRateLimiter(redis, options);
+            }
+            catch (Exception ex)
+            {
+                var logger = sp.GetRequiredService<ILogger<InMemoryRateLimiter>>();
+                logger.LogWarning(ex, "Failed to connect to Redis for rate limiter. Falling back to in-memory rate limiter.");
+                return new InMemoryRateLimiter(options);
+            }
+        });
     }
 
     public static IServiceCollection AddGrpcServices(this IServiceCollection services)

@@ -52,7 +52,7 @@ public class UserController : UserService.UserServiceBase
 
         if (string.IsNullOrEmpty(userId))
         {
-            throw new RpcException(new Status(StatusCode.Unauthenticated, "User is not authenticated."));
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "Authentication is required to update a user."));   
         }
 
         var validationResult = await _updateUserValidator.ValidateAsync(request);
@@ -302,7 +302,7 @@ public class UserController : UserService.UserServiceBase
     {
         var metadata = new Metadata
         {
-            { "Set-Cookie", "token=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0" }
+            { "Set-Cookie", "token=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0" }
         };
         await context.WriteResponseHeadersAsync(metadata);
 
@@ -395,7 +395,7 @@ public class UserController : UserService.UserServiceBase
 
         var metadata = new Metadata
         {
-            { "Set-Cookie", $"token={jwtToken}; Path=/; HttpOnly; Secure; SameSite=Strict" }
+            { "Set-Cookie", $"token={jwtToken}; Path=/; HttpOnly; Secure; SameSite=None" }
         };
         await context.WriteResponseHeadersAsync(metadata);
     }

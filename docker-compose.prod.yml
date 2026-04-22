@@ -1,0 +1,61 @@
+# Production compose — overrides base docker-compose.yml
+# ECR images for envoy & grpc-service; secrets injected at runtime via .env
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Required: Set ECR_REGISTRY in .env on the EC2 instance, e.g.:
+#   ECR_REGISTRY=123456789012.dkr.ecr.ap-southeast-1.amazonaws.com
+
+services:
+  envoy:
+    image: ${ECR_REGISTRY}/envoy-proxy:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+      - "8083:8083"
+      # Admin port 9901 NOT exposed in prod for security
+
+  grpc-service:
+    image: ${ECR_REGISTRY}/main-service:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    # ports NOT exposed — traffic routed through envoy only
+
+  notification-service:
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    # ports NOT exposed — traffic routed through envoy only
+
+  zookeeper:
+    restart: unless-stopped
+
+  kafka:
+    restart: unless-stopped
+
+  kafka-ui:
+    restart: unless-stopped
+    # Uncomment below to access Kafka UI in prod (not recommended)
+    # ports:
+    #   - "8888:8888"
+
+  redis:
+    restart: unless-stopped
+
+  elasticsearch:
+    restart: unless-stopped
+
+  kibana-token-init:
+    restart: "no"
+
+  kibana:
+    restart: unless-stopped
