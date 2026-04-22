@@ -2,7 +2,7 @@ name: TaskFlow CI/CD
 
 on:
   push:
-    branches: [taskflow/deploy]
+    branches: [develop]
     paths:
       - "services/main-service/**"
       - "protos/**"
