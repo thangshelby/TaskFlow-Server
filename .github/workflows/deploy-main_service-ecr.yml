@@ -11,9 +11,32 @@ on:
       - ".github/workflows/deploy-main_service-ecr.yml"
 
 jobs:
+  detect-changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      main-service: ${{ steps.filter.outputs.main-service }}
+      envoy: ${{ steps.filter.outputs.envoy }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            main-service:
+              - 'services/main-service/**'
+              - 'protos/**'
+            envoy:
+              - 'envoy.yaml'
+              - 'dockerfile'
+
   build-main-service:
     name: Build main-service image
-    if: contains(toJson(github.event.commits), 'services/main-service/') || contains(toJson(github.event.commits), 'protos/')
+    needs: detect-changes
+    if: needs.detect-changes.outputs.main-service == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -49,7 +72,8 @@ jobs:
 
   build-envoy:
     name: Build envoy image
-    if: contains(toJson(github.event.commits), 'envoy.yaml') || contains(toJson(github.event.commits), 'dockerfile')
+    needs: detect-changes
+    if: needs.detect-changes.outputs.envoy == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -71,15 +95,8 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: envoy-proxy
           IMAGE_TAG: latest
-          # Keep build args consistent with main-service in case Dockerfile requires them.
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          REDIS_CONNECTIONSTRING: ${{ secrets.REDIS_CONNECTIONSTRING }}
         run: |
           docker build \
-            --build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
-            --build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-            --build-arg REDIS_CONNECTIONSTRING=$REDIS_CONNECTIONSTRING \
             -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
             -f dockerfile .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
