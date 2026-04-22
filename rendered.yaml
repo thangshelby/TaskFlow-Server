@@ -43,7 +43,7 @@ static_resources:
                           response_headers_to_add:
                             - header:
                                 key: "access-control-allow-origin"
-                                value: "${FRONTEND_URL}"
+                                value: "https://myapp.com"
                               append_action: OVERWRITE_IF_EXISTS_OR_ADD
                             - header:
                                 key: "access-control-allow-methods"

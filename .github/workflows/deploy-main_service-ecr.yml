@@ -80,7 +80,7 @@ jobs:
             --build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
             --build-arg REDIS_CONNECTIONSTRING=$REDIS_CONNECTIONSTRING \
             -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            -f envoy/Dockerfile .
+            -f dockerfile .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
   deploy:

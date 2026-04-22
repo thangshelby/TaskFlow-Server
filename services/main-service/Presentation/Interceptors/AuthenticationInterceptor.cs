@@ -20,10 +20,8 @@ public class AuthenticationInterceptor : Interceptor
         UnaryServerMethod<TRequest, TResponse> continuation)
     {
         var token = GetTokenFromMetadata(context);
-        _logger.LogWarning("----------------------------------Token: {Token}", token);
         if (string.IsNullOrEmpty(token))
         {
-            _logger.LogWarning("----------------------------------No token found in metadata");
             return await continuation(request, context);
         }
         var claimsPrincipal = DecodeJwtToken(token);

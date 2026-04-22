@@ -52,8 +52,7 @@ public class UserController : UserService.UserServiceBase
 
         if (string.IsNullOrEmpty(userId))
         {
-            // Fallback to a default user when request has no authenticated context.
-            userId = "69ddde504572e3dbb15dacc0";
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "Authentication is required to update a user."));   
         }
 
         var validationResult = await _updateUserValidator.ValidateAsync(request);
@@ -114,8 +113,6 @@ public class UserController : UserService.UserServiceBase
 
         if (string.IsNullOrEmpty(userId))
         {
-            // User is not authenticated, use default user id.
-            // userId = "69ddde504572e3dbb15dacc0";
             throw new RpcException(new Status(StatusCode.Unauthenticated, "User is not authenticated."));
         }
 
@@ -305,7 +302,7 @@ public class UserController : UserService.UserServiceBase
     {
         var metadata = new Metadata
         {
-            { "Set-Cookie", "token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0" }
+            { "Set-Cookie", "token=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0" }
         };
         await context.WriteResponseHeadersAsync(metadata);
 
