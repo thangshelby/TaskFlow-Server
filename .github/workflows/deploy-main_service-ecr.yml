@@ -142,13 +142,13 @@ jobs:
 
             echo "📥 Pulling images: $SERVICES"
             for service in $SERVICES; do
-              docker compose -f docker-compose.yml -f docker-compose.prod.yml pull "$service"
+              sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml pull "$service"
             done
 
             echo "🚀 Starting services..."
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d $SERVICES
+            sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d $SERVICES
 
             echo "🧹 Cleaning up old images..."
-            docker image prune -f
+            sudo docker image prune -f
 
             echo "✅ Deploy completed!"
