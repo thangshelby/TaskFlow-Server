@@ -1,0 +1,49 @@
+services:
+  envoy:
+    env_file:
+      - .env
+    ports:
+      - "8081:8081" # HTTP (REST to gRPC)
+      - "8082:8082"
+      - "8083:8083"
+      - "9901:9901" # Admin Panel
+
+  grpc-service:
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "5001:5001"
+
+  notification-service:
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+    ports:
+      - "5002:5002"
+
+  zookeeper:
+    ports:
+      - "2181:2181"
+
+  kafka:
+    ports:
+      - "29092:29092"
+
+  kafka-ui:
+    ports:
+      - "8888:8888"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  elasticsearch:
+    ports:
+      - "9200:9200"
+
+  kibana:
+    ports:
+      - "5601:5601"

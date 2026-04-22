@@ -34,20 +34,14 @@ COPY --from=build /out .
 # Expose the port that the app runs on
 EXPOSE 5001
 
-ARG AWS_ACCESS_KEY_ID
-ARG AWS_SECRET_ACCESS_KEY
-ARG REDIS_CONNECTIONSTRING
-# Set environment variables
-ENV ASPNETCORE_ENVIRONMENT=Development
+# Non-secret environment defaults only. Secrets (AWS keys, connection strings, etc.)
+# are injected at runtime via env_file / environment in docker-compose.
 ENV ASPNETCORE_URLS=http://0.0.0.0:5001
 ENV AWS_REGION=ap-southeast-1
-ENV AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-ENV AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-ENV REDIS_CONNECTIONSTRING=${REDIS_CONNECTIONSTRING}
 
-# Add health check
+# Health check — uses /bin/sh compatible wget (available in aspnet images)
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
-  CMD bash -c "exec 3<>/dev/tcp/127.0.0.1/5001" || exit 1
+  CMD wget -qO- http://localhost:5001/health || exit 1
 
 # Start the application
 ENTRYPOINT ["dotnet", "NetService.dll"]
