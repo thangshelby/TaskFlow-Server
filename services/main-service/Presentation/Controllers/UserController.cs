@@ -109,7 +109,6 @@ public class UserController : UserService.UserServiceBase
 
     public override async Task<GetUserRes> GetMe(GetUserReq request, ServerCallContext context)
     {  
-        
         var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
 
         if (string.IsNullOrEmpty(userId))
