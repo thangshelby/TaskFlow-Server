@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option csharp_namespace = "TaskFlow.MetadataService";
+package project_service;
+import "google/api/annotations.proto";
+
+service MetadataService {
+    rpc CreatePresignedtURLImage (CreatePresignedURLImageReq) returns (CreatePresignedtURLImageRes)  {
+        option (google.api.http) = {
+            post: "/api/v1/metadata/image/upload"
+            body: "*"
+        };
+    }
+}
+
+message CreatePresignedURLImageReq {
+    string project_id = 1;
+    string user_id =2;
+    string file_name = 3;
+    string content_type = 4; 
+}
+
+message CreatePresignedtURLImageRes {
+    string url = 1;
+}

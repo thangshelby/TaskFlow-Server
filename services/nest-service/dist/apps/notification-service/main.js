@@ -1225,10 +1225,11 @@ const mongoose_1 = __webpack_require__(14);
 const notification_repo_interface_1 = __webpack_require__(38);
 const notification_schema_1 = __webpack_require__(46);
 const notification_controller_1 = __webpack_require__(48);
+const health_controller_1 = __webpack_require__(49);
 const notification_websocket_1 = __webpack_require__(39);
-const mail_service_1 = __webpack_require__(49);
-const mail_sender_interface_1 = __webpack_require__(50);
-const mail_sender_repo_1 = __webpack_require__(51);
+const mail_service_1 = __webpack_require__(50);
+const mail_sender_interface_1 = __webpack_require__(51);
+const mail_sender_repo_1 = __webpack_require__(52);
 let NotificationModule = class NotificationModule {
 };
 exports.NotificationModule = NotificationModule;
@@ -1242,7 +1243,7 @@ exports.NotificationModule = NotificationModule = __decorate([
             core_1.CoreModule,
             mongoose_1.MongooseModule.forFeature([{ name: notification_schema_1.INotification.name, schema: notification_schema_1.NotificationSchema }]),
         ],
-        controllers: [notification_controller_1.NotificationController],
+        controllers: [notification_controller_1.NotificationController, health_controller_1.HealthController],
         providers: [
             notification_websocket_1.NotificationGateway,
             mail_service_1.MailService,
@@ -1643,7 +1644,6 @@ let NotificationSubscriberService = class NotificationSubscriberService {
         }
     }
     async handleCreateNotification(queueMessage) {
-        console.log("-----------------------------", queueMessage);
         const kafkaMessage = JSON.parse(queueMessage);
         const { isValid, message, data } = validate_utils_1.default.validateRequiredFields(kafkaMessage);
         if (!isValid || !data) {
@@ -1930,13 +1930,6 @@ let NotificationController = class NotificationController {
     constructor(notificationService) {
         this.notificationService = notificationService;
     }
-    async healthCheck() {
-        return {
-            status: 'ok',
-            message: 'Notification service is running',
-            timestamp: new Date().toISOString(),
-        };
-    }
     async sendNotification(data) {
         const type = this.notificationService.ValidateNotificationType(data.type);
         const noti = await this.notificationService.createNotification({
@@ -1996,12 +1989,6 @@ let NotificationController = class NotificationController {
 };
 exports.NotificationController = NotificationController;
 __decorate([
-    (0, common_1.Get)('/health'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], NotificationController.prototype, "healthCheck", null);
-__decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -2050,12 +2037,50 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.HealthController = void 0;
+const common_1 = __webpack_require__(4);
+let HealthController = class HealthController {
+    async healthCheck() {
+        return {
+            status: 'ok',
+            message: 'Notification service is healthy',
+            timestamp: new Date().toISOString(),
+        };
+    }
+};
+exports.HealthController = HealthController;
+__decorate([
+    (0, common_1.Get)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], HealthController.prototype, "healthCheck", null);
+exports.HealthController = HealthController = __decorate([
+    (0, common_1.Controller)('/health')
+], HealthController);
+
+
+/***/ }),
+/* 50 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 var _a, _b;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MailService = void 0;
 const core_1 = __webpack_require__(1);
 const common_1 = __webpack_require__(4);
-const mail_sender_interface_1 = __webpack_require__(50);
+const mail_sender_interface_1 = __webpack_require__(51);
 let MailService = class MailService {
     userClientService;
     mailSender;
@@ -2094,7 +2119,7 @@ exports.MailService = MailService = __decorate([
 
 
 /***/ }),
-/* 50 */
+/* 51 */
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -2106,7 +2131,7 @@ exports.IMailSender = IMailSender;
 
 
 /***/ }),
-/* 51 */
+/* 52 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -2124,9 +2149,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MailSenderRepo = void 0;
 const common_1 = __webpack_require__(4);
 const config_1 = __webpack_require__(3);
-const nodemailer = __webpack_require__(52);
-const fs = __webpack_require__(53);
-const handlebars = __webpack_require__(54);
+const nodemailer = __webpack_require__(53);
+const fs = __webpack_require__(54);
+const handlebars = __webpack_require__(55);
 const path_1 = __webpack_require__(18);
 let MailSenderRepo = class MailSenderRepo {
     configService;
@@ -2168,19 +2193,19 @@ exports.MailSenderRepo = MailSenderRepo = __decorate([
 
 
 /***/ }),
-/* 52 */
+/* 53 */
 /***/ ((module) => {
 
 module.exports = require("nodemailer");
 
 /***/ }),
-/* 53 */
+/* 54 */
 /***/ ((module) => {
 
 module.exports = require("fs");
 
 /***/ }),
-/* 54 */
+/* 55 */
 /***/ ((module) => {
 
 module.exports = require("handlebars");
