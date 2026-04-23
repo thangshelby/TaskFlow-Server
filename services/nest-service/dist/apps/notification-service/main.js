@@ -436,9 +436,55 @@ let AwsService = class AwsService {
                     continue;
                 }
                 for (const message of response.Messages) {
-                    const messageBody = message.Body ? JSON.parse(message.Body) : null;
+                    let messageData;
                     try {
-                        await callback(messageBody.Message);
+                        if (!message.Body) {
+                            continue;
+                        }
+                        const body = message.Body.trim();
+                        let parsedBody;
+                        try {
+                            parsedBody = JSON.parse(body);
+                        }
+                        catch (e) {
+                            if (body.includes('"id":') && !body.startsWith('{')) {
+                                const fixedBody = `{${body}${body.endsWith('}') ? '' : '}'}`;
+                                try {
+                                    parsedBody = JSON.parse(fixedBody);
+                                    this.logService.warn(`Auto-fixed SQS message body missing braces for message ${message.MessageId}`);
+                                }
+                                catch (e2) {
+                                    throw new Error(`Failed to parse SQS body even after auto-fix attempt. Original: ${body.substring(0, 100)}...`);
+                                }
+                            }
+                            else {
+                                throw e;
+                            }
+                        }
+                        if (parsedBody && typeof parsedBody === 'object' && 'Message' in parsedBody) {
+                            const innerMessage = parsedBody.Message;
+                            if (typeof innerMessage === 'string') {
+                                try {
+                                    messageData = JSON.parse(innerMessage);
+                                }
+                                catch (e) {
+                                    messageData = innerMessage;
+                                }
+                            }
+                            else {
+                                messageData = innerMessage;
+                            }
+                        }
+                        else {
+                            messageData = parsedBody;
+                        }
+                    }
+                    catch (error) {
+                        this.logService.error(`Failed to parse SQS message body: ${message.MessageId}. Body snippet: ${message.Body?.substring(0, 100)}`, error.stack);
+                        continue;
+                    }
+                    try {
+                        await callback(messageData);
                         if (message.ReceiptHandle) {
                             await this.sqsClient.send(new client_sqs_1.DeleteMessageCommand({
                                 QueueUrl: queueUrl,
@@ -447,7 +493,7 @@ let AwsService = class AwsService {
                         }
                     }
                     catch (error) {
-                        this.logService.error(`Error processing message from queue ${queueUrl}`, error?.stack);
+                        this.logService.error(`Error processing message ${message.MessageId} from queue ${queueUrl}`, error?.stack);
                     }
                 }
             }
@@ -1585,7 +1631,7 @@ let NotificationSubscriberService = class NotificationSubscriberService {
         this.configService = configService;
     }
     async onModuleInit() {
-        const queueName = this.configService.get('NOTIFICATION_QUEUE_NAME', 'https://sqs.ap-southeast-1.amazonaws.com/017263836577/notifications.fifo') || '';
+        const queueName = this.configService.get('NOTIFICATION_QUEUE_NAME') || 'https://sqs.ap-southeast-1.amazonaws.com/017263836577/notifications.fifo';
         await this.queueService.subscribe(queueName, this.handleNotificationReceiver.bind(this));
     }
     async handleNotificationReceiver(queueMessage) {
@@ -1597,6 +1643,7 @@ let NotificationSubscriberService = class NotificationSubscriberService {
         }
     }
     async handleCreateNotification(queueMessage) {
+        console.log("-----------------------------", queueMessage);
         const kafkaMessage = JSON.parse(queueMessage);
         const { isValid, message, data } = validate_utils_1.default.validateRequiredFields(kafkaMessage);
         if (!isValid || !data) {
