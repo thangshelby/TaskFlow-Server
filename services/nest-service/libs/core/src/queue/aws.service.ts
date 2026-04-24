@@ -74,9 +74,59 @@ export class AwsService implements OnModuleDestroy {
         }
 
         for (const message of response.Messages) {
-          const messageBody = message.Body ? JSON.parse(message.Body) : null;
+          let messageData: any;
           try {
-            await callback(messageBody.Message);
+            if (!message.Body) {
+              continue;
+            }
+
+            const body = message.Body.trim();
+            // console.log('DEBUG: Received SQS message body:', body);
+
+            let parsedBody: any;
+            try {
+              parsedBody = JSON.parse(body);
+            } catch (e) {
+              // Robust check: handle common issue with missing braces in this environment
+              if (body.includes('"id":') && !body.startsWith('{')) {
+                const fixedBody = `{${body}${body.endsWith('}') ? '' : '}'}`;
+                try {
+                  parsedBody = JSON.parse(fixedBody);
+                  this.logService.warn(`Auto-fixed SQS message body missing braces for message ${message.MessageId}`);
+                } catch (e2) {
+                  throw new Error(`Failed to parse SQS body even after auto-fix attempt. Original: ${body.substring(0, 100)}...`);
+                }
+              } else {
+                throw e;
+              }
+            }
+
+            // Check if it's an SNS envelope
+            // SNS shape: { "Type": "Notification", "Message": "{\"id\":...}", ... }
+            if (parsedBody && typeof parsedBody === 'object' && 'Message' in parsedBody) {
+              const innerMessage = parsedBody.Message;
+              if (typeof innerMessage === 'string') {
+                try {
+                  // Attempt to parse the inner message if it's a JSON string
+                  messageData = JSON.parse(innerMessage);
+                } catch (e) {
+                  // If inner Message is not a JSON string, use it as is
+                  messageData = innerMessage;
+                }
+              } else {
+                messageData = innerMessage;
+              }
+            } else {
+              // Not an SNS envelope or no Message field, use the parsed body directly
+              messageData = parsedBody;
+            }
+          } catch (error) {
+            this.logService.error(`Failed to parse SQS message body: ${message.MessageId}. Body snippet: ${message.Body?.substring(0, 100)}`, (error as Error).stack);
+            continue;
+          }
+
+          try {
+            await callback(messageData);
 
             if (message.ReceiptHandle) {
               await this.sqsClient.send(
@@ -87,7 +137,7 @@ export class AwsService implements OnModuleDestroy {
               );
             }
           } catch (error: any) {
-            this.logService.error(`Error processing message from queue ${queueUrl}`, error?.stack);
+            this.logService.error(`Error processing message ${message.MessageId} from queue ${queueUrl}`, error?.stack);
           }
         }
       } catch (error: any) {
