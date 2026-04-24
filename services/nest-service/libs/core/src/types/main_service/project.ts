@@ -184,6 +184,61 @@ export interface DeleteColumnRes {
   status: string;
 }
 
+export interface GetProjectSummaryReq {
+  projectId: string;
+  sprintId?: string | undefined;
+  dateFrom?: string | undefined;
+  dateTo?: string | undefined;
+}
+
+export interface ProjectSummaryStatusCount {
+  name: string;
+  count: number;
+}
+
+export interface ProjectSummaryPriorityCount {
+  priority: string;
+  count: number;
+}
+
+export interface ProjectSummaryTypeCount {
+  type: string;
+  count: number;
+}
+
+export interface ProjectSummaryContributor {
+  userId: string;
+  displayName: string;
+  avatar: string;
+  resolvedCount: number;
+  contributionPercent: number;
+}
+
+export interface ProjectSummaryTimelinePoint {
+  date: string;
+  doneIssues: number;
+  remainingScope: number;
+  addedScope: number;
+}
+
+export interface ProjectSummaryData {
+  byStatus: ProjectSummaryStatusCount[];
+  byPriority: ProjectSummaryPriorityCount[];
+  byType: ProjectSummaryTypeCount[];
+  topContributors: ProjectSummaryContributor[];
+  timeline: ProjectSummaryTimelinePoint[];
+  totalIssues: number;
+  doneIssues: number;
+  newIssuesCount: number;
+  recentlyUpdatedCount: number;
+}
+
+export interface GetProjectSummaryRes {
+  status: string;
+  message: string;
+  data: ProjectSummaryData | undefined;
+}
+
 export const PROJECT_SERVICE_PACKAGE_NAME = "project_service";
 
 /** Define the gRPC service */
@@ -210,6 +265,8 @@ export interface ProjectServiceClient {
   updateColumnProject(request: UpdateColumnReq): Observable<UpdateColumnRes>;
 
   deleteColumn(request: DeleteColumnReq): Observable<DeleteColumnRes>;
+
+  getProjectSummary(request: GetProjectSummaryReq): Observable<GetProjectSummaryRes>;
 }
 
 /** Define the gRPC service */
@@ -242,6 +299,10 @@ export interface ProjectServiceController {
   ): Promise<UpdateColumnRes> | Observable<UpdateColumnRes> | UpdateColumnRes;
 
   deleteColumn(request: DeleteColumnReq): Promise<DeleteColumnRes> | Observable<DeleteColumnRes> | DeleteColumnRes;
+
+  getProjectSummary(
+    request: GetProjectSummaryReq,
+  ): Promise<GetProjectSummaryRes> | Observable<GetProjectSummaryRes> | GetProjectSummaryRes;
 }
 
 export function ProjectServiceControllerMethods() {
@@ -258,6 +319,7 @@ export function ProjectServiceControllerMethods() {
       "updateOrderProjectColumns",
       "updateColumnProject",
       "deleteColumn",
+      "getProjectSummary",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

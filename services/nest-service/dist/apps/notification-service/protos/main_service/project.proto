@@ -74,6 +74,12 @@ service ProjectService {
       delete: "/api/v1/projects/columns/{column_id}"
     };
   }
+  rpc GetProjectSummary (GetProjectSummaryReq) returns (GetProjectSummaryRes) {
+    option (google.api.http) = {
+      post: "/api/v1/projects/{project_id}/summary"
+      body: "*"
+    };
+  }
 }
 
 // Define request message
@@ -234,4 +240,59 @@ message DeleteColumnReq {
 message DeleteColumnRes {
   string message = 1;
   string status = 2;
+}
+
+message GetProjectSummaryReq {
+  string project_id = 1;
+  optional string sprint_id = 2;
+  optional string date_from = 3;
+  optional string date_to = 4;
+}
+
+message ProjectSummaryStatusCount {
+  string name = 1;
+  int32 count = 2;
+}
+
+message ProjectSummaryPriorityCount {
+  string priority = 1;
+  int32 count = 2;
+}
+
+message ProjectSummaryTypeCount {
+  string type = 1;
+  int32 count = 2;
+}
+
+message ProjectSummaryContributor {
+  string user_id = 1;
+  string display_name = 2;
+  string avatar = 3;
+  int32 resolved_count = 4;
+  double contribution_percent = 5;
+}
+
+message ProjectSummaryTimelinePoint {
+  string date = 1;
+  int32 done_issues = 2;
+  int32 remaining_scope = 3;
+  int32 added_scope = 4;
+}
+
+message ProjectSummaryData {
+  repeated ProjectSummaryStatusCount by_status = 1;
+  repeated ProjectSummaryPriorityCount by_priority = 2;
+  repeated ProjectSummaryTypeCount by_type = 3;
+  repeated ProjectSummaryContributor top_contributors = 4;
+  repeated ProjectSummaryTimelinePoint timeline = 5;
+  int32 total_issues = 6;
+  int32 done_issues = 7;
+  int32 new_issues_count = 8;
+  int32 recently_updated_count = 9;
+}
+
+message GetProjectSummaryRes {
+  string status = 1;
+  string message = 2;
+  ProjectSummaryData data = 3;
 }

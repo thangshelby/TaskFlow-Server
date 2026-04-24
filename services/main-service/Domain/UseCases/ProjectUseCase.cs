@@ -256,4 +256,19 @@ public class ProjectUseCase
         }
         await _projectRepository.DeleteColumn(param);
     }
+
+    public async Task<ProjectSummaryDomain> GetProjectSummary(GetProjectSummaryParams param)
+    {
+        if (string.IsNullOrWhiteSpace(param.ProjectId))
+        {
+            throw new ArgumentException("Project ID cannot be empty");
+        }
+
+        if (param.DateFrom.HasValue && param.DateTo.HasValue && param.DateFrom > param.DateTo)
+        {
+            throw new ArgumentException("date_from must be less than or equal to date_to");
+        }
+
+        return await _projectRepository.GetProjectSummary(param);
+    }
 }

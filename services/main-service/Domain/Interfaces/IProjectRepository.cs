@@ -16,6 +16,7 @@ public interface IProjectRepository
     Task DeleteColumn(DeleteColumnParams param);
     Task IncrementIssuesCount(string projectId);
     Task<(string Key, int IssuesCount)> GetProjectKeyAndIssuesCount(string projectId);
+    Task<ProjectSummaryDomain> GetProjectSummary(GetProjectSummaryParams param);
 }
 public class ListProjectParams
 {
@@ -76,4 +77,12 @@ public class GetColumnParams
 public class DeleteColumnParams
 {
     public required string ColumnId { get; set; }
+}
+
+public class GetProjectSummaryParams
+{
+    public required string ProjectId { get; set; }
+    public string? SprintId { get; set; }
+    public DateTime? DateFrom { get; set; }
+    public DateTime? DateTo { get; set; }
 }
