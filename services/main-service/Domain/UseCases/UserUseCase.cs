@@ -61,6 +61,7 @@ public class UserUseCase
             ExpiredAt = DateTime.MaxValue,
         });
 
+        user.IsVerified = true;
         return user;
     }
 
