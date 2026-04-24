@@ -2251,7 +2251,11 @@ const snakeCase_interceptor_1 = __webpack_require__(32);
 const notification_module_1 = __webpack_require__(35);
 async function bootstrap() {
     const app = await core_2.NestFactory.create(notification_module_1.NotificationModule);
-    app.enableCors();
+    app.enableCors({
+        origin: 'http://localhost:5173',
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+        credentials: true,
+    });
     app.useGlobalInterceptors(new core_1.HttpAuthInterceptor(), new snakeCase_interceptor_1.TransformResponseInterceptor(), new core_1.GlobalHandleErrorInterceptor());
     await app.listen(5002);
     common_1.Logger.log(`🚀 HTTP server running at http://localhost:5002`);
