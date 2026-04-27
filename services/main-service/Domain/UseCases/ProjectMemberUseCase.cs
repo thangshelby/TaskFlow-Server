@@ -39,6 +39,19 @@ public class ProjectMemberUseCase
         {
             throw new KeyNotFoundException("Requester not found in project");
         }
+        
+        // If the requester is the owner, the member is automatically approved
+        var isPending = true;
+
+        var member = new ProjectMemberDomain
+        {
+            ProjectId = projectId,
+            UserId = userId,
+            Role = role,
+            IsPending = isPending
+        };
+
+        var addedMember = await _projectMemberRepository.AddAsync(member);
 
         // Send appropriate notification based on pending status
         if (isPending)

@@ -282,25 +282,19 @@ public class IssueUseCase
             }
         }
 
-        if (oldIssue.ColumnId != newIssue.ColumnId && oldIssue.ColumnId != null && newIssue.ColumnId != null)
+        if (oldIssue.ColumnId != newIssue.ColumnId && !string.IsNullOrWhiteSpace(oldIssue.ColumnId) && !string.IsNullOrWhiteSpace(newIssue.ColumnId))
         {
-            var oldColumnTask = _projectRepository.FindColumn(new GetColumnParams
-            {
-                ColumnId = oldIssue.ColumnId
-            });
-            var newColumnTask = _projectRepository.FindColumn(new GetColumnParams
-            {
-                ColumnId = newIssue.ColumnId
-            });
+            var oldStatusTask = _projectRepository.FindColumn(new GetColumnParams { ColumnId = oldIssue.ColumnId });
+            var newStatusTask = _projectRepository.FindColumn(new GetColumnParams { ColumnId = newIssue.ColumnId });
 
-            await Task.WhenAll(oldColumnTask, newColumnTask);
+            await Task.WhenAll(oldStatusTask, newStatusTask);
 
-            var oldStatus = await oldColumnTask;
-            var newStatus = await newColumnTask;
+            var oldStatus = await oldStatusTask;
+            var newStatus = await newStatusTask;
 
             Compare("Status", oldStatus?.Name, newStatus?.Name);
         }
-        if (oldIssue.AssigneeId != newIssue.AssigneeId && oldIssue.AssigneeId != null && newIssue.AssigneeId != null)
+        if (oldIssue.AssigneeId != newIssue.AssigneeId && !string.IsNullOrWhiteSpace(oldIssue.AssigneeId) && !string.IsNullOrWhiteSpace(newIssue.AssigneeId))
         {
             var oldAsigneeTask = _userRepository.FindUserAsync(new UserQueryParams
             {
@@ -318,7 +312,7 @@ public class IssueUseCase
 
             Compare("Assignee", oldAsignee?.FullName, newAsignee?.FullName);
         }
-        if (oldIssue.ReporterId != newIssue.ReporterId && oldIssue.ReporterId != null && newIssue.ReporterId != null)
+        if (oldIssue.ReporterId != newIssue.ReporterId && !string.IsNullOrWhiteSpace(oldIssue.ReporterId) && !string.IsNullOrWhiteSpace(newIssue.ReporterId))
         {
             var oldReporterTask = _userRepository.FindUserAsync(new UserQueryParams
             {
@@ -336,7 +330,7 @@ public class IssueUseCase
 
             Compare("Reporter", oldReporter?.FullName, newReporter?.FullName);
         }
-        if (oldIssue.SprintId != newIssue.SprintId && oldIssue.SprintId != null && newIssue.SprintId != null)
+        if (oldIssue.SprintId != newIssue.SprintId && !string.IsNullOrWhiteSpace(oldIssue.SprintId) && !string.IsNullOrWhiteSpace(newIssue.SprintId))
         {
             var oldSprintTask = _sprintRepository.GetSprint(oldIssue.SprintId);
             var newSprintTask = _sprintRepository.GetSprint(newIssue.SprintId);

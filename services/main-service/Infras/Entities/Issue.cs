@@ -47,6 +47,18 @@ public class Issue
     [BsonElement("column")]
     public ProjectColumn? Column { get; set; }
 
+
+    [BsonElement("sprint")]
+    public Sprint? Sprint { get; set; }
+    [BsonElement("team")]
+    public ProjectTeam? Team { get; set; }
+    [BsonElement("assignee")]
+    public User? Assignee { get; set; }
+    [BsonElement("reporter")]
+    public User? Reporter { get; set; }
+    [BsonElement("parent_issue")]
+    public Issue? ParentIssue { get; set; }
+
     [BsonElement("priority")]
     [BsonRepresentation(BsonType.String)]
     public IssuePriority? Priority { get; set; }

@@ -108,6 +108,11 @@ public class AutoMapperProfiles : Profile
             .ForMember(dest => dest.SprintId, opt => opt.MapFrom(src => src.SprintId ?? string.Empty))
             .ForMember(dest => dest.AssigneeId, opt => opt.MapFrom(src => src.AssigneeId ?? string.Empty))
             .ForMember(dest => dest.Column, opt => opt.MapFrom(src => src.Column))
+            .ForMember(dest => dest.Sprint, opt => opt.MapFrom(src => src.Sprint))
+            .ForMember(dest => dest.Team, opt => opt.MapFrom(src => src.Team))
+            .ForMember(dest => dest.Assignee, opt => opt.MapFrom(src => src.Assignee))
+            .ForMember(dest => dest.Reporter, opt => opt.MapFrom(src => src.Reporter))
+            .ForMember(dest => dest.ParentIssue, opt => opt.MapFrom(src => src.ParentIssue))
             .ForMember(dest => dest.TeamId, opt => opt.MapFrom(src => src.TeamId ?? string.Empty))
             .ForMember(dest => dest.Key, opt => opt.MapFrom(src => src.Key));
 
