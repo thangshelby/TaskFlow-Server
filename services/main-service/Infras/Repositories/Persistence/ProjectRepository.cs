@@ -412,7 +412,7 @@ public class ProjectRepository : IProjectRepository
             .GroupBy(x => x.AssigneeId!)
             .Select(group =>
             {
-                var resolvedCount = group.Count(issue => isDone.TryGetValue(issue.Id!, out var done) && done);
+                var resolvedCount = group.Count();
                 userById.TryGetValue(group.Key, out var user);
                 return new ProjectSummaryContributorDomain
                 {
@@ -420,10 +420,9 @@ public class ProjectRepository : IProjectRepository
                     DisplayName = user == null ? "Unknown User" : $"{user.FirstName} {user.LastName}".Trim(),
                     Avatar = user?.Avatar ?? string.Empty,
                     ResolvedCount = resolvedCount,
-                    ContributionPercent = doneIssues == 0 ? 0 : (double)resolvedCount / doneIssues * 100
+                    ContributionPercent = doneIssues == 0 ? 0 : (double)resolvedCount / totalIssues * 100
                 };
             })
-            .Where(x => x.ResolvedCount > 0)
             .OrderByDescending(x => x.ResolvedCount)
             .Take(5)
             .ToList();

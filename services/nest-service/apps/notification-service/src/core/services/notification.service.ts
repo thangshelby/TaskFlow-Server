@@ -5,8 +5,7 @@ import { RpcException } from '@nestjs/microservices';
 import { status } from '@grpc/grpc-js';
 import { IssueClientService, ProjectClientService, SprintClientService, UserClientService } from '@nest-service/core';
 import { ProjectRes } from '@nest-service/core/types/main_service/project';
-import { SprintRes } from '@nest-service/core/types/main_service/sprint';
-import { IssueRes, UserRes } from '@nest-service/core/types/base';
+import { IssueRes, UserRes, SprintRes } from '@nest-service/core/types/base';
 import { NotificationEmitterService } from '@notification-service/adapters/websocket/notification.websocket';
 export interface CreateNotificationParams {
   recipientId: string;

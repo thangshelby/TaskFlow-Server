@@ -19,7 +19,7 @@ service ProjectService {
       body: "*"
     };
   }
-  rpc GetProject (GetProjectReq) returns (ProjectRes) {
+  rpc GetProject (GetProjectReq) returns (GetProjectRes) {
     option (google.api.http) = {
       get: "/api/v1/projects/{id}"
     };
@@ -167,6 +167,12 @@ message CreateProjectRes {
   string message = 2; 
   ProjectRes data = 3;
   optional base.PaginationRes pagination = 4;
+}
+
+message GetProjectRes {
+  string status = 1;
+  string message = 2;
+  ProjectRes data = 3;
 }
 
 message ListProjectsRes {

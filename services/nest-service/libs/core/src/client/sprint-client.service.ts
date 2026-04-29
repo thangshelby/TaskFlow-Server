@@ -1,4 +1,5 @@
-import { SprintRes, SprintServiceClient } from '@nest-service/core/types/main_service/sprint';
+import { SprintServiceClient } from '@nest-service/core/types/main_service/sprint';
+import { SprintRes } from '@nest-service/core/types/base';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';

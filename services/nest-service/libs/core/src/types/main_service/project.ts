@@ -105,6 +105,12 @@ export interface CreateProjectRes {
   pagination?: PaginationRes | undefined;
 }
 
+export interface GetProjectRes {
+  status: string;
+  message: string;
+  data: ProjectRes | undefined;
+}
+
 export interface ListProjectsRes {
   status: string;
   message: string;
@@ -246,7 +252,7 @@ export const PROJECT_SERVICE_PACKAGE_NAME = "project_service";
 export interface ProjectServiceClient {
   createProject(request: CreateProjectReq): Observable<CreateProjectRes>;
 
-  getProject(request: GetProjectReq): Observable<ProjectRes>;
+  getProject(request: GetProjectReq): Observable<GetProjectRes>;
 
   updateProject(request: UpdateProjectReq): Observable<ProjectRes>;
 
@@ -274,7 +280,7 @@ export interface ProjectServiceClient {
 export interface ProjectServiceController {
   createProject(request: CreateProjectReq): Promise<CreateProjectRes> | Observable<CreateProjectRes> | CreateProjectRes;
 
-  getProject(request: GetProjectReq): Promise<ProjectRes> | Observable<ProjectRes> | ProjectRes;
+  getProject(request: GetProjectReq): Promise<GetProjectRes> | Observable<GetProjectRes> | GetProjectRes;
 
   updateProject(request: UpdateProjectReq): Promise<ProjectRes> | Observable<ProjectRes> | ProjectRes;
 

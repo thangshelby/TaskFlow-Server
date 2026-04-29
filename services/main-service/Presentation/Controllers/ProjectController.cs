@@ -67,10 +67,15 @@ public class ProjectController : ProjectService.ProjectServiceBase
             throw new RpcException(new Status(StatusCode.Internal, "Error creating project"));
         }
     }
-    public override async Task<ProjectRes> GetProject(GetProjectReq request, ServerCallContext context)
+    public override async Task<GetProjectRes> GetProject(GetProjectReq request, ServerCallContext context)
     {
         var result = await _projectUseCase.GetProject(request.Id);
-        return _mapper.Map<ProjectRes>(result);
+        return new GetProjectRes
+        {
+            Status = "success",
+            Message = "Get project success.",
+            Data = _mapper.Map<ProjectRes>(result)
+        };
     }
     public override async Task<ProjectRes> UpdateProject(UpdateProjectReq request, ServerCallContext context)
     {

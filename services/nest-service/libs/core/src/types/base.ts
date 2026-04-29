@@ -25,6 +25,29 @@ export interface ColumnRes {
   projectId: string;
 }
 
+export interface SprintRes {
+  id: string;
+  name: string;
+  dateStarted: string;
+  dateEnded: string;
+  duration: number;
+  goal: string;
+  createdAt: string;
+  updatedAt: string;
+  projectId: string;
+}
+
+export interface ProjectTeamRes {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string;
+  permissionKeys: string[];
+  createdAt: string;
+  updatedAt: string;
+  memberIds: string[];
+}
+
 /** Common */
 export interface IssueRes {
   id: string;
@@ -48,6 +71,11 @@ export interface IssueRes {
   dueDateTo: string;
   key: string;
   teamId: string;
+  sprint: SprintRes | undefined;
+  team: ProjectTeamRes | undefined;
+  assignee: UserRes | undefined;
+  reporter: UserRes | undefined;
+  parentIssue: IssueRes | undefined;
 }
 
 /** Activity */
