@@ -28,9 +28,9 @@ interface BulkUpdateNotificationsReq {
   userId: string;
 }
 
-@Controller('/api/v1/notifications')
+@Controller('/')
 export class NotificationController {
-  constructor(private readonly notificationService: NotificationService) {}
+  constructor(private readonly notificationService: NotificationService) { }
 
   @Post()
   async sendNotification(@Body() data: CreateNotificationReq) {

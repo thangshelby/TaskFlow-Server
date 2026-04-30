@@ -369,7 +369,6 @@ public class IssueRepository : IIssueRepository
 
         var rawResults = await _issues.Aggregate<BsonDocument>(pipelineStages).ToListAsync();
         var issues = rawResults.Select(bson => BsonSerializer.Deserialize<Issue>(bson)).ToList();
-        _logger.LogInformation($"00000000000000000000000ListIssues result: {issues.Count},first issue: {issues[0].Sprint?.Name}");
         return new PagedResult<IssueDomain>(_mapper.Map<List<IssueDomain>>(issues), (int)totalCount);
     }
     
