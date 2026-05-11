@@ -10,13 +10,12 @@ phases:
       - docker build -t envoy-proxy .
       - docker tag envoy-proxy:latest 017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/envoy-proxy:latest
   post_build:
-      commands:
-        - echo Build completed on `date`  
-        - echo pushing to ECR
-        - docker push 017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/envoy-proxy:latest
-        - echo Writing image definitions file...
-        # Sửa dòng này: Thay biến bằng giá trị thực tế
-        - printf '[{"name":"envoy-proxy","imageUri":"017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/envoy-proxy:latest"}]' > imagedefinitions.json
+    commands:
+      - echo Build completed on `date`
+      - echo pushing to ECR
+      - docker push 017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/envoy-proxy:latest
+      - echo Writing image definitions file...
+      - printf '[{"name":"envoy-proxy","imageUri":"017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/envoy-proxy:latest"}]' > imagedefinitions.json
 artifacts:
-    files:
-      - imagedefinitions.json
+  files:
+    - imagedefinitions.json
