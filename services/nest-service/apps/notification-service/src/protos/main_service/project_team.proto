@@ -5,7 +5,6 @@ option csharp_namespace = "TaskFlow.ProjectTeamService";
 
 package project_service;
 
-import "google/protobuf/empty.proto";
 import "google/api/annotations.proto"; // Import Google API annotations
 import "base.proto";
 
@@ -22,7 +21,7 @@ service ProjectTeamService {
       get: "/api/v1/projects/{project_id}/teams"
     };
   }
-  rpc GetProjectTeam (GetProjectTeamReq) returns (ProjectTeamRes) {
+  rpc GetProjectTeam (GetProjectTeamReq) returns (base.ProjectTeamRes) {
     option (google.api.http) = {
       get: "/api/v1/projects/{project_id}/teams/{team_id}"
     };
@@ -56,20 +55,6 @@ message Permission {
   string description= 6; 
 }
 
-
-
-// Project Team Messages
-message ProjectTeamRes {
-  string id = 1;
-  string project_id = 2;
-  string name = 3;
-  string description = 4;
-  repeated string permission_keys = 5;
-  string created_at = 6;
-  string updated_at = 7;
-  repeated string member_ids = 8;
-}
-
 message CreateProjectTeamReq {
   string project_id = 1;
   string name = 2;
@@ -80,7 +65,7 @@ message CreateProjectTeamReq {
 message CreateProjectTeamRes {
   string status = 1;
   string message = 2;
-  ProjectTeamRes data = 3;
+  base.ProjectTeamRes data = 3;
   base.PaginationRes pagination = 4;
 }
 
@@ -93,7 +78,7 @@ message ListProjectTeamsReq {
 message ListProjectTeamsRes {
   string status = 1;
   string message = 2;
-  repeated ProjectTeamRes data = 3;
+  repeated base.ProjectTeamRes data = 3;
   base.PaginationRes pagination = 4;
 }
 
@@ -113,7 +98,7 @@ message UpdateProjectTeamReq {
 message UpdateProjectTeamRes {
   string status = 1;
   string message = 2;
-  ProjectTeamRes data = 3;
+  base.ProjectTeamRes data = 3;
   base.PaginationRes pagination = 4;
 }
 
@@ -132,5 +117,5 @@ message GetUserTeamsReq {
 }
 
 message GetUserTeamsRes {
-  repeated ProjectTeamRes data = 1;
+  repeated base.ProjectTeamRes data = 1;
 }

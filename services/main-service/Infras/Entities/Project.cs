@@ -30,9 +30,6 @@ public class Project
     [BsonElement("updated_at")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    [BsonElement("team_members")]
-    public List<ProjectMember>? ProjectMembers { get; set; } = new List<ProjectMember>();
-
     // New fields
     [BsonElement("issues_count")]
     public int? IssuesCount { get; set; }

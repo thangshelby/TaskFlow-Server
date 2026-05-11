@@ -109,22 +109,6 @@ public class ProjectUseCase
         var project = await _projectRepository.GetProject(id);
         if (project == null)
             throw new KeyNotFoundException($"Project with ID {id} not found");
-
-        // Get project members with user data
-        var members = await _projectMemberRepository.GetProjectMembersAsync(id, 1, 100); // TODO: Handle pagination properly
-        var membersList = members.ToList();
-
-        foreach (var member in membersList)
-        {
-            var user = await _userRepository.FindUserAsync(new UserQueryParams { UserId = member.UserId });
-            if (user != null)
-            {
-                member.User = user;
-            }
-        }
-
-        // Set the members to the project
-        project.ProjectMembers = membersList;
         return project;
     }
 
@@ -169,26 +153,6 @@ public class ProjectUseCase
     public async Task<(List<ProjectDomain> Projects, int TotalCount)> ListProjects(ListProjectParams param)
     {
         var (projects, totalCount) = await _projectRepository.ListProjects(param);
-
-        // Get project members for each project
-        // TODO: Fix performance
-        // foreach (var project in projects)
-        // {
-        //     var members = await _projectMemberRepository.GetProjectMembersAsync(project.Id!, 1, 100);
-        //     var membersList = members.ToList();
-
-        //     foreach (var member in membersList)
-        //     {
-        //         var user = await _userRepository.FindUserAsync(new UserQueryParams { UserId = member.UserId });
-        //         if (user != null)
-        //         {
-        //             member.User = user;
-        //         }
-        //     }
-
-        //     project.ProjectMembers = membersList;
-        // }
-
         return (projects, totalCount);
     }
 
@@ -255,5 +219,20 @@ public class ProjectUseCase
             throw new RpcException(new Status(StatusCode.FailedPrecondition, "Cannot delete column that contains issues"));
         }
         await _projectRepository.DeleteColumn(param);
+    }
+
+    public async Task<ProjectSummaryDomain> GetProjectSummary(GetProjectSummaryParams param)
+    {
+        if (string.IsNullOrWhiteSpace(param.ProjectId))
+        {
+            throw new ArgumentException("Project ID cannot be empty");
+        }
+
+        if (param.DateFrom.HasValue && param.DateTo.HasValue && param.DateFrom > param.DateTo)
+        {
+            throw new ArgumentException("date_from must be less than or equal to date_to");
+        }
+
+        return await _projectRepository.GetProjectSummary(param);
     }
 }

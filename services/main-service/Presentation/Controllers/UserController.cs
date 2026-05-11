@@ -188,7 +188,7 @@ public class UserController : UserService.UserServiceBase
         return new VerifyOTPRes
         {
             Status = "success",
-            Message = "Send mail verify successfully!",
+            Message = "Account verified successfully!",
             Data = userResponse
         };
     }

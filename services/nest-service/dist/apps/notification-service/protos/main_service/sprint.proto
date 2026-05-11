@@ -16,12 +16,12 @@ service SprintService {
       body: "*"
     };
   }
-  rpc GetSprint (GetSprintReq) returns (SprintRes) {
+  rpc GetSprint (GetSprintReq) returns (base.SprintRes) {
     option (google.api.http) = {
       get: "/api/v1/sprint/project/{project_id}/{id}"
     };
   }
-  rpc UpdateSprint (UpdateSprintReq) returns (SprintRes) {
+  rpc UpdateSprint (UpdateSprintReq) returns (base.SprintRes) {
     option (google.api.http) = {
       put: "/api/v1/sprint/project/{project_id}/{id}"
       body: "*"
@@ -55,7 +55,7 @@ message GetSrintStatsRes {
   SprintStatData data = 3;
 }
 message SprintStatData {
-  SprintRes sprint = 1;
+  base.SprintRes sprint = 1;
   SprintStats sprint_stats = 2;
   repeated SprintDailyStats sprint_daily_stats = 3;
 }
@@ -108,25 +108,13 @@ message ListSprintsReq {
   int32 limit = 4;
 }
 
-message SprintRes {
-  string id = 1;
-  string name = 2;
-  string date_started = 3;
-  string date_ended = 4;
-  int32 duration = 5;
-  string goal = 6;
-  string created_at = 7;
-  string updated_at = 8;
-  string project_id = 9;
-}
-
 message CreateSprintRes {
-  SprintRes data = 1;
+  base.SprintRes data = 1;
   optional base.PaginationRes pagination = 2;
 }
 
 message ListSprintsRes {
-  repeated SprintRes data = 1;
+  repeated base.SprintRes data = 1;
   base.PaginationRes pagination = 2;
 }
 

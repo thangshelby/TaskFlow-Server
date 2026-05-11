@@ -98,6 +98,8 @@ public class ActivitiesConsumer : IHostedService, IDisposable
             switch (action)
             {
                 case QueueMessageAction.ACTIVITIES_ISSUE_CHANGED:
+                    await issueUseCase.OnIssueChanged(message);
+                    break;
                 case QueueMessageAction.ACTIVITIES_ISSUE_CREATED:
                     await issueUseCase.OnIssueChanged(message);
                     break;

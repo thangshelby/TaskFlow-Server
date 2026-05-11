@@ -7,7 +7,7 @@
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from "@nestjs/microservices";
 import { Observable } from "rxjs";
-import { PaginationRes } from "../base";
+import { PaginationRes, ProjectTeamRes } from "../base";
 
 export const protobufPackage = "project_service";
 
@@ -19,18 +19,6 @@ export interface Permission {
   action: string;
   label: string;
   description: string;
-}
-
-/** Project Team Messages */
-export interface ProjectTeamRes {
-  id: string;
-  projectId: string;
-  name: string;
-  description: string;
-  permissionKeys: string[];
-  createdAt: string;
-  updatedAt: string;
-  memberIds: string[];
 }
 
 export interface CreateProjectTeamReq {

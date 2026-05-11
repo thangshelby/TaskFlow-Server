@@ -6,6 +6,7 @@ using MongoDB.Driver;
 using MongoDB.Bson;
 using System.Text.Json;
 using MongoDB.Bson.Serialization;
+using System.Globalization;
 
 namespace MainService.Infras.Repositories;
 
@@ -306,5 +307,194 @@ public class ProjectRepository : IProjectRepository
             throw new Exception("Project not found");
 
         return (project.Key, project.IssuesCount ?? 0);
+    }
+
+    public async Task<ProjectSummaryDomain> GetProjectSummary(GetProjectSummaryParams param)
+    {
+        var filterBuilder = Builders<Issue>.Filter;
+        var filter = filterBuilder.Eq(x => x.ProjectId, param.ProjectId);
+
+        if (!string.IsNullOrWhiteSpace(param.SprintId))
+        {
+            filter &= filterBuilder.Eq(x => x.SprintId, param.SprintId);
+        }
+
+        if (param.DateFrom.HasValue)
+        {
+            filter &= filterBuilder.Gte(x => x.CreatedAt, param.DateFrom.Value);
+        }
+
+        if (param.DateTo.HasValue)
+        {
+            filter &= filterBuilder.Lte(x => x.CreatedAt, param.DateTo.Value);
+        }
+
+        var issues = await _issues.Find(filter).ToListAsync();
+        var totalIssues = issues.Count;
+        if (totalIssues == 0)
+        {
+            return new ProjectSummaryDomain();
+        }
+
+        var columnIds = issues
+            .Select(x => x.ColumnId)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct()
+            .ToList();
+
+        var columns = await _projectColumns.Find(x => columnIds.Contains(x.Id!)).ToListAsync();
+        var columnById = columns
+            .Where(x => !string.IsNullOrWhiteSpace(x.Id))
+            .ToDictionary(x => x.Id!, x => x);
+
+        var isDone = issues.ToDictionary(
+            issue => issue.Id!,
+            issue => columnById.TryGetValue(issue.ColumnId, out var col) && IsDoneColumn(col.Name)
+        );
+
+        var doneIssues = isDone.Values.Count(v => v);
+        var oneDayAgo = DateTime.UtcNow.AddDays(-1);
+        var sixHoursAgo = DateTime.UtcNow.AddHours(-6);
+
+        var byStatus = issues
+            .GroupBy(issue =>
+            {
+                if (columnById.TryGetValue(issue.ColumnId, out var col))
+                {
+                    return new { Name = col.Name, Order = col.Order };
+                }
+
+                return new { Name = "UNASSIGNED", Order = int.MaxValue };
+            })
+            .OrderBy(x => x.Key.Order)
+            .Select(x => new ProjectSummaryStatusCountDomain
+            {
+                Name = x.Key.Name,
+                Count = x.Count()
+            })
+            .ToList();
+
+        var byPriority = issues
+            .GroupBy(x => x.Priority?.ToString() ?? "Unknown")
+            .OrderByDescending(x => x.Count())
+            .Select(x => new ProjectSummaryPriorityCountDomain
+            {
+                Priority = x.Key,
+                Count = x.Count()
+            })
+            .ToList();
+
+        var byType = issues
+            .GroupBy(x => x.Type?.ToString() ?? "Unknown")
+            .OrderByDescending(x => x.Count())
+            .Select(x => new ProjectSummaryTypeCountDomain
+            {
+                Type = x.Key,
+                Count = x.Count()
+            })
+            .ToList();
+
+        var assigneeIds = issues
+            .Where(x => !string.IsNullOrWhiteSpace(x.AssigneeId))
+            .Select(x => x.AssigneeId!)
+            .Distinct()
+            .ToList();
+
+        var users = assigneeIds.Count == 0
+            ? new List<User>()
+            : await _users.Find(x => assigneeIds.Contains(x.Id!)).ToListAsync();
+        var userById = users
+            .Where(x => !string.IsNullOrWhiteSpace(x.Id))
+            .ToDictionary(x => x.Id!, x => x);
+
+        var topContributors = issues
+            .Where(x => !string.IsNullOrWhiteSpace(x.AssigneeId))
+            .GroupBy(x => x.AssigneeId!)
+            .Select(group =>
+            {
+                var resolvedCount = group.Count();
+                userById.TryGetValue(group.Key, out var user);
+                return new ProjectSummaryContributorDomain
+                {
+                    UserId = group.Key,
+                    DisplayName = user == null ? "Unknown User" : $"{user.FirstName} {user.LastName}".Trim(),
+                    Avatar = user?.Avatar ?? string.Empty,
+                    ResolvedCount = resolvedCount,
+                    ContributionPercent = doneIssues == 0 ? 0 : (double)resolvedCount / totalIssues * 100
+                };
+            })
+            .OrderByDescending(x => x.ResolvedCount)
+            .Take(5)
+            .ToList();
+
+        var timeline = BuildTimeline(issues, isDone);
+
+        return new ProjectSummaryDomain
+        {
+            ByStatus = byStatus,
+            ByPriority = byPriority,
+            ByType = byType,
+            TopContributors = topContributors,
+            Timeline = timeline,
+            TotalIssues = totalIssues,
+            DoneIssues = doneIssues,
+            NewIssuesCount = issues.Count(x => x.CreatedAt >= oneDayAgo),
+            RecentlyUpdatedCount = issues.Count(x => x.UpdatedAt >= sixHoursAgo),
+        };
+    }
+
+    private static bool IsDoneColumn(string? columnName)
+    {
+        if (string.IsNullOrWhiteSpace(columnName))
+        {
+            return false;
+        }
+
+        var normalized = columnName.Trim().ToUpperInvariant();
+        return normalized.Contains("DONE") || normalized.Contains("CLOSED");
+    }
+
+    private static List<ProjectSummaryTimelinePointDomain> BuildTimeline(
+        List<Issue> issues,
+        Dictionary<string, bool> doneLookup)
+    {
+        var firstDate = issues.Min(x => x.CreatedAt).Date;
+        var lastCreatedDate = issues.Max(x => x.CreatedAt).Date;
+        var lastCompletedDate = issues
+            .Where(x => x.CompletedAt > DateTime.MinValue)
+            .Select(x => x.CompletedAt.Date)
+            .DefaultIfEmpty(lastCreatedDate)
+            .Max();
+        var lastDate = lastCreatedDate > lastCompletedDate ? lastCreatedDate : lastCompletedDate;
+
+        var timeline = new List<ProjectSummaryTimelinePointDomain>();
+        var cumulativeCreated = 0;
+        var cumulativeDone = 0;
+        var createdByDate = issues
+            .GroupBy(x => x.CreatedAt.Date)
+            .ToDictionary(g => g.Key, g => g.Count());
+        var doneByDate = issues
+            .Where(x => doneLookup.TryGetValue(x.Id!, out var done) && done && x.CompletedAt > DateTime.MinValue)
+            .GroupBy(x => x.CompletedAt.Date)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        for (var date = firstDate; date <= lastDate; date = date.AddDays(1))
+        {
+            createdByDate.TryGetValue(date, out var addedScope);
+            doneByDate.TryGetValue(date, out var doneInDate);
+
+            cumulativeCreated += addedScope;
+            cumulativeDone += doneInDate;
+
+            timeline.Add(new ProjectSummaryTimelinePointDomain
+            {
+                Date = DateTime.SpecifyKind(date, DateTimeKind.Utc),
+                AddedScope = addedScope,
+                DoneIssues = cumulativeDone,
+                RemainingScope = Math.Max(cumulativeCreated - cumulativeDone, 0)
+            });
+        }
+
+        return timeline;
     }
 }

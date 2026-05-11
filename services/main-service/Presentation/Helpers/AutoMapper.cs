@@ -108,6 +108,11 @@ public class AutoMapperProfiles : Profile
             .ForMember(dest => dest.SprintId, opt => opt.MapFrom(src => src.SprintId ?? string.Empty))
             .ForMember(dest => dest.AssigneeId, opt => opt.MapFrom(src => src.AssigneeId ?? string.Empty))
             .ForMember(dest => dest.Column, opt => opt.MapFrom(src => src.Column))
+            .ForMember(dest => dest.Sprint, opt => opt.MapFrom(src => src.Sprint))
+            .ForMember(dest => dest.Team, opt => opt.MapFrom(src => src.Team))
+            .ForMember(dest => dest.Assignee, opt => opt.MapFrom(src => src.Assignee))
+            .ForMember(dest => dest.Reporter, opt => opt.MapFrom(src => src.Reporter))
+            .ForMember(dest => dest.ParentIssue, opt => opt.MapFrom(src => src.ParentIssue))
             .ForMember(dest => dest.TeamId, opt => opt.MapFrom(src => src.TeamId ?? string.Empty))
             .ForMember(dest => dest.Key, opt => opt.MapFrom(src => src.Key));
 
@@ -126,7 +131,8 @@ public class AutoMapperProfiles : Profile
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.FirstName))
             .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.LastName))
-            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email));
+            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
+            .ForMember(dest => dest.Avatar, opt => opt.MapFrom(src => src.Avatar));
 
         CreateMap<ProjectMemberDomain, ProjectMemberRes>()
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("o")))

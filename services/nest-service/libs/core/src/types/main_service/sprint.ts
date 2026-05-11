@@ -7,7 +7,7 @@
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from "@nestjs/microservices";
 import { Observable } from "rxjs";
-import { PaginationRes } from "../base";
+import { PaginationRes, SprintRes } from "../base";
 
 export const protobufPackage = "project_service";
 
@@ -75,18 +75,6 @@ export interface ListSprintsReq {
   sprintIds: string[];
   page: number;
   limit: number;
-}
-
-export interface SprintRes {
-  id: string;
-  name: string;
-  dateStarted: string;
-  dateEnded: string;
-  duration: number;
-  goal: string;
-  createdAt: string;
-  updatedAt: string;
-  projectId: string;
 }
 
 export interface CreateSprintRes {

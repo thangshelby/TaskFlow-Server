@@ -46,36 +46,12 @@ public class IssueRepository : IIssueRepository
 
     public async Task<IssueDomain> GetIssue(string id)
     {
-        var pipeline = new[]
+        var pipeline = new List<BsonDocument>
         {
-            new BsonDocument("$match", new BsonDocument("_id", ObjectId.Parse(id))),    
-            new BsonDocument("$lookup", new BsonDocument
-            {
-                { "from", "project_column" },
-                { "let", new BsonDocument("colId", "$column_id") },
-                { "pipeline", new BsonArray
-                    {
-                        new BsonDocument("$match", new BsonDocument("$expr",
-                            new BsonDocument("$eq", new BsonArray
-                            {
-                                "$_id",
-                                // Nếu column_id là string thì dùng $toObjectId
-                                new BsonDocument("$toObjectId", "$$colId")
-                            }))
-                        )
-                    }
-                },
-                { "as", "column" }
-            }),
-            new BsonDocument("$unwind", new BsonDocument
-            {
-                { "path", "$column" },
-                { "preserveNullAndEmptyArrays", true }
-            }),
-        
+            new BsonDocument("$match", new BsonDocument("_id", ObjectId.Parse(id))),
         };
       
-        
+        pipeline.AddRange(GetEnrichedLookupStages());
 
         var result = await _issues.Aggregate<Issue>(pipeline).FirstOrDefaultAsync();
         _logger.LogInformation($"GetIssue result: {result}");
@@ -95,33 +71,11 @@ public class IssueRepository : IIssueRepository
         await _issues.UpdateOneAsync(i => i.Id == body.Id, update);
 
         // Fetch the updated issue with column information
-        var pipeline = new[]
+        var pipeline = new List<BsonDocument>
         {
             new BsonDocument("$match", new BsonDocument("_id", ObjectId.Parse(body.Id))),
-            new BsonDocument("$lookup", new BsonDocument
-            {
-                { "from", "project_column" },
-                { "let", new BsonDocument { { "colId", "$column_id" } } },
-                { "pipeline", new BsonArray
-                    {
-                        new BsonDocument("$match", new BsonDocument
-                        {
-                            { "$expr", new BsonDocument
-                                {
-                                    { "$eq", new BsonArray { "$_id", new BsonDocument("$toObjectId", "$$colId") } }
-                                }
-                            }
-                        })
-                    }
-                },
-                { "as", "column" }
-            }),
-            new BsonDocument("$unwind", new BsonDocument
-            {
-                { "path", "$column" },
-                { "preserveNullAndEmptyArrays", true }
-            })
         };
+        pipeline.AddRange(GetEnrichedLookupStages());
 
         var rawResult = await _issues.Aggregate<BsonDocument>(pipeline).FirstOrDefaultAsync();
         var updatedIssue = BsonSerializer.Deserialize<Issue>(rawResult);
@@ -134,6 +88,7 @@ public class IssueRepository : IIssueRepository
         if (result.DeletedCount == 0)
             throw new Exception("Issue not found");
     }
+
     public async Task<UserStats> GetStats(string id, bool isSprintId = false)
     {
         var now = DateTime.UtcNow;
@@ -307,7 +262,8 @@ public class IssueRepository : IIssueRepository
             
             foreach (var teamId in param.TeamIds)
             {
-                if (teamId == "NULL")
+                var normalizedTeamId = teamId?.Trim();
+                if (string.IsNullOrEmpty(normalizedTeamId) || string.Equals(normalizedTeamId, "NULL", StringComparison.OrdinalIgnoreCase))
                 {
                     // Filter for null or empty team_id
                     teamFilters.Add(filterBuilder.Or(
@@ -319,7 +275,7 @@ public class IssueRepository : IIssueRepository
                 else
                 {
                     // Filter for specific team_id
-                    teamFilters.Add(filterBuilder.Eq(i => i.TeamId, teamId));
+                    teamFilters.Add(filterBuilder.Eq(i => i.TeamId, normalizedTeamId));
                 }
             }
             
@@ -336,7 +292,8 @@ public class IssueRepository : IIssueRepository
             
             foreach (var parentId in param.ParentIds)
             {
-                if (parentId == "NULL")
+                var normalizedParentId = parentId?.Trim();
+                if (string.IsNullOrEmpty(normalizedParentId) || string.Equals(normalizedParentId, "NULL", StringComparison.OrdinalIgnoreCase))
                 {
                     // Filter for null or empty parent_id
                     parentFilters.Add(filterBuilder.Or(
@@ -348,7 +305,7 @@ public class IssueRepository : IIssueRepository
                 else
                 {
                     // Filter for specific parent_id
-                    parentFilters.Add(filterBuilder.Eq(i => i.ParentId, parentId));
+                    parentFilters.Add(filterBuilder.Eq(i => i.ParentId, normalizedParentId));
                 }
             }
             
@@ -399,31 +356,10 @@ public class IssueRepository : IIssueRepository
         ));
         var pipelineStages = new List<BsonDocument>
         {
-            new BsonDocument("$match", renderedFilter),
-            new BsonDocument("$lookup", new BsonDocument
-            {
-                { "from", "project_column" },
-                { "let", new BsonDocument { { "colId", "$column_id" } } },
-                { "pipeline", new BsonArray
-                    {
-                        new BsonDocument("$match", new BsonDocument
-                        {
-                            { "$expr", new BsonDocument
-                                {
-                                    { "$eq", new BsonArray { "$_id", new BsonDocument("$toObjectId", "$$colId") } }
-                                }
-                            }
-                        })
-                    }
-                },
-                { "as", "column" }
-            }),
-            new BsonDocument("$unwind", new BsonDocument
-            {
-                { "path", "$column" },
-                { "preserveNullAndEmptyArrays", true }
-            })
+            new BsonDocument("$match", renderedFilter)
         };
+
+        pipelineStages.AddRange(GetEnrichedLookupStages());
 
         if (!param.Unpaged)
         {
@@ -433,7 +369,6 @@ public class IssueRepository : IIssueRepository
 
         var rawResults = await _issues.Aggregate<BsonDocument>(pipelineStages).ToListAsync();
         var issues = rawResults.Select(bson => BsonSerializer.Deserialize<Issue>(bson)).ToList();
-
         return new PagedResult<IssueDomain>(_mapper.Map<List<IssueDomain>>(issues), (int)totalCount);
     }
     
@@ -469,4 +404,119 @@ public class IssueRepository : IIssueRepository
         return filterBuilder.Lte(i => i.DueDateTo, inclusiveEnd);
     }
 
+    private List<BsonDocument> GetEnrichedLookupStages()
+    {
+        BsonDocument SafeToObjectId(string varName) => new BsonDocument("$convert", new BsonDocument
+        {
+            { "input", varName },
+            { "to", "objectId" },
+            { "onError", BsonNull.Value },
+            { "onNull", BsonNull.Value }
+        });
+
+        return new List<BsonDocument>
+        {
+            // Lookup Column
+            new BsonDocument("$lookup", new BsonDocument
+            {
+                { "from", "project_column" },
+                { "let", new BsonDocument("colId", "$column_id") },
+                { "pipeline", new BsonArray
+                    {
+                        new BsonDocument("$match", new BsonDocument
+                        {
+                            { "$expr", new BsonDocument("$eq", new BsonArray { "$_id", SafeToObjectId("$$colId") }) }
+                        })
+                    }
+                },
+                { "as", "column" }
+            }),
+            new BsonDocument("$unwind", new BsonDocument { { "path", "$column" }, { "preserveNullAndEmptyArrays", true } }),
+
+            // Lookup Sprint
+            new BsonDocument("$lookup", new BsonDocument
+            {
+                { "from", "sprints" },
+                { "let", new BsonDocument("sprintId", "$sprint_id") },
+                { "pipeline", new BsonArray
+                    {
+                        new BsonDocument("$match", new BsonDocument
+                        {
+                            { "$expr", new BsonDocument("$eq", new BsonArray { "$_id", SafeToObjectId("$$sprintId") }) }
+                        })
+                    }
+                },
+                { "as", "sprint" }
+            }),
+            new BsonDocument("$unwind", new BsonDocument { { "path", "$sprint" }, { "preserveNullAndEmptyArrays", true } }),
+
+            // Lookup Team
+            new BsonDocument("$lookup", new BsonDocument
+            {
+                { "from", "project_teams" },
+                { "let", new BsonDocument("teamId", "$team_id") },
+                { "pipeline", new BsonArray
+                    {
+                        new BsonDocument("$match", new BsonDocument
+                        {
+                            { "$expr", new BsonDocument("$eq", new BsonArray { "$_id", SafeToObjectId("$$teamId") }) }
+                        })
+                    }
+                },
+                { "as", "team" }
+            }),
+            new BsonDocument("$unwind", new BsonDocument { { "path", "$team" }, { "preserveNullAndEmptyArrays", true } }),
+
+            // Lookup Assignee
+            new BsonDocument("$lookup", new BsonDocument
+            {
+                { "from", "users" },
+                { "let", new BsonDocument("assigneeId", "$assignee_id") },
+                { "pipeline", new BsonArray
+                    {
+                        new BsonDocument("$match", new BsonDocument
+                        {
+                            { "$expr", new BsonDocument("$eq", new BsonArray { "$_id", SafeToObjectId("$$assigneeId") }) }
+                        })
+                    }
+                },
+                { "as", "assignee" }
+            }),
+            new BsonDocument("$unwind", new BsonDocument { { "path", "$assignee" }, { "preserveNullAndEmptyArrays", true } }),
+
+            // Lookup Reporter
+            new BsonDocument("$lookup", new BsonDocument
+            {
+                { "from", "users" },
+                { "let", new BsonDocument("reporterId", "$reporter_id") },
+                { "pipeline", new BsonArray
+                    {
+                        new BsonDocument("$match", new BsonDocument
+                        {
+                            { "$expr", new BsonDocument("$eq", new BsonArray { "$_id", SafeToObjectId("$$reporterId") }) }
+                        })
+                    }
+                },
+                { "as", "reporter" }
+            }),
+            new BsonDocument("$unwind", new BsonDocument { { "path", "$reporter" }, { "preserveNullAndEmptyArrays", true } }),
+
+            // Lookup Parent Issue
+            new BsonDocument("$lookup", new BsonDocument
+            {
+                { "from", "issues" },
+                { "let", new BsonDocument("parentId", "$parent_id") },
+                { "pipeline", new BsonArray
+                    {
+                        new BsonDocument("$match", new BsonDocument
+                        {
+                            { "$expr", new BsonDocument("$eq", new BsonArray { "$_id", SafeToObjectId("$$parentId") }) }
+                        })
+                    }
+                },
+                { "as", "parent_issue" }
+            }),
+            new BsonDocument("$unwind", new BsonDocument { { "path", "$parent_issue" }, { "preserveNullAndEmptyArrays", true } }),
+        };
+    }
 }

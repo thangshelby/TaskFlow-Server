@@ -21,6 +21,28 @@ message ColumnRes {
     string project_id = 7;
 }
 
+message SprintRes {
+    string id = 1;
+    string name = 2;
+    string date_started = 3;
+    string date_ended = 4;
+    int32 duration = 5;
+    string goal = 6;
+    string created_at = 7;
+    string updated_at = 8;
+    string project_id = 9;
+}
+message ProjectTeamRes {
+    string id = 1;
+    string project_id = 2;
+    string name = 3;
+    string description = 4;
+    repeated string permission_keys = 5;
+    string created_at = 6;
+    string updated_at = 7;
+    repeated string member_ids = 8;
+}
+
 // Common
 message IssueRes {
     string id = 1;
@@ -44,6 +66,11 @@ message IssueRes {
     string due_date_to = 19;
     string key = 20;
     string team_id = 21; 
+    SprintRes sprint = 22;
+    ProjectTeamRes team = 23;
+    UserRes assignee = 24;
+    UserRes reporter = 25;
+    IssueRes parent_issue = 26;
 }
 
 //Activity

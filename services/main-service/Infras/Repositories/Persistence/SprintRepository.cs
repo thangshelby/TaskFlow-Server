@@ -40,12 +40,13 @@ public class SprintRepository : ISprintRepository
         return sprintDomain;
     }
 
-    public async Task<SprintDomain> GetSprint(string id)
+    public async Task<SprintDomain?> GetSprint(string id)
     {
+        if (string.IsNullOrWhiteSpace(id) || !ObjectId.TryParse(id, out _))
+            return null;
+
         var sprintEntity = await _sprints.Find(s => s.Id == id).FirstOrDefaultAsync();
-        if (sprintEntity == null)
-            throw new Exception("Sprint not found");
-        return _mapper.Map<SprintDomain>(sprintEntity);
+        return sprintEntity == null ? null : _mapper.Map<SprintDomain>(sprintEntity);
     }
 
     public async Task<SprintDomain> UpdateSprint(SprintDomain sprintDomain)

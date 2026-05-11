@@ -34,3 +34,51 @@ public class ProjectColumnDomain
     public List<IssueDomain>? Issues { get; set; } = new List<IssueDomain>();
     public int Order { get; set; } = 0;
 }
+
+public class ProjectSummaryDomain
+{
+    public List<ProjectSummaryStatusCountDomain> ByStatus { get; set; } = new();
+    public List<ProjectSummaryPriorityCountDomain> ByPriority { get; set; } = new();
+    public List<ProjectSummaryTypeCountDomain> ByType { get; set; } = new();
+    public List<ProjectSummaryContributorDomain> TopContributors { get; set; } = new();
+    public List<ProjectSummaryTimelinePointDomain> Timeline { get; set; } = new();
+    public int TotalIssues { get; set; }
+    public int DoneIssues { get; set; }
+    public int NewIssuesCount { get; set; }
+    public int RecentlyUpdatedCount { get; set; }
+}
+
+public class ProjectSummaryStatusCountDomain
+{
+    public string Name { get; set; } = string.Empty;
+    public int Count { get; set; }
+}
+
+public class ProjectSummaryPriorityCountDomain
+{
+    public string Priority { get; set; } = string.Empty;
+    public int Count { get; set; }
+}
+
+public class ProjectSummaryTypeCountDomain
+{
+    public string Type { get; set; } = string.Empty;
+    public int Count { get; set; }
+}
+
+public class ProjectSummaryContributorDomain
+{
+    public string UserId { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string Avatar { get; set; } = string.Empty;
+    public int ResolvedCount { get; set; }
+    public double ContributionPercent { get; set; }
+}
+
+public class ProjectSummaryTimelinePointDomain
+{
+    public DateTime Date { get; set; }
+    public int DoneIssues { get; set; }
+    public int RemainingScope { get; set; }
+    public int AddedScope { get; set; }
+}

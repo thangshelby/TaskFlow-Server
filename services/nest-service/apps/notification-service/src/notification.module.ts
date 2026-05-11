@@ -9,6 +9,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { INotificationRepo } from '@notification-service/core/interfaces/notification-repo.interface';
 import { INotification, NotificationSchema } from '@notification-service/infras/schema/notification.schema';
 import { NotificationController } from '@notification-service/adapters/controllers/notification.controller';
+import { HealthController } from '@notification-service/adapters/controllers/health.controller';
 import { NotificationEmitterService, NotificationGateway } from '@notification-service/adapters/websocket/notification.websocket';
 import { MailService } from '@notification-service/core/services/mail.service';
 import { IMailSender } from '@notification-service/core/interfaces/mail-sender.interface';
@@ -23,7 +24,7 @@ import { MailSenderRepo } from '@notification-service/infras/repos/mail-sender.r
     CoreModule,
     MongooseModule.forFeature([{ name: INotification.name, schema: NotificationSchema }]),
   ],
-  controllers: [NotificationController],
+  controllers: [NotificationController, HealthController],
   providers: [
     NotificationGateway,
     MailService,

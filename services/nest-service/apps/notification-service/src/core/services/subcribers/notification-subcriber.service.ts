@@ -11,14 +11,13 @@ export class NotificationSubscriberService implements OnModuleInit {
     @Inject(QUEUE_SERVICE_TOKEN) private readonly queueService: IQueueService,
     private readonly notificationService: NotificationService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   async onModuleInit(): Promise<void> {
     const queueName =
       this.configService.get<string>(
         'NOTIFICATION_QUEUE_NAME',
-        'https://sqs.ap-southeast-1.amazonaws.com/017263836577/notifications.fifo',
-      ) || '';
+      ) || 'https://sqs.ap-southeast-1.amazonaws.com/017263836577/notifications.fifo';
 
     await this.queueService.subscribe(queueName, this.handleNotificationReceiver.bind(this));
   }

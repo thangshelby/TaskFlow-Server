@@ -6,6 +6,7 @@ using MainService.Domain.Entities;
 using TaskFlow.ProjectService;
 using MainService.Domain.Interfaces;
 using BaseService;
+using System.Globalization;
 
 
 public class ProjectController : ProjectService.ProjectServiceBase
@@ -66,10 +67,15 @@ public class ProjectController : ProjectService.ProjectServiceBase
             throw new RpcException(new Status(StatusCode.Internal, "Error creating project"));
         }
     }
-    public override async Task<ProjectRes> GetProject(GetProjectReq request, ServerCallContext context)
+    public override async Task<GetProjectRes> GetProject(GetProjectReq request, ServerCallContext context)
     {
         var result = await _projectUseCase.GetProject(request.Id);
-        return _mapper.Map<ProjectRes>(result);
+        return new GetProjectRes
+        {
+            Status = "success",
+            Message = "Get project success.",
+            Data = _mapper.Map<ProjectRes>(result)
+        };
     }
     public override async Task<ProjectRes> UpdateProject(UpdateProjectReq request, ServerCallContext context)
     {
@@ -246,5 +252,87 @@ public class ProjectController : ProjectService.ProjectServiceBase
         });
 
         return new DeleteColumnRes();
+    }
+
+    public override async Task<GetProjectSummaryRes> GetProjectSummary(GetProjectSummaryReq request, ServerCallContext context)
+    {
+        var userId = context.UserState.ContainsKey("UserId") ? context.UserState["UserId"] as string : null;
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User must be authenticated"));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.ProjectId))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "ProjectId is required"));
+        }
+
+        var summary = await _projectUseCase.GetProjectSummary(new GetProjectSummaryParams
+        {
+            ProjectId = request.ProjectId,
+            SprintId = string.IsNullOrWhiteSpace(request.SprintId) ? null : request.SprintId,
+            DateFrom = ParseNullableDate(request.DateFrom),
+            DateTo = ParseNullableDate(request.DateTo),
+        });
+
+        var response = new GetProjectSummaryRes
+        {
+            Status = "success",
+            Message = "Get project summary successfully",
+            Data = new ProjectSummaryData
+            {
+                TotalIssues = summary.TotalIssues,
+                DoneIssues = summary.DoneIssues,
+                NewIssuesCount = summary.NewIssuesCount,
+                RecentlyUpdatedCount = summary.RecentlyUpdatedCount,
+            }
+        };
+        response.Data.ByStatus.AddRange(summary.ByStatus.Select(x => new ProjectSummaryStatusCount
+        {
+            Name = x.Name,
+            Count = x.Count
+        }));
+        response.Data.ByPriority.AddRange(summary.ByPriority.Select(x => new ProjectSummaryPriorityCount
+        {
+            Priority = x.Priority,
+            Count = x.Count
+        }));
+        response.Data.ByType.AddRange(summary.ByType.Select(x => new ProjectSummaryTypeCount
+        {
+            Type = x.Type,
+            Count = x.Count
+        }));
+        response.Data.TopContributors.AddRange(summary.TopContributors.Select(x => new ProjectSummaryContributor
+        {
+            UserId = x.UserId,
+            DisplayName = x.DisplayName,
+            Avatar = x.Avatar,
+            ResolvedCount = x.ResolvedCount,
+            ContributionPercent = x.ContributionPercent
+        }));
+        response.Data.Timeline.AddRange(summary.Timeline.Select(x => new ProjectSummaryTimelinePoint
+        {
+            Date = x.Date.ToString("yyyy-MM-dd"),
+            DoneIssues = x.DoneIssues,
+            RemainingScope = x.RemainingScope,
+            AddedScope = x.AddedScope
+        }));
+
+        return response;
+    }
+
+    private static DateTime? ParseNullableDate(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed))
+        {
+            return parsed.Kind == DateTimeKind.Utc ? parsed : parsed.ToUniversalTime();
+        }
+
+        throw new RpcException(new Status(StatusCode.InvalidArgument, $"Invalid date: {value}"));
     }
 }

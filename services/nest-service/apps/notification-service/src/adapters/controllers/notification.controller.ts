@@ -28,18 +28,9 @@ interface BulkUpdateNotificationsReq {
   userId: string;
 }
 
-@Controller('/api/v1/notifications')
+@Controller('/')
 export class NotificationController {
-  constructor(private readonly notificationService: NotificationService) {}
-
-  @Get('/health')
-  async healthCheck() {
-    return {
-      status: 'ok',
-      message: 'Notification service is running',
-      timestamp: new Date().toISOString(),
-    };
-  }
+  constructor(private readonly notificationService: NotificationService) { }
 
   @Post()
   async sendNotification(@Body() data: CreateNotificationReq) {

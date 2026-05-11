@@ -118,6 +118,7 @@ message UserInfo {
   string first_name = 2;
   string last_name = 3;
   string email = 4;
+  string avatar = 5;
 }
 
 message ProjectInfo {

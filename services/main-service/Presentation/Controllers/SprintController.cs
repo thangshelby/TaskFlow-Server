@@ -5,7 +5,7 @@ using MainService.Domain.UseCases;
 using MainService.Domain.Entities;
 using TaskFlow.SprintService;
 using MainService.Domain.Interfaces;
-
+using BaseService;
 // namespace MainService.Presentation.Services;
 
 public class SprintController : SprintService.SprintServiceBase

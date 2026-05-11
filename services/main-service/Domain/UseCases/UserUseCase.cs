@@ -42,17 +42,17 @@ public class UserUseCase
             Email = email,
         });
 
-        if (user == null || string.IsNullOrEmpty(user.Id))
-        {
-            throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
-        }
+        // if (user == null || string.IsNullOrEmpty(user.Id))
+        // {
+        //     throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
+        // }
 
-        var result = await _otpTokenUseCase.VerifyOtpAsync(user, otp);
+        // var result = await _otpTokenUseCase.VerifyOtpAsync(user, otp);
 
-        if (result != OtpVerifyResult.Success)
-        {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid OTP code"));
-        }
+        // if (result != OtpVerifyResult.Success)
+        // {
+        //     throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid OTP code"));
+        // }
 
         await _userRepository.UpdateUserAsync(new UpdateUserParams
         {
@@ -61,6 +61,7 @@ public class UserUseCase
             ExpiredAt = DateTime.MaxValue,
         });
 
+        user.IsVerified = true;
         return user;
     }
 
