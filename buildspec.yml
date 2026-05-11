@@ -1,0 +1,21 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin 017263836577.dkr.ecr.ap-southeast-1.amazonaws.com
+  build:
+    commands:
+      - echo build
+      - docker build -t envoy-proxy .
+      - docker tag envoy-proxy:latest 017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/envoy-proxy:latest
+  post_build:
+    commands:
+      - echo Build completed on `date`  
+      - echo pushing to ECR
+      - docker push 017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/envoy-proxy:latest
+      - echo Writing image definitions file...
+      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+artifacts:
+    files:
+    - imagedefinitions.json
