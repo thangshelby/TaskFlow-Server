@@ -15,7 +15,7 @@ phases:
       - echo pushing to ECR
       - docker push 017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/envoy-proxy:latest
       - echo Writing image definitions file...
-      - printf '[{"name":"envoy-proxy","imageUri":"017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/envoy-proxy:latest"}]' > imagedefinitions.json
+      - printf '[{"name":"envoy-proxyy","imageUri":"017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/envoy-proxy:latest"}]' > imagedefinitions.json
 artifacts:
   files:
     - imagedefinitions.json
