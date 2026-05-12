@@ -193,5 +193,5 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: main-service
+                      address: main-service.TaskFlowNameSpace
                       port_value: 5001
