@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { NotificationDomain, NotificationType, ReferenceType } from '@notification-service/core/models/notification';
 import { INotificationRepo } from '@notification-service/core/interfaces/notification-repo.interface';
 import { RpcException } from '@nestjs/microservices';
@@ -36,6 +36,8 @@ export interface BulkUpdateNotificationParams {
 
 @Injectable()
 export class NotificationService {
+  private readonly logger = new Logger(NotificationService.name);
+
   constructor(
     private readonly notificationRepo: INotificationRepo,
     private readonly projectClientService: ProjectClientService,
@@ -83,68 +85,72 @@ export class NotificationService {
       }
     });
 
-    const [projects, sprints, issues, receivers, actors] = await Promise.all([
-      this.projectClientService.getListProjects({ projectIds: projectIds, limit: params.limit || 100, page: params.page || 1 }),
-      this.sprintCLientService.getListSprints({ sprintIds: sprintIds, limit: params.limit || 100, page: params.page || 1 }),
-      this.issueClientService.getListIssues({ issueIds: issueIds, limit: params.limit || 100, page: params.page || 1 }),
-      this.userClientService.getListUsers({ userIds: notiDomain.map((noti) => noti.recipientId), limit: params.limit || 100, page: params.page || 1 }),
-      this.userClientService.getListUsers({ userIds: actorIds, limit: params.limit || 100, page: params.page || 1 }),
-    ]);
+    try {
+      const [projects, sprints, issues, receivers, actors] = await Promise.all([
+        this.projectClientService.getListProjects({ projectIds: projectIds, limit: params.limit || 100, page: params.page || 1 }),
+        this.sprintCLientService.getListSprints({ sprintIds: sprintIds, limit: params.limit || 100, page: params.page || 1 }),
+        this.issueClientService.getListIssues({ issueIds: issueIds, limit: params.limit || 100, page: params.page || 1 }),
+        this.userClientService.getListUsers({ userIds: notiDomain.map((noti) => noti.recipientId), limit: params.limit || 100, page: params.page || 1 }),
+        this.userClientService.getListUsers({ userIds: actorIds, limit: params.limit || 100, page: params.page || 1 }),
+      ]);
 
-    const projectsMap = new Map<string, ProjectRes>();
-    (projects || []).forEach((project) => {
-      projectsMap.set(project.id, project);
-    });
+      const projectsMap = new Map<string, ProjectRes>();
+      (projects || []).forEach((project) => {
+        projectsMap.set(project.id, project);
+      });
 
-    const sprintsMap = new Map<string, SprintRes>();
-    (sprints || []).forEach((sprint) => {
-      sprintsMap.set(sprint.id, sprint);
-    });
+      const sprintsMap = new Map<string, SprintRes>();
+      (sprints || []).forEach((sprint) => {
+        sprintsMap.set(sprint.id, sprint);
+      });
 
-    const issuesMaps = new Map<string, IssueRes>();
-    (issues || []).forEach((issue) => {
-      issuesMaps.set(issue.id, issue);
-    });
+      const issuesMaps = new Map<string, IssueRes>();
+      (issues || []).forEach((issue) => {
+        issuesMaps.set(issue.id, issue);
+      });
 
-    const receiverMaps = new Map<string, UserRes>();
-    (receivers || []).forEach((receiver) => {
-      receiverMaps.set(receiver.id, receiver);
-    });
+      const receiverMaps = new Map<string, UserRes>();
+      (receivers || []).forEach((receiver) => {
+        receiverMaps.set(receiver.id, receiver);
+      });
 
-    const actorMaps = new Map<string, UserRes>();
-    (actors || []).forEach((actor) => {
-      actorMaps.set(actor.id, actor);
-    });
+      const actorMaps = new Map<string, UserRes>();
+      (actors || []).forEach((actor) => {
+        actorMaps.set(actor.id, actor);
+      });
 
-    notiDomain.forEach((noti) => {
-      if (noti.referenceType === ReferenceType.PROJECT && noti.referenceId) {
-        const project = projectsMap.get(noti.referenceId);
-        if (project) {
-          noti.referenceData = project;
+      notiDomain.forEach((noti) => {
+        if (noti.referenceType === ReferenceType.PROJECT && noti.referenceId) {
+          const project = projectsMap.get(noti.referenceId);
+          if (project) {
+            noti.referenceData = project;
+          }
         }
-      }
-      if (noti.referenceType === ReferenceType.SPRINT && noti.referenceId) {
-        const sprint = sprintsMap.get(noti.referenceId);
-        if (sprint) {
-          noti.referenceData = sprint;
+        if (noti.referenceType === ReferenceType.SPRINT && noti.referenceId) {
+          const sprint = sprintsMap.get(noti.referenceId);
+          if (sprint) {
+            noti.referenceData = sprint;
+          }
         }
-      }
-      if (noti.referenceType === ReferenceType.ISSUE && noti.referenceId) {
-        const issue = issuesMaps.get(noti.referenceId);
-        if (issue) {
-          noti.referenceData = issue;
+        if (noti.referenceType === ReferenceType.ISSUE && noti.referenceId) {
+          const issue = issuesMaps.get(noti.referenceId);
+          if (issue) {
+            noti.referenceData = issue;
+          }
         }
-      }
-      // ...
-      const receiver = receiverMaps.get(noti.recipientId);
-      if (receiver) {
-        noti.recipient = receiver;
-      }
-      if (noti.actorId) {
-        const actor = actorMaps.get(noti.actorId);
-        noti.actor = actor;
-      }
-    });
+        const receiver = receiverMaps.get(noti.recipientId);
+        if (receiver) {
+          noti.recipient = receiver;
+        }
+        if (noti.actorId) {
+          const actor = actorMaps.get(noti.actorId);
+          noti.actor = actor;
+        }
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`listNotifications: gRPC enrichment skipped (MAIN_SERVICE unreachable or error): ${message}`);
+    }
     return {
       data: notiDomain,
       totalCount: totalCount,

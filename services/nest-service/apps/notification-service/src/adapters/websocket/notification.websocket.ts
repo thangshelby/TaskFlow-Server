@@ -41,8 +41,11 @@ export class NotificationEmitterService {
 
 @Injectable()
 @WebSocketGateway({
+  // Must match socket.io-client `path` in TaskFlow/src/apis/notiApi.ts (default is /socket.io only).
+  path: '/notification-service/socket.io',
   cors: {
-    origin: '*',
+    origin: ['http://localhost:5173', 'http://localhost:4173', 'https://frontend.taskkfloww.shop'],
+    credentials: true,
   },
 })
 export class NotificationGateway implements OnGatewayConnection, OnGatewayDisconnect {
