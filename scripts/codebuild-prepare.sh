@@ -48,46 +48,54 @@ elif [ -n "${CODEBUILD_SERVICES:-}" ]; then
     esac
   done
 else
-  _base_br="${TASKFLOW_DIFF_BASE_BRANCH:-develop}"
-  # Prefer HEAD~1 (full clone). CodePipeline/CodeBuild often uses depth=1 → no parent → fall back to origin/<branch>...HEAD.
-  DIFF_FILES=""
-  if git rev-parse HEAD~1 >/dev/null 2>&1; then
-    echo "[taskflow] git diff HEAD~1..HEAD" >&2
-    DIFF_FILES=$(git diff --name-only HEAD~1 HEAD || true)
-  else
-    echo "[taskflow] No HEAD~1 (shallow clone or single commit). Trying fetch origin/${_base_br}..." >&2
-    git fetch origin "${_base_br}" --depth=100 2>/dev/null || true
-    if git rev-parse "origin/${_base_br}" >/dev/null 2>&1; then
-      echo "[taskflow] git diff origin/${_base_br}...HEAD" >&2
-      DIFF_FILES=$(git diff --name-only "origin/${_base_br}"...HEAD || true)
-    else
-      echo "[taskflow] origin/${_base_br} not available after fetch; cannot diff." >&2
-    fi
-  fi
-
-  if [ -z "${DIFF_FILES}" ] && ! git rev-parse HEAD~1 >/dev/null 2>&1 && ! git rev-parse "origin/${_base_br}" >/dev/null 2>&1; then
-    echo "[taskflow] Fallback: building all services (set TASKFLOW_DIFF_BASE_BRANCH if your default branch is not develop)." >&2
+  # CodePipeline (ZIP artifact) has no .git directory — git diff is impossible.
+  # Fix: in CodePipeline Source stage, set Output artifact format = "Full clone" (requires CodeStar/GitHub Connection, not OAuth).
+  # Then git history is available and the diff logic below works correctly.
+  # Until full clone is enabled, set CODEBUILD_SERVICES=<service> in the CodeBuild action's environment variables.
+  if [ ! -d .git ]; then
+    echo "[taskflow] ERROR: No .git directory found. CodePipeline is passing source as a ZIP (default)." >&2
+    echo "[taskflow] To use git-diff-based selective builds, enable 'Full clone' in the CodePipeline Source action." >&2
+    echo "[taskflow] Workaround: set CODEBUILD_SERVICES=envoy (or main/notification/all) in the CodeBuild action env." >&2
+    echo "[taskflow] Fallback: building all services." >&2
     BUILD_ENVOY=true
     BUILD_MAIN=true
     BUILD_NOTI=true
   else
-    while IFS= read -r f; do
-      [[ -z "$f" ]] && continue
-      if [[ "$f" == protos/* ]] || [[ "$f" == proto.pb ]]; then
-        BUILD_ENVOY=true
-        BUILD_MAIN=true
-        BUILD_NOTI=true
+    _base_br="${TASKFLOW_DIFF_BASE_BRANCH:-develop}"
+    DIFF_FILES=""
+    if git rev-parse HEAD~1 >/dev/null 2>&1; then
+      echo "[taskflow] git diff HEAD~1..HEAD" >&2
+      DIFF_FILES=$(git diff --name-only HEAD~1 HEAD || true)
+    else
+      echo "[taskflow] No HEAD~1 (shallow clone). Trying fetch origin/${_base_br}..." >&2
+      git fetch origin "${_base_br}" --depth=100 2>/dev/null || true
+      if git rev-parse "origin/${_base_br}" >/dev/null 2>&1; then
+        echo "[taskflow] git diff origin/${_base_br}...HEAD" >&2
+        DIFF_FILES=$(git diff --name-only "origin/${_base_br}"...HEAD || true)
+      else
+        echo "[taskflow] origin/${_base_br} not available; building all services." >&2
+        BUILD_ENVOY=true; BUILD_MAIN=true; BUILD_NOTI=true
       fi
-      if [[ "$f" == envoy.yaml ]] || [[ "$f" == dockerfile ]]; then
-        BUILD_ENVOY=true
-      fi
-      if [[ "$f" == services/main-service/* ]]; then
-        BUILD_MAIN=true
-      fi
-      if [[ "$f" == services/nest-service/* ]]; then
-        BUILD_NOTI=true
-      fi
-    done <<< "${DIFF_FILES}"
+    fi
+
+    if [ -n "${DIFF_FILES}" ]; then
+      echo "[taskflow] Changed files: $(echo "${DIFF_FILES}" | tr '\n' ' ')" >&2
+      while IFS= read -r f; do
+        [[ -z "$f" ]] && continue
+        if [[ "$f" == protos/* ]] || [[ "$f" == proto.pb ]]; then
+          BUILD_ENVOY=true; BUILD_MAIN=true; BUILD_NOTI=true
+        fi
+        if [[ "$f" == envoy.yaml ]] || [[ "$f" == dockerfile ]]; then
+          BUILD_ENVOY=true
+        fi
+        if [[ "$f" == services/main-service/* ]]; then
+          BUILD_MAIN=true
+        fi
+        if [[ "$f" == services/nest-service/* ]]; then
+          BUILD_NOTI=true
+        fi
+      done <<< "${DIFF_FILES}"
+    fi
   fi
 fi
 
