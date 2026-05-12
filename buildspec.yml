@@ -1,22 +1,34 @@
+# Single CodeBuild spec for Envoy, main-service, and notification-service.
+#
+# ECR private repos (ap-southeast-1, account 017263836577) — push targets:
+#   017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/envoy-proxy
+#   017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/main-service
+#   017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/notification-service
+#
+# Control behavior via environment variables (set in this file or in the CodeBuild project):
+#   (default)           — scripts decide from git diff vs HEAD~1 which images to build
+#   FORCE_FULL_BUILD=1  — always build and push all three images
+#   CODEBUILD_SERVICES  — force subset: "all", or one/more of envoy, main, notification (comma-separated)
+# Optional overrides: ECR_REPO_ENVOY, ECR_REPO_MAIN, ECR_REPO_NOTIFICATION (must match repo names in ECR)
+#
 version: 0.2
+
+env:
+  variables:
+    AWS_REGION: ap-southeast-1
+    AWS_ACCOUNT_ID: "017263836577"
 
 phases:
   pre_build:
     commands:
-      - aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin 017263836577.dkr.ecr.ap-southeast-1.amazonaws.com
+      - bash scripts/codebuild-prepare.sh
   build:
     commands:
-      - echo build
-      - docker build -t envoy-proxy .
-      - docker tag envoy-proxy:latest 017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/envoy-proxy:latest
+      - bash scripts/codebuild-build.sh
   post_build:
     commands:
-      - echo Build completed on `date`
-      - echo pushing to ECR
-      - docker push 017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/envoy-proxy:latest
-      - echo Writing image definitions file...
-      - printf '[{"name":"envoy","imageUri":"017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/envoy-proxy:latest"}]' > imagedefinitions.json
+      - bash scripts/codebuild-post-build.sh
+
 artifacts:
   files:
     - imagedefinitions.json
-
