@@ -11,9 +11,9 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
-  app.setGlobalPrefix('notification-service/api/v1')
+  app.setGlobalPrefix('notification-service/api/v1');
   app.useGlobalInterceptors(new HttpAuthInterceptor(), new TransformResponseInterceptor(), new GlobalHandleErrorInterceptor());
   await app.listen(5002);
-  Logger.log(`🚀 HTTP server running at http://localhost:5002`);
+  Logger.log(`🚀 HTTP server running at http://localhost:5002/notification-service/api/v1`);
 }
 bootstrap();

@@ -14,6 +14,9 @@ import { ProjectClientService } from '@nest-service/core/client/project-client.s
 import { SprintClientService } from '@nest-service/core/client/sprint-client.service';
 import { IssueClientService } from '@nest-service/core/client/issue-client.service';
 
+/** gRPC address for main-service (host:port). ECS must set MAIN_SERVICE to the reachable internal DNS name. */
+const mainServiceGrpcUrl = (config: ConfigService) => config.get<string>('MAIN_SERVICE')?.trim() || 'main-service.TaskFlowNameSpace';
+
 @Module({
   controllers: [],
   imports: [
@@ -33,7 +36,7 @@ import { IssueClientService } from '@nest-service/core/client/issue-client.servi
             loader: {
               includeDirs: [join(__dirname, 'protos')],
             },
-            url: configService.get<string>('MAIN_SERVICE') || '0.0.0.0:5001',
+            url: mainServiceGrpcUrl(configService),
           },
         }),
       },
@@ -49,7 +52,7 @@ import { IssueClientService } from '@nest-service/core/client/issue-client.servi
             loader: {
               includeDirs: [join(__dirname, 'protos')],
             },
-            url: configService.get<string>('MAIN_SERVICE'),
+            url: mainServiceGrpcUrl(configService),
           },
         }),
       },
@@ -65,7 +68,7 @@ import { IssueClientService } from '@nest-service/core/client/issue-client.servi
             loader: {
               includeDirs: [join(__dirname, 'protos')],
             },
-            url: configService.get<string>('MAIN_SERVICE'),
+            url: mainServiceGrpcUrl(configService),
           },
         }),
       },
@@ -81,7 +84,7 @@ import { IssueClientService } from '@nest-service/core/client/issue-client.servi
             loader: {
               includeDirs: [join(__dirname, 'protos')],
             },
-            url: configService.get<string>('MAIN_SERVICE'),
+            url: mainServiceGrpcUrl(configService),
           },
         }),
       },
@@ -103,16 +106,8 @@ import { IssueClientService } from '@nest-service/core/client/issue-client.servi
     AwsQueueAdapter,
     {
       provide: QUEUE_SERVICE_TOKEN,
-      useFactory: (
-        configService: ConfigService,
-        kafkaQueueAdapter: KafkaQueueAdapter,
-        awsQueueAdapter: AwsQueueAdapter,
-      ) => {
-        const provider = (
-          configService.get<string>('QUEUE_PROVIDER') ?? 'aws'
-        )
-          .toLowerCase()
-          .trim();
+      useFactory: (configService: ConfigService, kafkaQueueAdapter: KafkaQueueAdapter, awsQueueAdapter: AwsQueueAdapter) => {
+        const provider = (configService.get<string>('QUEUE_PROVIDER') ?? 'aws').toLowerCase().trim();
         return provider === 'kafka' ? kafkaQueueAdapter : awsQueueAdapter;
       },
       inject: [ConfigService, KafkaQueueAdapter, AwsQueueAdapter],
@@ -122,15 +117,6 @@ import { IssueClientService } from '@nest-service/core/client/issue-client.servi
     SprintClientService,
     IssueClientService,
   ],
-  exports: [
-    LogService,
-    KafkaService,
-    AwsService,
-    QUEUE_SERVICE_TOKEN,
-    UserClientService,
-    ProjectClientService,
-    SprintClientService,
-    IssueClientService,
-  ],
+  exports: [LogService, KafkaService, AwsService, QUEUE_SERVICE_TOKEN, UserClientService, ProjectClientService, SprintClientService, IssueClientService],
 })
 export class CoreModule {}

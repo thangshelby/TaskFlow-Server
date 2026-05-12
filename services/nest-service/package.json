@@ -8,7 +8,7 @@
   "scripts": {
     "gen-type": "chmod +x ./start.sh && ./start.sh",
     "gen-type-wd": "powershell -ExecutionPolicy Bypass -File ./start-wd.ps1",
-    "build": "nest build",
+    "build": "nest build notification-service",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
