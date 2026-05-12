@@ -6,7 +6,8 @@
 #   017263836577.dkr.ecr.ap-southeast-1.amazonaws.com/notification-service
 #
 # Control behavior via environment variables (set in this file or in the CodeBuild project):
-#   (default)           — scripts decide from git diff vs HEAD~1 which images to build
+#   (default)           — scripts decide from git diff (HEAD~1 or origin/<branch>...HEAD if shallow clone)
+#   TASKFLOW_DIFF_BASE_BRANCH — branch name for fetch/diff when HEAD~1 missing (default: develop)
 #   FORCE_FULL_BUILD=1  — always build and push all three images
 #   CODEBUILD_SERVICES  — force subset: "all", or one/more of envoy, main, notification (comma-separated)
 # Optional overrides: ECR_REPO_ENVOY, ECR_REPO_MAIN, ECR_REPO_NOTIFICATION (must match repo names in ECR)
@@ -19,6 +20,9 @@ env:
     AWS_ACCOUNT_ID: "017263836577"
 
 phases:
+  install:
+    commands:
+      - command -v jq >/dev/null 2>&1 || (apt-get update -qq && apt-get install -y -qq jq)
   pre_build:
     commands:
       - bash scripts/codebuild-prepare.sh

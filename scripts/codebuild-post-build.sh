@@ -11,29 +11,34 @@ fi
 
 source /tmp/taskflow-build.env
 
-if ! command -v jq >/dev/null 2>&1; then
-  echo "jq is required for imagedefinitions.json" >&2
-  exit 1
-fi
+# Write an empty array first so the artifact file always exists even if nothing is built.
+echo '[]' > imagedefinitions.json
 
-json='[]'
+ENTRIES=""
 
-push_and_record() {
-  local name=$1
-  local repo=$2
+push_image() {
+  local repo=$1
   docker push "${ECR_REGISTRY}/${repo}:${IMAGE_TAG}"
   docker push "${ECR_REGISTRY}/${repo}:latest"
-  json=$(jq -n --argjson j "$json" --arg n "$name" --arg u "${ECR_REGISTRY}/${repo}:${IMAGE_TAG}" '$j + [{"name":$n,"imageUri":$u}]')
 }
 
 if [ "${BUILD_ENVOY}" = "true" ]; then
-  push_and_record envoy "${ECR_REPO_ENVOY}"
+  push_image "${ECR_REPO_ENVOY}"
+  ENTRIES="${ENTRIES}{\"name\":\"envoy\",\"imageUri\":\"${ECR_REGISTRY}/${ECR_REPO_ENVOY}:${IMAGE_TAG}\"},"
 fi
 if [ "${BUILD_MAIN}" = "true" ]; then
-  push_and_record main-service "${ECR_REPO_MAIN}"
+  push_image "${ECR_REPO_MAIN}"
+  ENTRIES="${ENTRIES}{\"name\":\"main-service\",\"imageUri\":\"${ECR_REGISTRY}/${ECR_REPO_MAIN}:${IMAGE_TAG}\"},"
 fi
 if [ "${BUILD_NOTI}" = "true" ]; then
-  push_and_record notification-service "${ECR_REPO_NOTIFICATION}"
+  push_image "${ECR_REPO_NOTIFICATION}"
+  ENTRIES="${ENTRIES}{\"name\":\"notification-service\",\"imageUri\":\"${ECR_REGISTRY}/${ECR_REPO_NOTIFICATION}:${IMAGE_TAG}\"},"
 fi
 
-echo "$json" | tee imagedefinitions.json
+# Build final JSON array (strip trailing comma).
+if [ -n "${ENTRIES}" ]; then
+  ENTRIES="${ENTRIES%,}"
+  printf '[%s]' "${ENTRIES}" > imagedefinitions.json
+fi
+
+echo "[taskflow] imagedefinitions.json → $(cat imagedefinitions.json)"
