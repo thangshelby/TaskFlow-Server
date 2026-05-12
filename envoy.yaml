@@ -19,6 +19,8 @@ static_resources:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                 codec_type: AUTO
                 stat_prefix: grpc_json_transcoder
+                upgrade_configs:
+                  - upgrade_type: websocket
                 access_log:
                 - name: envoy.access_loggers.stdout
                   typed_config:
@@ -57,6 +59,17 @@ static_resources:
                             - header:
                                 key: "access-control-max-age"
                                 value: "86400"
+                        # Same hostname as main API: send Nest REST + Socket.IO here (not through gRPC transcoder).
+                        - match:
+                            prefix: "/notification-service"
+                          route:
+                            cluster: notification_service
+                          typed_per_filter_config:
+                            # Empty services disables transcoder on this route (Envoy grpc_json_transcoder.proto).
+                            envoy.filters.http.grpc_json_transcoder:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_json_transcoder.v3.GrpcJsonTranscoder
+                              proto_descriptor: "/etc/envoy/proto.pb"
+                              services: []
                         - match:
                             prefix: "/"
                           route:
@@ -157,7 +170,7 @@ static_resources:
                             response_handle:headers():add("Set-Cookie", "token=" .. token .. "; Path=/; HttpOnly; Secure; SameSite=None")
                           end
                         end
-                  - name: envoy.filters.http.grpc_json  _transcoder
+                  - name: envoy.filters.http.grpc_json_transcoder
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_json_transcoder.v3.GrpcJsonTranscoder
                       proto_descriptor: "/etc/envoy/proto.pb"
@@ -179,7 +192,158 @@ static_resources:
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-
+    - name: listener_notification_service
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 8082
+      filter_chains:
+          - filters:
+              - name: envoy.filters.network.http_connection_manager
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                  stat_prefix: ws_gateway
+                  codec_type: AUTO
+                  upgrade_configs:
+                    - upgrade_type: websocket
+                  route_config:
+                    name: ws_route
+                    virtual_hosts:
+                      - name: ws_host
+                        domains: ["*"]
+                        routes:
+                          - match:
+                              prefix: "/"
+                              headers:
+                                - name: ":method"
+                                  exact_match: "OPTIONS"
+                            direct_response:
+                              status: 204
+                            response_headers_to_add:
+                              - header:
+                                  key: "access-control-allow-origin"
+                                  value: "${FRONTEND_URL}"
+                                append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                              - header:
+                                  key: "access-control-allow-methods"
+                                  value: "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+                              - header:
+                                  key: "access-control-allow-headers"
+                                  value: "content-type, authorization, x-requested-with"
+                              - header:
+                                  key: "access-control-allow-credentials"
+                                  value: "true"
+                              - header:
+                                  key: "access-control-max-age"
+                                  value: "86400"
+                          - match:
+                              prefix: "/notification-service"
+                            route:
+                              cluster: notification_service
+                          - match:
+                              prefix: "/"
+                            route:
+                              cluster: notification_service
+                        typed_per_filter_config:
+                          envoy.filters.http.cors:
+                            "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
+                            allow_origin_string_match:
+                              - prefix: "http://localhost:5173"
+                              - prefix: "http://localhost:4173"
+                              - prefix: "https://frontend.taskkfloww.shop"
+                              - prefix: "https://frontend.taskflow.shop"
+                              - prefix: "http://taskflow-frontend-alb-952368214.ap-southeast-1.elb.amazonaws.com"
+                            allow_methods: "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+                            allow_headers: "content-type, authorization, x-requested-with"
+                            expose_headers: "x-custom-header"
+                            # allow_methods: "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+                            # allow_headers: "content-type, authorization, accept, origin, x-requested-with"
+                            # expose_headers: "authorization"
+                            max_age: "86400"
+                            allow_credentials: true
+                  http_filters:
+                    - name: envoy.filters.http.cors
+                      typed_config:
+                        "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
+                    - name: envoy.filters.http.jwt_authn
+                      typed_config:
+                        "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
+                        providers:
+                          my_jwt_provider:
+                            issuer: "127.0.0.1"
+                            local_jwks:
+                              inline_string: |
+                                {
+                                  "keys": [
+                                    {
+                                      "kty": "RSA",
+                                      "alg": "RS256",
+                                      "use": "sig",
+                                      "n": "sqeJGov8nTaxpcqKnjOlt2_6YgBdm9vPX67brfmEY--M4mn7Tbt_Q76hDk44CvLvFll7amwO763rA5m9mQDTgmK57_E7zaF4T2A2B0xqg8V_f6EG5G9lBmtwqHX4mDW8B4ZKXX9KYzVK6wndoJsRu1rq1FmZMeapDpjXL1Rb0DVP9ZPxnvGDhVBxA83lzUhIRBX3_2CwrCrET9nCEDOAer7U9xKz-oVbXyuCvUwYCJPN02gOV_sBjHrW2T09bEsUW6s-vLspv9AVC5sjYduhAVrqmh1RGhZOPziwwa1DmvO5z_qEdDawSOki7dU8zxZQ5cX18BzkXZjuwhjQYP9vlw",
+                                      "e": "AQAB"
+                                    }
+                                  ]
+                                }
+                            forward: true
+                            payload_in_metadata: "jwt_payload"
+                            from_cookies:
+                              - token
+                        rules:
+                          - match:
+                              prefix: "/notification-service/socket.io"
+                            requires: {}
+                          - match:
+                              prefix: "/notification-service/api/v1/health"
+                            requires: {}
+                          - match:
+                              prefix: "/"
+                            requires:
+                              provider_name: "my_jwt_provider"
+                    - name: envoy.filters.http.rbac
+                      typed_config:
+                        "@type": type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
+                        rules:
+                          action: ALLOW
+                          policies:
+                            "all-access-policy":
+                              permissions:
+                                - any: true
+                              principals:
+                                - any: true
+                    - name: envoy.filters.http.lua
+                      typed_config:
+                        "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+                        inline_code: |
+                          function envoy_on_request(request_handle)
+                            local method = request_handle:headers():get(":method")
+                            local origin = request_handle:headers():get("origin")
+                            local req_headers = request_handle:headers():get("access-control-request-headers")
+                            if method == "OPTIONS" then
+                              local allow_origin = origin or "*"
+                              request_handle:respond(
+                                {
+                                  [":status"] = "204",
+                                  ["access-control-allow-origin"] = allow_origin,
+                                  ["access-control-allow-methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+                                  ["access-control-allow-headers"] = req_headers or "content-type, authorization, x-requested-with",
+                                  ["access-control-allow-credentials"] = "true",
+                                  ["access-control-max-age"] = "86400",
+                                  ["vary"] = "Origin"
+                                },
+                                ""
+                              )
+                              return
+                            end
+                          end
+                          function envoy_on_response(response_handle)
+                            local token = response_handle:headers():get("authorization")
+                            if token then
+                              response_handle:headers():add("Set-Cookie", "token=" .. token .. "; Path=/; HttpOnly; Secure; SameSite=None")
+                            end
+                          end
+                    - name: envoy.filters.http.router
+                      typed_config:
+                        "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
   clusters:
     - name: main_service
       type: LOGICAL_DNS
@@ -195,3 +359,16 @@ static_resources:
                     socket_address:
                       address: main-service.TaskFlowNameSpace
                       port_value: 5001
+    - name: notification_service
+      type: LOGICAL_DNS
+      connect_timeout: 5s
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: notification_service
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: notification-service.TaskFlowNameSpace
+                      port_value: 5002
