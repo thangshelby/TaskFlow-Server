@@ -163,6 +163,25 @@ else
     fi
   fi
 
+  # CodeBuild/CodePipeline shallow checkout: HEAD~1 may never resolve even after
+  # fetch/deepen, but `git cat-file -p HEAD` still lists `parent <sha>`. Fetch that
+  # commit so `git diff parent..HEAD` matches local behavior (avoids false "build all").
+  if [ -z "${DIFF_FILES}" ] && [ "${BUILD_ENVOY}" = "false" ] && [ "${BUILD_MAIN}" = "false" ] && [ "${BUILD_NOTI}" = "false" ]; then
+    _par=$(git cat-file -p HEAD 2>/dev/null | awk '/^parent / { print $2; exit }')
+    if [ -n "${_par}" ]; then
+      echo "[taskflow] Shallow clone — fetching parent ${_par:0:7} for diff..." >&2
+      git fetch origin "${_par}" --depth=1 2>/dev/null || true
+      if git cat-file -e "${_par}^{commit}" 2>/dev/null; then
+        echo "[taskflow] Diff: ${_par}..HEAD  (parent from commit metadata)" >&2
+        DIFF_FILES=$(git diff --name-only "${_par}" HEAD || true)
+        # #region agent log
+        _dbg "H-A,H-B" "prepare.sh:parent_fetch" "diff_via_parent_sha" \
+          "{\"parent\":\"${_par:0:7}\",\"DIFF_FILES_len\":$(printf '%s' "${DIFF_FILES}" | wc -c),\"DIFF_FILES\":\"$(printf '%s' "${DIFF_FILES}" | tr '\n' '|')\"}"
+        # #endregion agent log
+      fi
+    fi
+  fi
+
   # Shallow clone without parent objects: cannot trust git log --name-only (lists whole tree).
   # If we still have no diff, build everything so deploy is not a silent no-op.
   if [ -z "${DIFF_FILES}" ] && [ "${BUILD_ENVOY}" = "false" ] && [ "${BUILD_MAIN}" = "false" ] && [ "${BUILD_NOTI}" = "false" ]; then
