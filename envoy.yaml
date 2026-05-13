@@ -372,3 +372,4 @@ static_resources:
                     socket_address:
                       address: notification-service.TaskFlowNameSpace
                       port_value: 5002
+
