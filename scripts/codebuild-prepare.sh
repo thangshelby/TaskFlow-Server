@@ -11,11 +11,20 @@ if [ ! -f dockerfile ] && [ -d TaskFlow-Server ] && [ -f TaskFlow-Server/dockerf
 fi
 
 # #region agent log
-_DBG_LOG="/home/ngothang/github/Task/.cursor/debug-fade0b.log"
+# Local Cursor path may not exist on CodeBuild; fall back to /tmp.
+_DEFAULT_DBG="/home/ngothang/github/Task/.cursor/debug-fade0b.log"
+if [ -n "${TASKFLOW_DEBUG_LOG:-}" ]; then
+  _DBG_LOG="$TASKFLOW_DEBUG_LOG"
+elif [ -d "$(dirname "$_DEFAULT_DBG")" ]; then
+  _DBG_LOG="$_DEFAULT_DBG"
+else
+  _DBG_LOG="/tmp/taskflow-debug-fade0b.ndjson"
+fi
 _dbg() {
   local hyp="$1" loc="$2" msg="$3" data="$4"
   local ts; ts=$(date +%s%3N 2>/dev/null || echo 0)
   echo "[DBG:${hyp}] ${msg} >> ${data}" >&2
+  mkdir -p "$(dirname "$_DBG_LOG")" 2>/dev/null || true
   printf '{"sessionId":"fade0b","timestamp":%s,"location":"%s","message":"%s","data":%s,"hypothesisId":"%s"}\n' \
     "$ts" "$loc" "$msg" "$data" "$hyp" >> "$_DBG_LOG" 2>/dev/null || true
 }
@@ -97,7 +106,7 @@ else
   _prev="${CODEBUILD_WEBHOOK_PREV_COMMIT:-}"
   # #region agent log
   _dbg "H-A" "prepare.sh:97" "diff_branch_decision" \
-    "{\"_prev\":\"${_prev}\",\"prev_nonempty\":$([ -n \"$_prev\" ] && echo true || echo false)}"
+    "{\"_prev\":\"${_prev}\",\"prev_nonempty\":$( [ -n "$_prev" ] && echo true || echo false )}"
   # #endregion agent log
   if [ -n "$_prev" ] && git rev-parse "$_prev" >/dev/null 2>&1; then
     echo "[taskflow] Diff: ${_prev}..HEAD  (CODEBUILD_WEBHOOK_PREV_COMMIT)" >&2
@@ -130,6 +139,18 @@ else
       echo "[taskflow] Cannot diff — building all services" >&2
       BUILD_ENVOY=true; BUILD_MAIN=true; BUILD_NOTI=true
     fi
+  fi
+
+  # CodePipeline/CodeBuild often uses a shallow clone (no HEAD~1). When the pushed
+  # commit is already the tip of origin/<branch>, origin/...HEAD is empty even though
+  # HEAD introduced files — fall back to the tree of the current commit only.
+  if [ -z "${DIFF_FILES}" ] && [ "${BUILD_ENVOY}" = "false" ] && [ "${BUILD_MAIN}" = "false" ] && [ "${BUILD_NOTI}" = "false" ]; then
+    echo "[taskflow] Diff range empty — using files from HEAD (shallow / tip-of-branch)" >&2
+    DIFF_FILES=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null || true)
+    # #region agent log
+    _dbg "H-A,H-B" "prepare.sh:fallback_head" "diff_via_HEAD_tree" \
+      "{\"DIFF_FILES_len\":$(printf '%s' "${DIFF_FILES}" | wc -c),\"DIFF_FILES\":\"$(printf '%s' "${DIFF_FILES}" | tr '\n' '|')\"}"
+    # #endregion agent log
   fi
 
   if [ -n "${DIFF_FILES}" ]; then
