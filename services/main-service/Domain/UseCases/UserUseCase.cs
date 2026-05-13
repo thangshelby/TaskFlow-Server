@@ -100,8 +100,8 @@ public class UserUseCase
         if (user.IsVerified == false)
             throw new RpcException(new Status(StatusCode.Unauthenticated, "Account not verified. Please verify OTP!"));
 
-        // if (!PasswordHasher.ValidatePassword(param.Password, user.Password))
-        //     throw new RpcException(new Status(StatusCode.Unauthenticated, "Invalid password!"));
+        if (!PasswordHasher.ValidatePassword(param.Password, user.Password))
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "Invalid password!"));
 
         return user;
     }
