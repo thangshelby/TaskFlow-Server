@@ -135,21 +135,43 @@ else
       _dbg "H-A,H-B" "prepare.sh:119" "diff_via_origin_develop" \
         "{\"DIFF_FILES_len\":$(printf '%s' "${DIFF_FILES}" | wc -c),\"DIFF_FILES\":\"$(printf '%s' "${DIFF_FILES}" | tr '\n' '|')\"}"
       # #endregion agent log
+      # Same commit as remote tip → three-dot diff is empty, but fetch may have
+      # deepened history so HEAD~1 exists — compare against parent commit.
+      if [ -z "${DIFF_FILES}" ] && git rev-parse HEAD~1 >/dev/null 2>&1; then
+        echo "[taskflow] Diff: HEAD~1..HEAD (after fetch; tip matched origin/${_base_br})" >&2
+        DIFF_FILES=$(git diff --name-only HEAD~1 HEAD || true)
+        # #region agent log
+        _dbg "H-A,H-B" "prepare.sh:after_fetch_HEAD1" "diff_via_HEAD1_after_fetch" \
+          "{\"DIFF_FILES_len\":$(printf '%s' "${DIFF_FILES}" | wc -c),\"DIFF_FILES\":\"$(printf '%s' "${DIFF_FILES}" | tr '\n' '|')\"}"
+        # #endregion agent log
+      fi
+      if [ -z "${DIFF_FILES}" ] && ! git rev-parse HEAD~1 >/dev/null 2>&1; then
+        echo "[taskflow] Still no HEAD~1 — git fetch --deepen=50 origin/${_base_br}..." >&2
+        git fetch origin "${_base_br}" --deepen=50 2>/dev/null || true
+        if git rev-parse HEAD~1 >/dev/null 2>&1; then
+          echo "[taskflow] Diff: HEAD~1..HEAD (after deepen)" >&2
+          DIFF_FILES=$(git diff --name-only HEAD~1 HEAD || true)
+          # #region agent log
+          _dbg "H-A,H-B" "prepare.sh:after_deepen" "diff_via_HEAD1_after_deepen" \
+            "{\"DIFF_FILES_len\":$(printf '%s' "${DIFF_FILES}" | wc -c),\"DIFF_FILES\":\"$(printf '%s' "${DIFF_FILES}" | tr '\n' '|')\"}"
+          # #endregion agent log
+        fi
+      fi
     else
       echo "[taskflow] Cannot diff — building all services" >&2
       BUILD_ENVOY=true; BUILD_MAIN=true; BUILD_NOTI=true
     fi
   fi
 
-  # CodePipeline/CodeBuild often uses a shallow clone (no HEAD~1). When the pushed
-  # commit is already the tip of origin/<branch>, origin/...HEAD is empty even though
-  # HEAD introduced files — fall back to the tree of the current commit only.
+  # Shallow clone without parent objects: cannot trust git log --name-only (lists whole tree).
+  # If we still have no diff, build everything so deploy is not a silent no-op.
   if [ -z "${DIFF_FILES}" ] && [ "${BUILD_ENVOY}" = "false" ] && [ "${BUILD_MAIN}" = "false" ] && [ "${BUILD_NOTI}" = "false" ]; then
-    echo "[taskflow] Diff range empty — using files from HEAD (shallow / tip-of-branch)" >&2
-    DIFF_FILES=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null || true)
+    echo "[taskflow] Cannot determine changed files after fetch/deepen — building all services" >&2
+    BUILD_ENVOY=true
+    BUILD_MAIN=true
+    BUILD_NOTI=true
     # #region agent log
-    _dbg "H-A,H-B" "prepare.sh:fallback_head" "diff_via_HEAD_tree" \
-      "{\"DIFF_FILES_len\":$(printf '%s' "${DIFF_FILES}" | wc -c),\"DIFF_FILES\":\"$(printf '%s' "${DIFF_FILES}" | tr '\n' '|')\"}"
+    _dbg "H-A,H-B" "prepare.sh:fallback_build_all" "no_diff_build_all" "{\"reason\":\"empty_DIFF_after_shallow_fetch\"}"
     # #endregion agent log
   fi
 
@@ -175,7 +197,7 @@ else
           BUILD_ENVOY=true; BUILD_MAIN=true; BUILD_NOTI=true ;;
       esac
     done <<< "${DIFF_FILES}"
-  else
+  elif [ "${BUILD_ENVOY}" = "false" ] && [ "${BUILD_MAIN}" = "false" ] && [ "${BUILD_NOTI}" = "false" ]; then
     echo "[taskflow] No changed files matched any service path — nothing to build" >&2
   fi
 fi
