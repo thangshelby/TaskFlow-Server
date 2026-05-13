@@ -42,10 +42,10 @@ public class UserUseCase
             Email = email,
         });
 
-        // if (user == null || string.IsNullOrEmpty(user.Id))
-        // {
-        //     throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
-        // }
+        if (user == null || string.IsNullOrEmpty(user.Id))
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
+        }
 
         // var result = await _otpTokenUseCase.VerifyOtpAsync(user, otp);
 
