@@ -27,14 +27,14 @@ protoc \
    $(find ../../protos -name "*.proto")
 
 # 4. Kiểm tra xem gen type có lỗi không trước khi chạy service
-if [ $? -eq 0 ]; then
-  echo "✅ Proto types generated successfully."
-  echo "🚀 Starting service: $SERVICE_NAME..."
+# if [ $? -eq 0 ]; then
+#   echo "✅ Proto types generated successfully."
+#   echo "🚀 Starting service: $SERVICE_NAME..."
   
-  # Chạy service bằng Nest CLI (chế độ development)
-  # Hoặc dùng: npx nest start $SERVICE_NAME --watch nếu muốn hot-reload
-  npx nest start "$SERVICE_NAME"
-else
-  echo "❌ Failed to generate proto types."
-  exit 1
-fi
+#   # Chạy service bằng Nest CLI (chế độ development)
+#   # Hoặc dùng: npx nest start $SERVICE_NAME --watch nếu muốn hot-reload
+#   npx nest start "$SERVICE_NAME"
+# else
+#   echo "❌ Failed to generate proto types."
+#   exit 1
+# fi
