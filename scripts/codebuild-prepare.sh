@@ -24,81 +24,105 @@ else
   IMAGE_TAG="latest"
 fi
 
+# ── Always log git context ───────────────────────────────────────────────────
+echo "[taskflow] ========== git context ==========" >&2
+echo "[taskflow] CODEBUILD_RESOLVED_SOURCE_VERSION : ${CODEBUILD_RESOLVED_SOURCE_VERSION:-n/a}" >&2
+echo "[taskflow] CODEBUILD_WEBHOOK_PREV_COMMIT     : ${CODEBUILD_WEBHOOK_PREV_COMMIT:-n/a}" >&2
+echo "[taskflow] CODEBUILD_SERVICES                : ${CODEBUILD_SERVICES:-n/a}" >&2
+echo "[taskflow] FORCE_FULL_BUILD                  : ${FORCE_FULL_BUILD:-0}" >&2
+if [ -d .git ]; then
+  echo "[taskflow] git log (last 3 commits):" >&2
+  git log --oneline -3 2>&1 | sed 's/^/[taskflow]   /' >&2
+  echo "[taskflow] git diff --name-only HEAD~1 HEAD:" >&2
+  git diff --name-only HEAD~1 HEAD 2>/dev/null | sed 's/^/[taskflow]   /' >&2 || echo "[taskflow]   (no HEAD~1)" >&2
+else
+  echo "[taskflow] .git directory: NOT FOUND (ZIP source — no history)" >&2
+fi
+echo "[taskflow] ====================================" >&2
+
+# ── Decide which services to build ──────────────────────────────────────────
 BUILD_ENVOY=false
 BUILD_MAIN=false
 BUILD_NOTI=false
 
 if [ "${FORCE_FULL_BUILD:-0}" = "1" ] || [ "${CODEBUILD_SERVICES:-}" = "all" ]; then
+  echo "[taskflow] Mode: FORCE_FULL_BUILD / all" >&2
   BUILD_ENVOY=true
   BUILD_MAIN=true
   BUILD_NOTI=true
+
 elif [ -n "${CODEBUILD_SERVICES:-}" ]; then
+  echo "[taskflow] Mode: CODEBUILD_SERVICES=${CODEBUILD_SERVICES}" >&2
   IFS=',' read -ra PARTS <<< "$CODEBUILD_SERVICES"
   for raw in "${PARTS[@]}"; do
     s=$(echo "$raw" | xargs)
     [ -z "$s" ] && continue
     case "$s" in
-      envoy) BUILD_ENVOY=true ;;
-      main) BUILD_MAIN=true ;;
+      envoy)        BUILD_ENVOY=true ;;
+      main)         BUILD_MAIN=true ;;
       notification) BUILD_NOTI=true ;;
       *)
-        echo "Unknown CODEBUILD_SERVICES entry: $s (use envoy, main, notification)" >&2
+        echo "[taskflow] ERROR: unknown CODEBUILD_SERVICES entry '$s' (valid: envoy, main, notification, all)" >&2
         exit 1
         ;;
     esac
   done
-else
-  # CodePipeline (ZIP artifact) has no .git directory — git diff is impossible.
-  # Fix: in CodePipeline Source stage, set Output artifact format = "Full clone" (requires CodeStar/GitHub Connection, not OAuth).
-  # Then git history is available and the diff logic below works correctly.
-  # Until full clone is enabled, set CODEBUILD_SERVICES=<service> in the CodeBuild action's environment variables.
-  if [ ! -d .git ]; then
-    echo "[taskflow] ERROR: No .git directory found. CodePipeline is passing source as a ZIP (default)." >&2
-    echo "[taskflow] To use git-diff-based selective builds, enable 'Full clone' in the CodePipeline Source action." >&2
-    echo "[taskflow] Workaround: set CODEBUILD_SERVICES=envoy (or main/notification/all) in the CodeBuild action env." >&2
-    echo "[taskflow] Fallback: building all services." >&2
-    BUILD_ENVOY=true
-    BUILD_MAIN=true
-    BUILD_NOTI=true
-  else
-    _base_br="${TASKFLOW_DIFF_BASE_BRANCH:-develop}"
-    DIFF_FILES=""
-    if git rev-parse HEAD~1 >/dev/null 2>&1; then
-      echo "[taskflow] git diff HEAD~1..HEAD" >&2
-      DIFF_FILES=$(git diff --name-only HEAD~1 HEAD || true)
-    else
-      echo "[taskflow] No HEAD~1 (shallow clone). Trying fetch origin/${_base_br}..." >&2
-      git fetch origin "${_base_br}" --depth=100 2>/dev/null || true
-      if git rev-parse "origin/${_base_br}" >/dev/null 2>&1; then
-        echo "[taskflow] git diff origin/${_base_br}...HEAD" >&2
-        DIFF_FILES=$(git diff --name-only "origin/${_base_br}"...HEAD || true)
-      else
-        echo "[taskflow] origin/${_base_br} not available; building all services." >&2
-        BUILD_ENVOY=true; BUILD_MAIN=true; BUILD_NOTI=true
-      fi
-    fi
 
-    if [ -n "${DIFF_FILES}" ]; then
-      echo "[taskflow] Changed files: $(echo "${DIFF_FILES}" | tr '\n' ' ')" >&2
-      while IFS= read -r f; do
-        [[ -z "$f" ]] && continue
-        if [[ "$f" == protos/* ]] || [[ "$f" == proto.pb ]]; then
-          BUILD_ENVOY=true; BUILD_MAIN=true; BUILD_NOTI=true
-        fi
-        if [[ "$f" == envoy.yaml ]] || [[ "$f" == dockerfile ]]; then
-          BUILD_ENVOY=true
-        fi
-        if [[ "$f" == services/main-service/* ]]; then
-          BUILD_MAIN=true
-        fi
-        if [[ "$f" == services/nest-service/* ]]; then
-          BUILD_NOTI=true
-        fi
-      done <<< "${DIFF_FILES}"
+elif [ ! -d .git ]; then
+  echo "[taskflow] Mode: ZIP fallback (no .git) — building all services" >&2
+  echo "[taskflow] FIX: set 'Full clone' in CodePipeline Source action, or set CODEBUILD_SERVICES=<service>" >&2
+  BUILD_ENVOY=true
+  BUILD_MAIN=true
+  BUILD_NOTI=true
+
+else
+  echo "[taskflow] Mode: git diff" >&2
+  _base_br="${TASKFLOW_DIFF_BASE_BRANCH:-develop}"
+  DIFF_FILES=""
+
+  _prev="${CODEBUILD_WEBHOOK_PREV_COMMIT:-}"
+  if [ -n "$_prev" ] && git rev-parse "$_prev" >/dev/null 2>&1; then
+    echo "[taskflow] Diff: ${_prev}..HEAD  (CODEBUILD_WEBHOOK_PREV_COMMIT)" >&2
+    DIFF_FILES=$(git diff --name-only "${_prev}" HEAD || true)
+  elif git rev-parse HEAD~1 >/dev/null 2>&1; then
+    echo "[taskflow] Diff: HEAD~1..HEAD" >&2
+    DIFF_FILES=$(git diff --name-only HEAD~1 HEAD || true)
+  else
+    echo "[taskflow] No HEAD~1 — fetching origin/${_base_br}..." >&2
+    git fetch origin "${_base_br}" --depth=100 2>/dev/null || true
+    if git rev-parse "origin/${_base_br}" >/dev/null 2>&1; then
+      echo "[taskflow] Diff: origin/${_base_br}...HEAD" >&2
+      DIFF_FILES=$(git diff --name-only "origin/${_base_br}"...HEAD || true)
+    else
+      echo "[taskflow] Cannot diff — building all services" >&2
+      BUILD_ENVOY=true; BUILD_MAIN=true; BUILD_NOTI=true
     fi
+  fi
+
+  if [ -n "${DIFF_FILES}" ]; then
+    echo "[taskflow] Files changed:" >&2
+    echo "${DIFF_FILES}" | sed 's/^/[taskflow]   /' >&2
+    while IFS= read -r f; do
+      [[ -z "$f" ]] && continue
+      case "$f" in
+        protos/*|proto.pb)
+          BUILD_ENVOY=true; BUILD_MAIN=true; BUILD_NOTI=true ;;
+        envoy.yaml|dockerfile)
+          BUILD_ENVOY=true ;;
+        services/main-service/*)
+          BUILD_MAIN=true ;;
+        services/nest-service/*)
+          BUILD_NOTI=true ;;
+        scripts/*|buildspec.yml)
+          BUILD_ENVOY=true; BUILD_MAIN=true; BUILD_NOTI=true ;;
+      esac
+    done <<< "${DIFF_FILES}"
+  else
+    echo "[taskflow] No changed files matched any service path — nothing to build" >&2
   fi
 fi
 
+# ── Write env for subsequent phases ─────────────────────────────────────────
 {
   echo "export ECR_REGISTRY=\"${ECR_REGISTRY}\""
   echo "export IMAGE_TAG=\"${IMAGE_TAG}\""
@@ -110,10 +134,10 @@ fi
   echo "export BUILD_NOTI=${BUILD_NOTI}"
 } > /tmp/taskflow-build.env
 
-echo "[taskflow] BUILD_ENVOY=${BUILD_ENVOY} BUILD_MAIN=${BUILD_MAIN} BUILD_NOTI=${BUILD_NOTI}" >&2
+echo "[taskflow] BUILD_ENVOY=${BUILD_ENVOY}  BUILD_MAIN=${BUILD_MAIN}  BUILD_NOTI=${BUILD_NOTI}" >&2
 
 if [ "${BUILD_ENVOY}" != "true" ] && [ "${BUILD_MAIN}" != "true" ] && [ "${BUILD_NOTI}" != "true" ]; then
-  echo "[taskflow] No services selected from changed paths. Skipping docker builds. Set FORCE_FULL_BUILD=1 or CODEBUILD_SERVICES=envoy,main,notification."
+  echo "[taskflow] Nothing to build. Set FORCE_FULL_BUILD=1 to override." >&2
 fi
 
 aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
