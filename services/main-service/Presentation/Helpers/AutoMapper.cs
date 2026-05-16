@@ -164,7 +164,8 @@ public class AutoMapperProfiles : Profile
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("o")))
             .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("o")))
             .ForMember(dest => dest.PermissionKeys, opt => opt.MapFrom(src => src.PermissionKeys))
-            .ForMember(dest => dest.MemberIds, opt => opt.MapFrom(src => src.MemberIds));
+            .ForMember(dest => dest.MemberIds, opt => opt.MapFrom(src => src.MemberIds))
+            .ForMember(dest => dest.Avatar, opt => opt.MapFrom(src => src.Avatar ?? string.Empty));
         CreateMap<ProjectPermission, PermissionDomain>().ReverseMap();
         CreateMap<PermissionDomain, Permission>().ReverseMap();
 

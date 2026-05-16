@@ -133,6 +133,10 @@ public class ProjectUseCase
         existingProject.Key = project.Key;
         existingProject.Access = project.Access;
         existingProject.Type = project.Type;
+        existingProject.Description = project.Description;
+        existingProject.BackgroundImg = project.BackgroundImg;
+        existingProject.DueDateFrom = project.DueDateFrom;
+        existingProject.DueDateTo = project.DueDateTo;
         existingProject.UpdatedAt = DateTime.UtcNow;
 
         return await _projectRepository.UpdateProject(existingProject);

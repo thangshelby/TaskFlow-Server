@@ -356,7 +356,7 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: main-service.TaskFlowNameSpace
+                      address: ${GRPC_SERVICE_HOST}
                       port_value: 5001
     - name: notification_service
       type: LOGICAL_DNS
@@ -369,6 +369,6 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: notification-service.TaskFlowNameSpace
+                      address: ${NOTIFICATION_SERVICE_HOST}
                       port_value: 5002
 

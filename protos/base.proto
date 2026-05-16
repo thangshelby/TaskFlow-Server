@@ -41,6 +41,7 @@ message ProjectTeamRes {
     string created_at = 6;
     string updated_at = 7;
     repeated string member_ids = 8;
+    string avatar = 9;
 }
 
 // Common

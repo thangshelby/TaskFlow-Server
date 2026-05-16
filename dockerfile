@@ -2,6 +2,11 @@ FROM envoyproxy/envoy:v1.33.0
 
 WORKDIR /etc/envoy
 
+# Defaults for ECS/compose; override via env (see .env).
+ENV GRPC_SERVICE_HOST=grpc-service
+ENV NOTIFICATION_SERVICE_HOST=notification-service
+ENV FRONTEND_URL=http://localhost:5173
+
 # Keep proto and base config inside image.
 COPY envoy.yaml /etc/envoy/envoy.yaml
 COPY proto.pb /etc/envoy/proto.pb
