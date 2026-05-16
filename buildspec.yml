@@ -18,6 +18,10 @@ env:
   variables:
     AWS_REGION: ap-southeast-1
     AWS_ACCOUNT_ID: "017263836577"
+  exported-variables:
+    - BUILD_ENVOY
+    - BUILD_MAIN
+    - BUILD_NOTI
 
 phases:
   install:
@@ -26,6 +30,8 @@ phases:
   pre_build:
     commands:
       - bash scripts/codebuild-prepare.sh
+      # Export BUILD_* vars into the CodeBuild shell so CodePipeline can read them
+      - source /tmp/taskflow-build.env
   build:
     commands:
       - bash scripts/codebuild-build.sh

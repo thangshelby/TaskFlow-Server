@@ -10,6 +10,29 @@ if [ ! -f dockerfile ] && [ -d TaskFlow-Server ] && [ -f TaskFlow-Server/dockerf
   cd TaskFlow-Server
 fi
 
+# #region agent log
+# Local Cursor path may not exist on CodeBuild; fall back to /tmp.
+_DEFAULT_DBG="/home/ngothang/github/Task/.cursor/debug-fade0b.log"
+if [ -n "${TASKFLOW_DEBUG_LOG:-}" ]; then
+  _DBG_LOG="$TASKFLOW_DEBUG_LOG"
+elif [ -d "$(dirname "$_DEFAULT_DBG")" ]; then
+  _DBG_LOG="$_DEFAULT_DBG"
+else
+  _DBG_LOG="/tmp/taskflow-debug-fade0b.ndjson"
+fi
+_dbg() {
+  local hyp="$1" loc="$2" msg="$3" data="$4"
+  local ts; ts=$(date +%s%3N 2>/dev/null || echo 0)
+  echo "[DBG:${hyp}] ${msg} >> ${data}" >&2
+  mkdir -p "$(dirname "$_DBG_LOG")" 2>/dev/null || true
+  printf '{"sessionId":"fade0b","timestamp":%s,"location":"%s","message":"%s","data":%s,"hypothesisId":"%s"}\n' \
+    "$ts" "$loc" "$msg" "$data" "$hyp" >> "$_DBG_LOG" 2>/dev/null || true
+}
+_git_root=$(git rev-parse --show-toplevel 2>/dev/null || echo "NO_GIT")
+_dbg "H-E" "prepare.sh:11" "env_context" \
+  "{\"cwd\":\"$(pwd)\",\"git_root\":\"${_git_root}\",\"script_root\":\"${_root}\"}"
+# #endregion agent log
+
 # shellcheck source=ecr-repos.defaults.sh
 source "${_here}/ecr-repos.defaults.sh"
 
@@ -81,22 +104,94 @@ else
   DIFF_FILES=""
 
   _prev="${CODEBUILD_WEBHOOK_PREV_COMMIT:-}"
+  # #region agent log
+  _dbg "H-A" "prepare.sh:97" "diff_branch_decision" \
+    "{\"_prev\":\"${_prev}\",\"prev_nonempty\":$( [ -n "$_prev" ] && echo true || echo false )}"
+  # #endregion agent log
   if [ -n "$_prev" ] && git rev-parse "$_prev" >/dev/null 2>&1; then
     echo "[taskflow] Diff: ${_prev}..HEAD  (CODEBUILD_WEBHOOK_PREV_COMMIT)" >&2
     DIFF_FILES=$(git diff --name-only "${_prev}" HEAD || true)
+    # #region agent log
+    _dbg "H-A,H-B" "prepare.sh:102" "diff_via_prev_commit" \
+      "{\"DIFF_FILES_len\":$(printf '%s' "${DIFF_FILES}" | wc -c),\"DIFF_FILES\":\"$(printf '%s' "${DIFF_FILES}" | tr '\n' '|')\"}"
+    # #endregion agent log
   elif git rev-parse HEAD~1 >/dev/null 2>&1; then
     echo "[taskflow] Diff: HEAD~1..HEAD" >&2
     DIFF_FILES=$(git diff --name-only HEAD~1 HEAD || true)
+    # #region agent log
+    _dbg "H-A,H-B" "prepare.sh:108" "diff_via_HEAD~1" \
+      "{\"DIFF_FILES_len\":$(printf '%s' "${DIFF_FILES}" | wc -c),\"DIFF_FILES\":\"$(printf '%s' "${DIFF_FILES}" | tr '\n' '|')\"}"
+    # #endregion agent log
   else
     echo "[taskflow] No HEAD~1 — fetching origin/${_base_br}..." >&2
+    # #region agent log
+    _dbg "H-A" "prepare.sh:113" "no_HEAD~1_branch_taken" "{\"base_br\":\"${_base_br}\"}"
+    # #endregion agent log
     git fetch origin "${_base_br}" --depth=100 2>/dev/null || true
     if git rev-parse "origin/${_base_br}" >/dev/null 2>&1; then
       echo "[taskflow] Diff: origin/${_base_br}...HEAD" >&2
       DIFF_FILES=$(git diff --name-only "origin/${_base_br}"...HEAD || true)
+      # #region agent log
+      _dbg "H-A,H-B" "prepare.sh:119" "diff_via_origin_develop" \
+        "{\"DIFF_FILES_len\":$(printf '%s' "${DIFF_FILES}" | wc -c),\"DIFF_FILES\":\"$(printf '%s' "${DIFF_FILES}" | tr '\n' '|')\"}"
+      # #endregion agent log
+      # Same commit as remote tip → three-dot diff is empty, but fetch may have
+      # deepened history so HEAD~1 exists — compare against parent commit.
+      if [ -z "${DIFF_FILES}" ] && git rev-parse HEAD~1 >/dev/null 2>&1; then
+        echo "[taskflow] Diff: HEAD~1..HEAD (after fetch; tip matched origin/${_base_br})" >&2
+        DIFF_FILES=$(git diff --name-only HEAD~1 HEAD || true)
+        # #region agent log
+        _dbg "H-A,H-B" "prepare.sh:after_fetch_HEAD1" "diff_via_HEAD1_after_fetch" \
+          "{\"DIFF_FILES_len\":$(printf '%s' "${DIFF_FILES}" | wc -c),\"DIFF_FILES\":\"$(printf '%s' "${DIFF_FILES}" | tr '\n' '|')\"}"
+        # #endregion agent log
+      fi
+      if [ -z "${DIFF_FILES}" ] && ! git rev-parse HEAD~1 >/dev/null 2>&1; then
+        echo "[taskflow] Still no HEAD~1 — git fetch --deepen=50 origin/${_base_br}..." >&2
+        git fetch origin "${_base_br}" --deepen=50 2>/dev/null || true
+        if git rev-parse HEAD~1 >/dev/null 2>&1; then
+          echo "[taskflow] Diff: HEAD~1..HEAD (after deepen)" >&2
+          DIFF_FILES=$(git diff --name-only HEAD~1 HEAD || true)
+          # #region agent log
+          _dbg "H-A,H-B" "prepare.sh:after_deepen" "diff_via_HEAD1_after_deepen" \
+            "{\"DIFF_FILES_len\":$(printf '%s' "${DIFF_FILES}" | wc -c),\"DIFF_FILES\":\"$(printf '%s' "${DIFF_FILES}" | tr '\n' '|')\"}"
+          # #endregion agent log
+        fi
+      fi
     else
       echo "[taskflow] Cannot diff — building all services" >&2
       BUILD_ENVOY=true; BUILD_MAIN=true; BUILD_NOTI=true
     fi
+  fi
+
+  # CodeBuild/CodePipeline shallow checkout: HEAD~1 may never resolve even after
+  # fetch/deepen, but `git cat-file -p HEAD` still lists `parent <sha>`. Fetch that
+  # commit so `git diff parent..HEAD` matches local behavior (avoids false "build all").
+  if [ -z "${DIFF_FILES}" ] && [ "${BUILD_ENVOY}" = "false" ] && [ "${BUILD_MAIN}" = "false" ] && [ "${BUILD_NOTI}" = "false" ]; then
+    _par=$(git cat-file -p HEAD 2>/dev/null | awk '/^parent / { print $2; exit }')
+    if [ -n "${_par}" ]; then
+      echo "[taskflow] Shallow clone — fetching parent ${_par:0:7} for diff..." >&2
+      git fetch origin "${_par}" --depth=1 2>/dev/null || true
+      if git cat-file -e "${_par}^{commit}" 2>/dev/null; then
+        echo "[taskflow] Diff: ${_par}..HEAD  (parent from commit metadata)" >&2
+        DIFF_FILES=$(git diff --name-only "${_par}" HEAD || true)
+        # #region agent log
+        _dbg "H-A,H-B" "prepare.sh:parent_fetch" "diff_via_parent_sha" \
+          "{\"parent\":\"${_par:0:7}\",\"DIFF_FILES_len\":$(printf '%s' "${DIFF_FILES}" | wc -c),\"DIFF_FILES\":\"$(printf '%s' "${DIFF_FILES}" | tr '\n' '|')\"}"
+        # #endregion agent log
+      fi
+    fi
+  fi
+
+  # Shallow clone without parent objects: cannot trust git log --name-only (lists whole tree).
+  # If we still have no diff, build everything so deploy is not a silent no-op.
+  if [ -z "${DIFF_FILES}" ] && [ "${BUILD_ENVOY}" = "false" ] && [ "${BUILD_MAIN}" = "false" ] && [ "${BUILD_NOTI}" = "false" ]; then
+    echo "[taskflow] Cannot determine changed files after fetch/deepen — building all services" >&2
+    BUILD_ENVOY=true
+    BUILD_MAIN=true
+    BUILD_NOTI=true
+    # #region agent log
+    _dbg "H-A,H-B" "prepare.sh:fallback_build_all" "no_diff_build_all" "{\"reason\":\"empty_DIFF_after_shallow_fetch\"}"
+    # #endregion agent log
   fi
 
   if [ -n "${DIFF_FILES}" ]; then
@@ -104,6 +199,10 @@ else
     echo "${DIFF_FILES}" | sed 's/^/[taskflow]   /' >&2
     while IFS= read -r f; do
       [[ -z "$f" ]] && continue
+      # #region agent log
+      _dbg "H-C,H-D" "prepare.sh:130" "file_in_loop" \
+        "{\"f\":\"${f}\",\"f_len\":$(printf '%s' "${f}" | wc -c),\"f_hex\":\"$(printf '%s' "${f}" | xxd -p 2>/dev/null | tr -d '\n' | head -c 40)\"}"
+      # #endregion agent log
       case "$f" in
         protos/*|proto.pb)
           BUILD_ENVOY=true; BUILD_MAIN=true; BUILD_NOTI=true ;;
@@ -117,7 +216,7 @@ else
           BUILD_ENVOY=true; BUILD_MAIN=true; BUILD_NOTI=true ;;
       esac
     done <<< "${DIFF_FILES}"
-  else
+  elif [ "${BUILD_ENVOY}" = "false" ] && [ "${BUILD_MAIN}" = "false" ] && [ "${BUILD_NOTI}" = "false" ]; then
     echo "[taskflow] No changed files matched any service path — nothing to build" >&2
   fi
 fi
