@@ -3,9 +3,11 @@ services:
     build:
       context: .
       dockerfile: dockerfile
+      args:
+        GRPC_SERVICE_HOST: ${GRPC_SERVICE_HOST:-grpc-service}
+        NOTIFICATION_SERVICE_HOST: ${NOTIFICATION_SERVICE_HOST:-notification-service}
+        FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
     container_name: envoy_proxy
-    networks:
-      - taskflow-network
     depends_on:
       grpc-service:
         condition: service_started

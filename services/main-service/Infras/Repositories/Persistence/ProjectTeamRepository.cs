@@ -91,6 +91,7 @@ public class ProjectTeamRepository : IProjectTeamRepository
                 ProjectId = team.ProjectId,
                 Name = team.Name,
                 Description = team.Description ?? string.Empty,
+                Avatar = team.Avatar ?? string.Empty,
                 CreatedAt = team.CreatedAt,
                 UpdatedAt = team.UpdatedAt,
                 PermissionKeys = team.PermissionKeys ?? new List<string>()
@@ -131,6 +132,7 @@ public class ProjectTeamRepository : IProjectTeamRepository
             ProjectId = team.ProjectId,
             Name = team.Name,
             Description = team.Description ?? string.Empty,
+            Avatar = team.Avatar ?? string.Empty,
             CreatedAt = team.CreatedAt,
             UpdatedAt = team.UpdatedAt,
             PermissionKeys = team.PermissionKeys ?? new List<string>()
@@ -164,6 +166,10 @@ public class ProjectTeamRepository : IProjectTeamRepository
         {
             updateDefs.Add(Builders<ProjectTeam>.Update.Set(t => t.Description, param.Description));
         }
+        if (!string.IsNullOrEmpty(param.Avatar))
+        {
+            updateDefs.Add(Builders<ProjectTeam>.Update.Set(t => t.Avatar, param.Avatar));
+        }
         if (param.Permissions != null)
         {
             updateDefs.Add(Builders<ProjectTeam>.Update.Set(t => t.PermissionKeys, param.Permissions));
@@ -186,6 +192,7 @@ public class ProjectTeamRepository : IProjectTeamRepository
             ProjectId = updated.ProjectId,
             Name = updated.Name,
             Description = updated.Description ?? string.Empty,
+            Avatar = updated.Avatar ?? string.Empty,
             CreatedAt = updated.CreatedAt,
             UpdatedAt = updated.UpdatedAt,
             PermissionKeys = updated.PermissionKeys ?? new List<string>()

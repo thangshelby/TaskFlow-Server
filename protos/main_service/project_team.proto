@@ -93,6 +93,7 @@ message UpdateProjectTeamReq {
   string name = 3;
   string description = 4;
   repeated string permission_keys = 5;
+  string avatar = 6;
 }
 
 message UpdateProjectTeamRes {

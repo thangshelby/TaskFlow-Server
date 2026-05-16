@@ -2,6 +2,13 @@ FROM envoyproxy/envoy:v1.33.0
 
 WORKDIR /etc/envoy
 
+ARG GRPC_SERVICE_HOST=grpc-service
+ARG NOTIFICATION_SERVICE_HOST=notification-service
+ARG FRONTEND_URL=http://localhost:5173
+ENV GRPC_SERVICE_HOST=${GRPC_SERVICE_HOST}
+ENV NOTIFICATION_SERVICE_HOST=${NOTIFICATION_SERVICE_HOST}
+ENV FRONTEND_URL=${FRONTEND_URL}
+
 # Keep proto and base config inside image.
 COPY envoy.yaml /etc/envoy/envoy.yaml
 COPY proto.pb /etc/envoy/proto.pb

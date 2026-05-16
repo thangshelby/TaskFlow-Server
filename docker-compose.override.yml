@@ -2,11 +2,10 @@ services:
   envoy:
     env_file:
       - .env
-    ports:
-      - "8081:8081" # HTTP (REST to gRPC)
-      - "8082:8082"
-      - "8083:8083"
-      - "9901:9901" # Admin Panel
+    # Linux dev: share host network so Envoy reaches dotnet/nest on 127.0.0.1:5001/5002.
+    # (host.docker.internal often cannot reach published host ports from the bridge network.)
+    network_mode: host
+    networks: !reset []
 
   grpc-service:
     env_file:

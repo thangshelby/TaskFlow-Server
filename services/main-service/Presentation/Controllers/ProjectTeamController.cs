@@ -117,6 +117,7 @@ public class ProjectTeamController : ProjectTeamService.ProjectTeamServiceBase
             TeamId = request.TeamId,
             Name = string.IsNullOrEmpty(request.Name) ? null : request.Name,
             Description = request.Description,
+            Avatar = string.IsNullOrEmpty(request.Avatar) ? null : request.Avatar,
             Permissions = request.PermissionKeys?.ToList()
         };
 

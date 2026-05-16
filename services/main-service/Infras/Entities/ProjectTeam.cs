@@ -20,6 +20,9 @@ public class ProjectTeam
     [BsonElement("description")]
     public string? Description { get; set; } = string.Empty;
 
+    [BsonElement("avatar")]
+    public string? Avatar { get; set; } = string.Empty;
+
     [BsonElement("permission_keys")]
     public List<string>? PermissionKeys { get; set; } = new List<string>();
 
