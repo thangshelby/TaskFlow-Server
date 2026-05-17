@@ -64,6 +64,7 @@ const path_1 = __webpack_require__(18);
 const project_client_service_1 = __webpack_require__(19);
 const sprint_client_service_1 = __webpack_require__(20);
 const issue_client_service_1 = __webpack_require__(21);
+const mainServiceGrpcUrl = (config) => config.get('MAIN_SERVICE')?.trim() || 'main-service.TaskFlowNameSpace';
 let CoreModule = class CoreModule {
 };
 exports.CoreModule = CoreModule;
@@ -87,7 +88,7 @@ exports.CoreModule = CoreModule = __decorate([
                             loader: {
                                 includeDirs: [(0, path_1.join)(__dirname, 'protos')],
                             },
-                            url: configService.get('MAIN_SERVICE') || '0.0.0.0:5001',
+                            url: mainServiceGrpcUrl(configService),
                         },
                     }),
                 },
@@ -103,7 +104,7 @@ exports.CoreModule = CoreModule = __decorate([
                             loader: {
                                 includeDirs: [(0, path_1.join)(__dirname, 'protos')],
                             },
-                            url: configService.get('MAIN_SERVICE'),
+                            url: mainServiceGrpcUrl(configService),
                         },
                     }),
                 },
@@ -119,7 +120,7 @@ exports.CoreModule = CoreModule = __decorate([
                             loader: {
                                 includeDirs: [(0, path_1.join)(__dirname, 'protos')],
                             },
-                            url: configService.get('MAIN_SERVICE'),
+                            url: mainServiceGrpcUrl(configService),
                         },
                     }),
                 },
@@ -135,7 +136,7 @@ exports.CoreModule = CoreModule = __decorate([
                             loader: {
                                 includeDirs: [(0, path_1.join)(__dirname, 'protos')],
                             },
-                            url: configService.get('MAIN_SERVICE'),
+                            url: mainServiceGrpcUrl(configService),
                         },
                     }),
                 },
@@ -158,9 +159,7 @@ exports.CoreModule = CoreModule = __decorate([
             {
                 provide: queue_interface_1.QUEUE_SERVICE_TOKEN,
                 useFactory: (configService, kafkaQueueAdapter, awsQueueAdapter) => {
-                    const provider = (configService.get('QUEUE_PROVIDER') ?? 'aws')
-                        .toLowerCase()
-                        .trim();
+                    const provider = (configService.get('QUEUE_PROVIDER') ?? 'aws').toLowerCase().trim();
                     return provider === 'kafka' ? kafkaQueueAdapter : awsQueueAdapter;
                 },
                 inject: [config_1.ConfigService, kafka_queue_adapter_1.KafkaQueueAdapter, aws_queue_adapter_1.AwsQueueAdapter],
@@ -170,16 +169,7 @@ exports.CoreModule = CoreModule = __decorate([
             sprint_client_service_1.SprintClientService,
             issue_client_service_1.IssueClientService,
         ],
-        exports: [
-            log_service_1.LogService,
-            kafka_service_1.KafkaService,
-            aws_service_1.AwsService,
-            queue_interface_1.QUEUE_SERVICE_TOKEN,
-            user_client_service_1.UserClientService,
-            project_client_service_1.ProjectClientService,
-            sprint_client_service_1.SprintClientService,
-            issue_client_service_1.IssueClientService,
-        ],
+        exports: [log_service_1.LogService, kafka_service_1.KafkaService, aws_service_1.AwsService, queue_interface_1.QUEUE_SERVICE_TOKEN, user_client_service_1.UserClientService, project_client_service_1.ProjectClientService, sprint_client_service_1.SprintClientService, issue_client_service_1.IssueClientService],
     })
 ], CoreModule);
 
@@ -1277,6 +1267,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var NotificationService_1;
 var _a, _b, _c, _d, _e, _f;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NotificationService = void 0;
@@ -1287,13 +1278,14 @@ const microservices_1 = __webpack_require__(16);
 const grpc_js_1 = __webpack_require__(25);
 const core_1 = __webpack_require__(1);
 const notification_websocket_1 = __webpack_require__(39);
-let NotificationService = class NotificationService {
+let NotificationService = NotificationService_1 = class NotificationService {
     notificationRepo;
     projectClientService;
     sprintCLientService;
     issueClientService;
     userClientService;
     notiEmitter;
+    logger = new common_1.Logger(NotificationService_1.name);
     constructor(notificationRepo, projectClientService, sprintCLientService, issueClientService, userClientService, notiEmitter) {
         this.notificationRepo = notificationRepo;
         this.projectClientService = projectClientService;
@@ -1334,61 +1326,67 @@ let NotificationService = class NotificationService {
                 sprintIds.push(noti.referenceId);
             }
         });
-        const [projects, sprints, issues, receivers, actors] = await Promise.all([
-            this.projectClientService.getListProjects({ projectIds: projectIds, limit: params.limit || 100, page: params.page || 1 }),
-            this.sprintCLientService.getListSprints({ sprintIds: sprintIds, limit: params.limit || 100, page: params.page || 1 }),
-            this.issueClientService.getListIssues({ issueIds: issueIds, limit: params.limit || 100, page: params.page || 1 }),
-            this.userClientService.getListUsers({ userIds: notiDomain.map((noti) => noti.recipientId), limit: params.limit || 100, page: params.page || 1 }),
-            this.userClientService.getListUsers({ userIds: actorIds, limit: params.limit || 100, page: params.page || 1 }),
-        ]);
-        const projectsMap = new Map();
-        (projects || []).forEach((project) => {
-            projectsMap.set(project.id, project);
-        });
-        const sprintsMap = new Map();
-        (sprints || []).forEach((sprint) => {
-            sprintsMap.set(sprint.id, sprint);
-        });
-        const issuesMaps = new Map();
-        (issues || []).forEach((issue) => {
-            issuesMaps.set(issue.id, issue);
-        });
-        const receiverMaps = new Map();
-        (receivers || []).forEach((receiver) => {
-            receiverMaps.set(receiver.id, receiver);
-        });
-        const actorMaps = new Map();
-        (actors || []).forEach((actor) => {
-            actorMaps.set(actor.id, actor);
-        });
-        notiDomain.forEach((noti) => {
-            if (noti.referenceType === notification_1.ReferenceType.PROJECT && noti.referenceId) {
-                const project = projectsMap.get(noti.referenceId);
-                if (project) {
-                    noti.referenceData = project;
+        try {
+            const [projects, sprints, issues, receivers, actors] = await Promise.all([
+                this.projectClientService.getListProjects({ projectIds: projectIds, limit: params.limit || 100, page: params.page || 1 }),
+                this.sprintCLientService.getListSprints({ sprintIds: sprintIds, limit: params.limit || 100, page: params.page || 1 }),
+                this.issueClientService.getListIssues({ issueIds: issueIds, limit: params.limit || 100, page: params.page || 1 }),
+                this.userClientService.getListUsers({ userIds: notiDomain.map((noti) => noti.recipientId), limit: params.limit || 100, page: params.page || 1 }),
+                this.userClientService.getListUsers({ userIds: actorIds, limit: params.limit || 100, page: params.page || 1 }),
+            ]);
+            const projectsMap = new Map();
+            (projects || []).forEach((project) => {
+                projectsMap.set(project.id, project);
+            });
+            const sprintsMap = new Map();
+            (sprints || []).forEach((sprint) => {
+                sprintsMap.set(sprint.id, sprint);
+            });
+            const issuesMaps = new Map();
+            (issues || []).forEach((issue) => {
+                issuesMaps.set(issue.id, issue);
+            });
+            const receiverMaps = new Map();
+            (receivers || []).forEach((receiver) => {
+                receiverMaps.set(receiver.id, receiver);
+            });
+            const actorMaps = new Map();
+            (actors || []).forEach((actor) => {
+                actorMaps.set(actor.id, actor);
+            });
+            notiDomain.forEach((noti) => {
+                if (noti.referenceType === notification_1.ReferenceType.PROJECT && noti.referenceId) {
+                    const project = projectsMap.get(noti.referenceId);
+                    if (project) {
+                        noti.referenceData = project;
+                    }
                 }
-            }
-            if (noti.referenceType === notification_1.ReferenceType.SPRINT && noti.referenceId) {
-                const sprint = sprintsMap.get(noti.referenceId);
-                if (sprint) {
-                    noti.referenceData = sprint;
+                if (noti.referenceType === notification_1.ReferenceType.SPRINT && noti.referenceId) {
+                    const sprint = sprintsMap.get(noti.referenceId);
+                    if (sprint) {
+                        noti.referenceData = sprint;
+                    }
                 }
-            }
-            if (noti.referenceType === notification_1.ReferenceType.ISSUE && noti.referenceId) {
-                const issue = issuesMaps.get(noti.referenceId);
-                if (issue) {
-                    noti.referenceData = issue;
+                if (noti.referenceType === notification_1.ReferenceType.ISSUE && noti.referenceId) {
+                    const issue = issuesMaps.get(noti.referenceId);
+                    if (issue) {
+                        noti.referenceData = issue;
+                    }
                 }
-            }
-            const receiver = receiverMaps.get(noti.recipientId);
-            if (receiver) {
-                noti.recipient = receiver;
-            }
-            if (noti.actorId) {
-                const actor = actorMaps.get(noti.actorId);
-                noti.actor = actor;
-            }
-        });
+                const receiver = receiverMaps.get(noti.recipientId);
+                if (receiver) {
+                    noti.recipient = receiver;
+                }
+                if (noti.actorId) {
+                    const actor = actorMaps.get(noti.actorId);
+                    noti.actor = actor;
+                }
+            });
+        }
+        catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            this.logger.warn(`listNotifications: gRPC enrichment skipped (MAIN_SERVICE unreachable or error): ${message}`);
+        }
         return {
             data: notiDomain,
             totalCount: totalCount,
@@ -1435,7 +1433,7 @@ let NotificationService = class NotificationService {
     }
 };
 exports.NotificationService = NotificationService;
-exports.NotificationService = NotificationService = __decorate([
+exports.NotificationService = NotificationService = NotificationService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [typeof (_a = typeof notification_repo_interface_1.INotificationRepo !== "undefined" && notification_repo_interface_1.INotificationRepo) === "function" ? _a : Object, typeof (_b = typeof core_1.ProjectClientService !== "undefined" && core_1.ProjectClientService) === "function" ? _b : Object, typeof (_c = typeof core_1.SprintClientService !== "undefined" && core_1.SprintClientService) === "function" ? _c : Object, typeof (_d = typeof core_1.IssueClientService !== "undefined" && core_1.IssueClientService) === "function" ? _d : Object, typeof (_e = typeof core_1.UserClientService !== "undefined" && core_1.UserClientService) === "function" ? _e : Object, typeof (_f = typeof notification_websocket_1.NotificationEmitterService !== "undefined" && notification_websocket_1.NotificationEmitterService) === "function" ? _f : Object])
 ], NotificationService);
@@ -1577,8 +1575,10 @@ __decorate([
 exports.NotificationGateway = NotificationGateway = __decorate([
     (0, common_1.Injectable)(),
     (0, websockets_1.WebSocketGateway)({
+        path: '/notification-service/socket.io',
         cors: {
-            origin: '*',
+            origin: ['http://localhost:5173', 'http://localhost:4173', 'https://frontend.taskkfloww.shop'],
+            credentials: true,
         },
     }),
     __metadata("design:paramtypes", [NotificationEmitterService])
