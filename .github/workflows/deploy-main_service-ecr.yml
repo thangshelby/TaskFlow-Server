@@ -1,154 +1,154 @@
-name: TaskFlow CI/CD
+# name: TaskFlow CI/CD
 
-on:
-  push:
-    branches: [develop]
-    paths:
-      - "services/main-service/**"
-      - "protos/**"
-      - "envoy.yaml"
-      - "dockerfile"
-      - ".github/workflows/deploy-main_service-ecr.yml"
+# on:
+#   push:
+#     branches: [develop]
+#     paths:
+#       - "services/main-service/**"
+#       - "protos/**"
+#       - "envoy.yaml"
+#       - "dockerfile"
+#       - ".github/workflows/deploy-main_service-ecr.yml"
 
-jobs:
-  detect-changes:
-    name: Detect changed paths
-    runs-on: ubuntu-latest
-    outputs:
-      main-service: ${{ steps.filter.outputs.main-service }}
-      envoy: ${{ steps.filter.outputs.envoy }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+# jobs:
+#   detect-changes:
+#     name: Detect changed paths
+#     runs-on: ubuntu-latest
+#     outputs:
+#       main-service: ${{ steps.filter.outputs.main-service }}
+#       envoy: ${{ steps.filter.outputs.envoy }}
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
 
-      - name: Detect changes
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            main-service:
-              - 'services/main-service/**'
-              - 'protos/**'
-            envoy:
-              - 'envoy.yaml'
-              - 'dockerfile'
+#       - name: Detect changes
+#         uses: dorny/paths-filter@v3
+#         id: filter
+#         with:
+#           filters: |
+#             main-service:
+#               - 'services/main-service/**'
+#               - 'protos/**'
+#             envoy:
+#               - 'envoy.yaml'
+#               - 'dockerfile'
 
-  build-main-service:
-    name: Build main-service image
-    needs: detect-changes
-    if: needs.detect-changes.outputs.main-service == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+#   build-main-service:
+#     name: Build main-service image
+#     needs: detect-changes
+#     if: needs.detect-changes.outputs.main-service == 'true'
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+#       - name: Configure AWS credentials
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+#       - name: Login to Amazon ECR
+#         id: login-ecr
+#         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push main-service image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: main-service
-          IMAGE_TAG: latest
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          REDIS_CONNECTIONSTRING: ${{ secrets.REDIS_CONNECTIONSTRING }}
-        run: |
-          docker build \
-            --build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
-            --build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-            --build-arg REDIS_CONNECTIONSTRING=$REDIS_CONNECTIONSTRING \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            -f services/main-service/Dockerfile .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+#       - name: Build, tag, and push main-service image
+#         env:
+#           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+#           ECR_REPOSITORY: main-service
+#           IMAGE_TAG: latest
+#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           REDIS_CONNECTIONSTRING: ${{ secrets.REDIS_CONNECTIONSTRING }}
+#         run: |
+#           docker build \
+#             --build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+#             --build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+#             --build-arg REDIS_CONNECTIONSTRING=$REDIS_CONNECTIONSTRING \
+#             -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+#             -f services/main-service/Dockerfile .
+#           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-  build-envoy:
-    name: Build envoy image
-    needs: detect-changes
-    if: needs.detect-changes.outputs.envoy == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+#   build-envoy:
+#     name: Build envoy image
+#     needs: detect-changes
+#     if: needs.detect-changes.outputs.envoy == 'true'
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+#       - name: Configure AWS credentials
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+#       - name: Login to Amazon ECR
+#         id: login-ecr
+#         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push envoy image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: envoy-proxy
-          IMAGE_TAG: latest
-        run: |
-          docker build \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            -f dockerfile .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+#       - name: Build, tag, and push envoy image
+#         env:
+#           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+#           ECR_REPOSITORY: envoy-proxy
+#           IMAGE_TAG: latest
+#         run: |
+#           docker build \
+#             -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+#             -f dockerfile .
+#           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-  deploy:
-    name: Deploy to EC2
-    needs: [build-main-service, build-envoy]
-    if: >
-      always() &&
-      (needs.build-main-service.result == 'success' ||
-      needs.build-envoy.result == 'success')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            set -e
-            REGION="${{ secrets.AWS_REGION }}"
-            ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
-            REGISTRY="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
+#   deploy:
+#     name: Deploy to EC2
+#     needs: [build-main-service, build-envoy]
+#     if: >
+#       always() &&
+#       (needs.build-main-service.result == 'success' ||
+#       needs.build-envoy.result == 'success')
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Deploy via SSH
+#         uses: appleboy/ssh-action@v1.2.0
+#         with:
+#           host: ${{ secrets.EC2_HOST }}
+#           username: ${{ secrets.EC2_USERNAME }}
+#           key: ${{ secrets.EC2_SSH_KEY }}
+#           script: |
+#             set -e
+#             REGION="${{ secrets.AWS_REGION }}"
+#             ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+#             REGISTRY="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
 
-            aws ecr get-login-password --region "$REGION" | sudo docker login --username AWS --password-stdin "$REGISTRY"
-            cd ~/TaskFlow-Server
+#             aws ecr get-login-password --region "$REGION" | sudo docker login --username AWS --password-stdin "$REGISTRY"
+#             cd ~/TaskFlow-Server
 
-            SERVICES=""
-            if [ "${{ needs.build-main-service.result }}" = "success" ]; then
-              SERVICES="$SERVICES grpc-service"
-            fi
+#             SERVICES=""
+#             if [ "${{ needs.build-main-service.result }}" = "success" ]; then
+#               SERVICES="$SERVICES grpc-service"
+#             fi
 
-            if [ "${{ needs.build-envoy.result }}" = "success" ]; then
-              SERVICES="$SERVICES envoy"
-            fi
+#             if [ "${{ needs.build-envoy.result }}" = "success" ]; then
+#               SERVICES="$SERVICES envoy"
+#             fi
 
-            SERVICES="$(echo "$SERVICES" | xargs)"
-            if [ -z "$SERVICES" ]; then
-              echo "No service changed, skip deploy."
-              exit 0
-            fi
+#             SERVICES="$(echo "$SERVICES" | xargs)"
+#             if [ -z "$SERVICES" ]; then
+#               echo "No service changed, skip deploy."
+#               exit 0
+#             fi
 
-            echo "📥 Pulling images: $SERVICES"
-            for service in $SERVICES; do
-              sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml pull "$service"
-            done
+#             echo "📥 Pulling images: $SERVICES"
+#             for service in $SERVICES; do
+#               sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml pull "$service"
+#             done
 
-            echo "🚀 Starting services..."
-            sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d $SERVICES
+#             echo "🚀 Starting services..."
+#             sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d $SERVICES
 
-            echo "🧹 Cleaning up old images..."
-            sudo docker image prune -f
+#             echo "🧹 Cleaning up old images..."
+#             sudo docker image prune -f
 
-            echo "✅ Deploy completed!"
+#             echo "✅ Deploy completed!"
