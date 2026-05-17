@@ -11,8 +11,22 @@ fi
 
 source /tmp/taskflow-build.env
 
+if [ -f ".env.prod" ]; then
+  echo "[taskflow] Using .env.prod instead of default .env for build..."
+  cp .env.prod .env
+  
+  # Export variables so they can be used as build args
+  set -a
+  source .env
+  set +a
+fi
+
 if [ "${BUILD_ENVOY}" = "true" ]; then
-  docker build -t "${ECR_REPO_ENVOY}" -f dockerfile .
+  docker build \
+    --build-arg GRPC_SERVICE_HOST="${GRPC_SERVICE_HOST:-grpc-service}" \
+    --build-arg NOTIFICATION_SERVICE_HOST="${NOTIFICATION_SERVICE_HOST:-notification-service}" \
+    --build-arg FRONTEND_URL="${FRONTEND_URL:-http://localhost:5173}" \
+    -t "${ECR_REPO_ENVOY}" -f dockerfile .
   docker tag "${ECR_REPO_ENVOY}:latest" "${ECR_REGISTRY}/${ECR_REPO_ENVOY}:${IMAGE_TAG}"
   docker tag "${ECR_REPO_ENVOY}:latest" "${ECR_REGISTRY}/${ECR_REPO_ENVOY}:latest"
 fi
