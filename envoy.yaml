@@ -81,8 +81,10 @@ static_resources:
                           "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
                           allow_origin_string_match:
                             - prefix: "http://localhost:5173"
-                            - prefix: "http://localhost:4173"
+                            - prefix: "http://localhost:5173"
+                            - prefix: "https://d3bm2vf027nhpy.cloudfront.net"
                             - prefix: "https://frontend.taskkfloww.shop"
+                            - prefix: "http://frontend.taskkfloww.shop"
                           allow_methods: "GET, POST, PUT, DELETE, OPTIONS"
                           allow_headers: "content-type, authorization"
                           expose_headers: "x-custom-header"
@@ -250,8 +252,8 @@ static_resources:
                               - prefix: "http://localhost:5173"
                               - prefix: "http://localhost:4173"
                               - prefix: "https://frontend.taskkfloww.shop"
+                              - prefix: "https://d3bm2vf027nhpy.cloudfront.net"
                               - prefix: "https://frontend.taskflow.shop"
-                              - prefix: "http://taskflow-frontend-alb-952368214.ap-southeast-1.elb.amazonaws.com"
                             allow_methods: "GET, POST, PUT, PATCH, DELETE, OPTIONS"
                             allow_headers: "content-type, authorization, x-requested-with"
                             expose_headers: "x-custom-header"
