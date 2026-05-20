@@ -1,7 +1,8 @@
-from ctypes import resize
 import boto3
 from PIL import Image
 from io import BytesIO
+from aws_xray_sdk.core import patch_all
+patch_all()
 
 s3Client = boto3.client('s3')
 
@@ -25,7 +26,6 @@ def lambda_handler(event, context):
     
     width = 100
     height = 100
-    dst_bucket_name = 'taskflow-1.0.0-resized'
     
     src_bucket_name = ''
     obj_key = ''
@@ -34,4 +34,10 @@ def lambda_handler(event, context):
         obj_key = obj['s3']['object']['key']
         
         dst_key = obj_key.replace('raw','processed')
-        resize_image(src_bucket_name=src_bucket_name, src_key=obj_key, dst_bucket_name=dst_bucket_name, dst_key=dst_key, width=width, height=height)
+        resize_image(src_bucket_name=src_bucket_name, src_key=obj_key, dst_bucket_name=src_bucket_name, dst_key= dst_key, width=width, height=height)
+    
+    print('Function executed successfully')
+    return {
+        'statusCode': 200,
+        'body': 'Function executed successfully'        
+    }

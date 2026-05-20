@@ -5,21 +5,23 @@ package project_service;
 import "google/api/annotations.proto";
 
 service MetadataService {
-    rpc CreatePresignedtURLImage (CreatePresignedURLImageReq) returns (CreatePresignedtURLImageRes)  {
+    rpc CreatePresignedURL (CreatePresignedURLReq) returns (CreatePresignedURLRes) {
         option (google.api.http) = {
-            post: "/api/v1/metadata/image/upload"
+            post: "/api/v1/metadata/upload"
             body: "*"
         };
     }
 }
 
-message CreatePresignedURLImageReq {
+message CreatePresignedURLReq {
     string project_id = 1;
-    string user_id =2;
+    string user_id = 2;
     string file_name = 3;
-    string content_type = 4; 
+    string content_type = 4;
+    string upload_type = 5; // "avatar" or "attachment"
 }
 
-message CreatePresignedtURLImageRes {
-    string url = 1;
+message CreatePresignedURLRes {
+    string presigned_url = 1;
+    string file_url = 2;
 }

@@ -2259,7 +2259,7 @@ async function bootstrap() {
     app.setGlobalPrefix('notification-service/api/v1');
     app.useGlobalInterceptors(new core_1.HttpAuthInterceptor(), new snakeCase_interceptor_1.TransformResponseInterceptor(), new core_1.GlobalHandleErrorInterceptor());
     await app.listen(5002);
-    common_1.Logger.log(`🚀 HTTP server running at http://localhost:5002/notification-service/api/v1`);
+    common_1.Logger.log(`🚀 HTTP server is running on http://localhost:5002/notification-service/api/v1`);
 }
 bootstrap();
 
