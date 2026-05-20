@@ -111,4 +111,8 @@ services/main-service/appsettings.json
 **/lambda/python/**
 **/lambda/python.zip
 **/lambda/env/
+**/lambda/.venv
+**/lambda/layer
+**/lambda/layer.zip
+
 

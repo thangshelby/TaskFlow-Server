@@ -24,34 +24,53 @@ public class S3Repository : IS3Repository
         _bucketName = bucketName ?? throw new InvalidOperationException("AWS:S3:Bucket configuration is required.");
     }
 
- public async Task<string> CreatePresignedURLImage(
-    string projectId,
-    string userId,
-    string fileExtension,
-    string contentType)
-{
-    var fileId = Guid.NewGuid();
-    _logger.LogInformation(
-        "Creating presigned URL for project {ProjectId}, user {UserId}, extension {FileExtension}, contentType {ContentType}",
-        projectId,
-        userId,
-        fileExtension,
-        contentType);
-    var key =
-        $"images/raw/project_{projectId}/user_{userId}/{fileId}.{fileExtension}";
-
-    var request = new GetPreSignedUrlRequest
+    /// <summary>
+    /// Tạo presigned PUT URL để client upload file trực tiếp lên S3.
+    /// S3 key được tổ chức theo: {category}/project_{projectId}/user_{userId}/{fileId}_{safeName}.{ext}
+    /// Trong đó category = phần đầu của content_type (image, application, video, audio, text...)
+    /// </summary>
+    public async Task<(string presignedUrl, string fileUrl)> CreatePresignedURL(
+        string projectId,
+        string userId,
+        string fileName,
+        string contentType,
+        string uploadType = "attachment")
     {
-        BucketName = _bucketName,
-        Key = key,
-        Expires = DateTime.UtcNow.AddMinutes(5),
-        Verb= HttpVerb.PUT,
-        ContentType = "image/jpeg"
-        
-    };
+        var fileId = Guid.NewGuid();
 
-    var url = _s3Client.GetPreSignedURL(request);
+        // Xác định category từ content_type (e.g. "image/png" → "image")
+        var category = contentType.Split("/")[0];
 
-    return await Task.FromResult(url);
-}
+        // Sanitize filename gốc để dùng trong key
+        var safeName = Path.GetFileNameWithoutExtension(fileName)
+            .Replace(" ", "_")
+            .Replace("..", "");
+        var extension = Path.GetExtension(fileName).TrimStart('.');
+
+        // Tổ chức key theo uploadType: avatar/ hoặc attachment/
+        var key = uploadType.ToLower() == "avatar"
+            ? $"avatar/project_{projectId}/user_{userId}/{fileId}_{safeName}.{extension}"
+            : $"attachment/{category}/raw/project_{projectId}/user_{userId}/{fileId}_{safeName}.{extension}";
+
+        var presignRequest = new GetPreSignedUrlRequest
+        {
+            BucketName = _bucketName,
+            Key = key,
+            Expires = DateTime.UtcNow.AddMinutes(10),
+            Verb = HttpVerb.PUT,
+            ContentType = contentType
+        };
+
+        var presignedUrl = _s3Client.GetPreSignedURL(presignRequest);
+
+        // Xây dựng file URL sạch: bỏ query string khỏi presigned URL
+        var uri = new Uri(presignedUrl);
+        var fileUrl = $"{uri.Scheme}://{uri.Authority}{uri.AbsolutePath}";
+
+        _logger.LogInformation(
+            "Created presigned URL for project {ProjectId}, user {UserId}, file {FileName}, category {Category}",
+            projectId, userId, fileName, category);
+
+        return await Task.FromResult((presignedUrl, fileUrl));
+    }
 }
