@@ -32,4 +32,17 @@ public class MetadataController : MetadataService.MetadataServiceBase
             UploadType = request.UploadType
         });
     }
+
+    public override async Task<DeleteFileRes> DeleteFile(
+        DeleteFileReq request, ServerCallContext context)
+    {
+        var userId = context.UserState.ContainsKey("UserId")
+            ? context.UserState["UserId"] as string
+            : null;
+
+        if (string.IsNullOrEmpty(userId))
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "User must be authenticated to delete files"));
+
+        return await _metadataUseCase.DeleteFile(request);
+    }
 }
