@@ -35,6 +35,14 @@ public class UserUseCase
         return user;
     }
 
+    public async Task<UserDomain> CreateOAuthUserAsync(UserDomain userBody)
+    {
+        userBody.Password = PasswordHasher.HashPassword(userBody.Password);
+        var user = await _userRepository.CreateUserAsync(userBody);
+        if (user.Id == null) throw new RpcException(new Status(StatusCode.NotFound, "Failed to create OAuth user"));
+        return user;
+    }
+
     public async Task<UserDomain> VerifyUser(string otp, string email)
     {
         var user = await _userRepository.FindUserAsync(new UserQueryParams

@@ -1,4 +1,5 @@
 using Grpc.Core;
+using System.Text.Json;
 using MainService.Domain.Common;
 using MainService.Domain.Entities;
 using MainService.Domain.Interfaces;
@@ -15,6 +16,7 @@ public class IssueUseCase
     private readonly IUserRepository _userRepository;
     private readonly IActivitiesRepository _activitiesRepository;
     private readonly IIssueRepository _issueRepository;
+    private readonly IS3Repository _s3Repository;
     private readonly ILogger<IssueUseCase> _logger;
     private readonly IPublisherService _publisher;
 
@@ -25,6 +27,7 @@ public class IssueUseCase
         IActivitiesRepository activitiesRepository,
         IProjectRepository projectRepository,
         ITransactionRepo transactionRepo,
+        IS3Repository s3Repository,
         ILogger<IssueUseCase> logger,
         IPublisherService publisher)
     {
@@ -32,6 +35,7 @@ public class IssueUseCase
         _transactionRepo = transactionRepo;
         _activitiesRepository = activitiesRepository;
         _projectRepository = projectRepository;
+        _s3Repository = s3Repository;
         _logger = logger;
         _userRepository = userRepository;
         _sprintRepository = sprintRepository;
@@ -195,7 +199,67 @@ public class IssueUseCase
             UserId = updateData.CreatorId
         });
 
+        // Clean up removed attachments from S3 in background
+        if (updateData.Attachments != null && existingIssue != null)
+        {
+            var oldUrls = new HashSet<string>();
+            if (existingIssue.Attachments != null)
+            {
+                foreach (var att in existingIssue.Attachments)
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(att);
+                        if (doc.RootElement.TryGetProperty("url", out var urlElement))
+                        {
+                            var url = urlElement.GetString();
+                            if (!string.IsNullOrEmpty(url)) oldUrls.Add(url);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to parse old attachment: {Att}", att);
+                    }
+                }
+            }
 
+            var newUrls = new HashSet<string>();
+            foreach (var att in updateData.Attachments)
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(att);
+                    if (doc.RootElement.TryGetProperty("url", out var urlElement))
+                    {
+                        var url = urlElement.GetString();
+                        if (!string.IsNullOrEmpty(url)) newUrls.Add(url);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to parse new attachment: {Att}", att);
+                }
+            }
+
+            foreach (var oldUrl in oldUrls)
+            {
+                if (!newUrls.Contains(oldUrl))
+                {
+                    _logger.LogInformation("Attachment removed via UpdateIssue, deleting from S3: {Url}", oldUrl);
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _s3Repository.DeleteFile(oldUrl);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Background S3 deletion failed for url: {Url}", oldUrl);
+                        }
+                    });
+                }
+            }
+        }
 
         await Task.WhenAll(notifyTask, activityTask, emailTask);
         return updatedIssue;
@@ -220,6 +284,35 @@ public class IssueUseCase
             RemoveIssueId = issue.Id,
             ColumnId = column.Id,
         });
+
+        // Delete S3 files in background
+        if (issue.Attachments != null && issue.Attachments.Count > 0)
+        {
+            var attachmentsToDelete = new List<string>(issue.Attachments);
+            _ = Task.Run(async () =>
+            {
+                foreach (var attachmentJson in attachmentsToDelete)
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(attachmentJson);
+                        if (doc.RootElement.TryGetProperty("url", out var urlElement))
+                        {
+                            var fileUrl = urlElement.GetString();
+                            if (!string.IsNullOrEmpty(fileUrl))
+                            {
+                                await _s3Repository.DeleteFile(fileUrl);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to parse attachment JSON for background deletion: {Json}", attachmentJson);
+                    }
+                }
+            });
+        }
+
         await _issueRepository.DeleteIssue(id);
     }
 

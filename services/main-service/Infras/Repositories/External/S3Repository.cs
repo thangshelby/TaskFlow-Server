@@ -73,4 +73,36 @@ public class S3Repository : IS3Repository
 
         return await Task.FromResult((presignedUrl, fileUrl));
     }
+
+    /// <summary>
+    /// Xóa file khỏi S3 sử dụng file URL.
+    /// </summary>
+    public async Task<bool> DeleteFile(string fileUrl)
+    {
+        try
+        {
+            var uri = new Uri(fileUrl);
+            string key = uri.AbsolutePath.TrimStart('/');
+            if (key.StartsWith(_bucketName + "/"))
+            {
+                key = key.Substring(_bucketName.Length + 1);
+            }
+
+            _logger.LogInformation("Deleting object from S3: Bucket={Bucket}, Key={Key}", _bucketName, key);
+
+            var deleteObjectRequest = new DeleteObjectRequest
+            {
+                BucketName = _bucketName,
+                Key = key
+            };
+
+            await _s3Client.DeleteObjectAsync(deleteObjectRequest);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete S3 file: {FileUrl}", fileUrl);
+            return false;
+        }
+    }
 }

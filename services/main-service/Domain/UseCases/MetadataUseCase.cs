@@ -28,5 +28,15 @@ public class MetadataUseCase
             PresignedUrl = presignedUrl,
             FileUrl = fileUrl
         };
+     }
+
+    public async Task<DeleteFileRes> DeleteFile(DeleteFileReq req)
+    {
+        _logger.LogInformation("Delete file from S3: {FileUrl}", req.FileUrl);
+        var success = await _s3Repository.DeleteFile(req.FileUrl);
+        return new DeleteFileRes
+        {
+            Success = success
+        };
     }
 }

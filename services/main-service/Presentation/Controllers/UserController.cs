@@ -10,6 +10,8 @@ using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography;
 using AutoMapper;
+using System.Net.Http;
+using System.Text.Json;
 using MainService.Domain.Interfaces;
 
 public class UserController : UserService.UserServiceBase
@@ -229,6 +231,310 @@ public class UserController : UserService.UserServiceBase
             Message = "Login successfully",
             Data = userResponse
         };
+    }
+
+    public override async Task<LoginUserRes> OAuthLogin(OAuthLoginReq request, ServerCallContext context)
+    {
+        _logger.LogInformation("Processing OAuth login/signup. Provider: {Provider}", request.Provider);
+
+        if (string.IsNullOrEmpty(request.Code))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "Authorization code is required"));
+        }
+
+        if (string.IsNullOrEmpty(request.RedirectUri))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "Redirect URI is required"));
+        }
+
+        string email = "";
+        string firstName = "";
+        string lastName = "";
+        string avatar = "";
+
+        try
+        {
+            if (request.Provider.ToLower() == "google")
+            {
+                var googleProfile = await ExchangeGoogleCodeAsync(request.Code, request.RedirectUri);
+                email = googleProfile.Email ?? "";
+                firstName = googleProfile.GivenName ?? "";
+                lastName = googleProfile.FamilyName ?? "";
+                avatar = googleProfile.Picture ?? "";
+
+                if (string.IsNullOrEmpty(firstName) && !string.IsNullOrEmpty(googleProfile.Name))
+                {
+                    var parts = googleProfile.Name.Split(' ', 2);
+                    firstName = parts[0];
+                    lastName = parts.Length > 1 ? parts[1] : "";
+                }
+            }
+            else if (request.Provider.ToLower() == "github")
+            {
+                var githubProfile = await ExchangeGithubCodeAsync(request.Code, request.RedirectUri);
+                email = githubProfile.Email ?? "";
+                avatar = githubProfile.AvatarUrl ?? "";
+                
+                string fullName = githubProfile.Name ?? githubProfile.Login ?? "";
+                var parts = fullName.Split(' ', 2);
+                firstName = parts[0];
+                lastName = parts.Length > 1 ? parts[1] : "";
+            }
+            else
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, $"Unsupported OAuth provider: {request.Provider}"));
+            }
+
+            if (string.IsNullOrEmpty(email))
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Failed to retrieve email from OAuth provider. Please make your email public on your profile or allow email access scope."));
+            }
+
+            UserDomain? user = await _userUseCase.FindUserAsync(new UserQueryParams { Email = email });
+            bool isNewUser = false;
+
+            if (user == null)
+            {
+                _logger.LogInformation("OAuth user {Email} not found. Auto-registering new account.", email);
+                isNewUser = true;
+
+                user = new UserDomain
+                {
+                    FirstName = !string.IsNullOrEmpty(firstName) ? firstName : "User",
+                    LastName = lastName,
+                    Email = email,
+                    Password = Guid.NewGuid().ToString("N"), // Safe random placeholder password
+                    Role = UserRole.User,
+                    IsVerified = true, // OAuth emails are verified by Google/GitHub
+                    Avatar = avatar,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    ExpiredAt = DateTime.MaxValue
+                };
+
+                user = await _userUseCase.CreateOAuthUserAsync(user);
+            }
+            else
+            {
+                _logger.LogInformation("OAuth user {Email} found. Initiating login session.", email);
+                
+                // Verify account if it was in registered state
+                if (!user.IsVerified)
+                {
+                    user.IsVerified = true;
+                    user.ExpiredAt = DateTime.MaxValue;
+                    await _userUseCase.UpdateUserAsync(new UpdateUserParams
+                    {
+                        Id = user.Id,
+                        IsVerified = true,
+                        ExpiredAt = DateTime.MaxValue
+                    });
+                }
+                
+                // Update empty avatar with the one from OAuth provider
+                if (string.IsNullOrEmpty(user.Avatar) && !string.IsNullOrEmpty(avatar))
+                {
+                    user.Avatar = avatar;
+                    await _userUseCase.UpdateUserAsync(new UpdateUserParams
+                    {
+                        Id = user.Id,
+                        Avatar = avatar
+                    });
+                }
+            }
+
+            await SetJwtToken(user, context);
+            var userResponse = _mapper.Map<UserRes>(user);
+
+            return new LoginUserRes
+            {
+                Status = "success",
+                Message = isNewUser ? "Account created and logged in via OAuth" : "Logged in successfully via OAuth",
+                Data = userResponse
+            };
+        }
+        catch (RpcException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during OAuth login process for {Provider}", request.Provider);
+            throw new RpcException(new Status(StatusCode.Internal, $"OAuth authentication failed: {ex.Message}"));
+        }
+    }
+
+    private async Task<GoogleUserProfile> ExchangeGoogleCodeAsync(string code, string redirectUri)
+    {
+        string clientId = _configuration["GOOGLE_CLIENT_ID"] ?? "";
+        string clientSecret = _configuration["GOOGLE_CLIENT_SECRET"] ?? "";
+
+        if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
+        {
+            throw new Exception("Google Client ID or Client Secret is not configured in the backend environment variables.");
+        }
+
+        using var client = new HttpClient();
+        var tokenRequestParams = new Dictionary<string, string>
+        {
+            { "code", code },
+            { "client_id", clientId },
+            { "client_secret", clientSecret },
+            { "redirect_uri", redirectUri },
+            { "grant_type", "authorization_code" }
+        };
+
+        var response = await client.PostAsync("https://oauth2.googleapis.com/token", new FormUrlEncodedContent(tokenRequestParams));
+        var content = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError("Google token exchange failed. Status: {Status}, Body: {Content}", response.StatusCode, content);
+            throw new Exception("Failed to exchange Authorization Code with Google.");
+        }
+
+        var tokenData = JsonSerializer.Deserialize<GoogleTokenResponse>(content);
+        if (tokenData == null || string.IsNullOrEmpty(tokenData.access_token))
+        {
+            throw new Exception("Google token response did not contain a valid access_token.");
+        }
+
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokenData.access_token);
+        var profileResponse = await client.GetAsync("https://www.googleapis.com/oauth2/v3/userinfo");
+        var profileContent = await profileResponse.Content.ReadAsStringAsync();
+
+        if (!profileResponse.IsSuccessStatusCode)
+        {
+            _logger.LogError("Google userinfo request failed. Status: {Status}, Body: {Content}", profileResponse.StatusCode, profileContent);
+            throw new Exception("Failed to retrieve user profile info from Google.");
+        }
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var profile = JsonSerializer.Deserialize<GoogleUserProfile>(profileContent, options);
+        if (profile == null)
+        {
+            throw new Exception("Deserialization of Google user profile failed.");
+        }
+
+        return profile;
+    }
+
+    private async Task<GithubUserProfile> ExchangeGithubCodeAsync(string code, string redirectUri)
+    {
+        string clientId = _configuration["GITHUB_CLIENT_ID"] ?? "";
+        string clientSecret = _configuration["GITHUB_CLIENT_SECRET"] ?? "";
+
+        if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
+        {
+            throw new Exception("GitHub Client ID or Client Secret is not configured in the backend environment variables.");
+        }
+
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Add("Accept", "application/json");
+        client.DefaultRequestHeaders.Add("User-Agent", "TaskFlow-App");
+
+        var tokenRequestParams = new Dictionary<string, string>
+        {
+            { "client_id", clientId },
+            { "client_secret", clientSecret },
+            { "code", code },
+            { "redirect_uri", redirectUri }
+        };
+
+        var response = await client.PostAsync("https://github.com/login/oauth/access_token", new FormUrlEncodedContent(tokenRequestParams));
+        var content = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError("GitHub token exchange failed. Status: {Status}, Body: {Content}", response.StatusCode, content);
+            throw new Exception("Failed to exchange Authorization Code with GitHub.");
+        }
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var tokenData = JsonSerializer.Deserialize<GithubTokenResponse>(content, options);
+        if (tokenData == null || string.IsNullOrEmpty(tokenData.access_token))
+        {
+            throw new Exception("GitHub token response did not contain a valid access_token.");
+        }
+
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokenData.access_token);
+        var profileResponse = await client.GetAsync("https://api.github.com/user");
+        var profileContent = await profileResponse.Content.ReadAsStringAsync();
+
+        if (!profileResponse.IsSuccessStatusCode)
+        {
+            _logger.LogError("GitHub user profile request failed. Status: {Status}, Body: {Content}", profileResponse.StatusCode, profileContent);
+            throw new Exception("Failed to retrieve user profile info from GitHub.");
+        }
+
+        var profile = JsonSerializer.Deserialize<GithubUserProfile>(profileContent, options);
+        if (profile == null)
+        {
+            throw new Exception("Deserialization of GitHub user profile failed.");
+        }
+
+        // If email is private, fetch it from /user/emails
+        if (string.IsNullOrEmpty(profile.Email))
+        {
+            _logger.LogInformation("GitHub profile email is private. Fetching from /user/emails endpoint.");
+            var emailsResponse = await client.GetAsync("https://api.github.com/user/emails");
+            var emailsContent = await emailsResponse.Content.ReadAsStringAsync();
+
+            if (emailsResponse.IsSuccessStatusCode)
+            {
+                var emails = JsonSerializer.Deserialize<List<GithubEmail>>(emailsContent, options);
+                var primaryEmail = emails?.FirstOrDefault(e => e.Primary && e.Verified)?.Email 
+                                   ?? emails?.FirstOrDefault(e => e.Verified)?.Email 
+                                   ?? emails?.FirstOrDefault()?.Email;
+                
+                if (!string.IsNullOrEmpty(primaryEmail))
+                {
+                    profile.Email = primaryEmail;
+                }
+            }
+        }
+
+        return profile;
+    }
+
+    private class GoogleTokenResponse
+    {
+        public string? access_token { get; set; }
+        public string? token_type { get; set; }
+        public int expires_in { get; set; }
+        public string? id_token { get; set; }
+        public string? scope { get; set; }
+    }
+
+    private class GoogleUserProfile
+    {
+        public string? Email { get; set; }
+        public string? Name { get; set; }
+        public string? GivenName { get; set; }
+        public string? FamilyName { get; set; }
+        public string? Picture { get; set; }
+    }
+
+    private class GithubTokenResponse
+    {
+        public string? access_token { get; set; }
+        public string? token_type { get; set; }
+        public string? scope { get; set; }
+    }
+
+    private class GithubUserProfile
+    {
+        public string? Login { get; set; }
+        public string? Email { get; set; }
+        public string? Name { get; set; }
+        public string? AvatarUrl { get; set; }
+    }
+
+    private class GithubEmail
+    {
+        public string? Email { get; set; }
+        public bool Primary { get; set; }
+        public bool Verified { get; set; }
     }
 
     public override async Task<ListUsersRes> ListUsers(ListUsersReq request, ServerCallContext context)

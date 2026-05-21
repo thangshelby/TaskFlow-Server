@@ -85,6 +85,16 @@ gen-protobuf-notification-wd: ## Generate notification protobuf (Windows)
 	protoc --plugin=protoc-gen-ts_proto=..\..\node_modules\.bin\protoc-gen-ts_proto.cmd --ts_proto_out=.\src\types --ts_proto_opt=nestJs=true --proto_path=.\src\proto .\src\proto\notification.proto && \
 	protoc -I .\src\proto -I .\src\proto\google\api --include_imports --include_source_info --descriptor_set_out=..\..\..\..\notification.pb .\src\proto\notification.proto
 
+reload-envoy: ## Re-generate proto descriptor and restart Envoy (run after any .proto change)
+	@echo "▶ Generating proto.pb..."
+	protoc -I ./protos --include_imports --include_source_info \
+		--descriptor_set_out=./proto.pb $$(find ./protos -name "*.proto")
+	@echo "▶ Rebuilding Envoy image with new proto.pb..."
+	docker compose build envoy
+	@echo "▶ Restarting Envoy container..."
+	docker compose up -d envoy
+	@echo "✅ Envoy reloaded with updated proto descriptor."
+
 # ── Utilities ────────────────────────────────────────────
 
 gen-testtoken: ## Generate a test JWT token

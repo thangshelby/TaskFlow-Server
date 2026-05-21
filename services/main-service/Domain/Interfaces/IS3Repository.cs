@@ -14,4 +14,9 @@ public interface IS3Repository
         string fileName,
         string contentType,
         string uploadType = "attachment");
+
+    /// <summary>
+    /// Xóa file khỏi S3 sử dụng file URL.
+    /// </summary>
+    Task<bool> DeleteFile(string fileUrl);
 }

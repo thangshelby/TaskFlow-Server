@@ -11,6 +11,12 @@ service MetadataService {
             body: "*"
         };
     }
+    rpc DeleteFile (DeleteFileReq) returns (DeleteFileRes) {
+        option (google.api.http) = {
+            post: "/api/v1/metadata/delete"
+            body: "*"
+        };
+    }
 }
 
 message CreatePresignedURLReq {
@@ -24,4 +30,12 @@ message CreatePresignedURLReq {
 message CreatePresignedURLRes {
     string presigned_url = 1;
     string file_url = 2;
+}
+
+message DeleteFileReq {
+    string file_url = 1;
+}
+
+message DeleteFileRes {
+    bool success = 1;
 }

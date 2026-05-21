@@ -21,6 +21,12 @@ service UserService {
       body: "*"
     };
   }
+  rpc OAuthLogin (OAuthLoginReq) returns (LoginUserRes) {
+    option (google.api.http) = {
+      post: "/api/v1/users/login/oauth"
+      body: "*"
+    };
+  }
   rpc Register (RegisterUserReq) returns (RegisterUserRes) {  
     option (google.api.http) = {
       post: "/api/v1/users/register"
@@ -149,6 +155,12 @@ message LoginUserRes {
   string status = 1;
   string message = 2;
   base.UserRes data = 3;
+}
+
+message OAuthLoginReq {
+  string code = 1;
+  string provider = 2;
+  string redirect_uri = 3;
 }
 
 // Get user by email
