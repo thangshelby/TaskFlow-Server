@@ -4,6 +4,7 @@ using MainService.Presentation.MiddleWare;
 using Amazon.S3;
 using Amazon.SimpleNotificationService;
 using Amazon.SQS;
+using Amazon.KeyManagementService;
 using DotNetEnv;
 
 // using MainService.Presentation.Services;
@@ -31,6 +32,7 @@ builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(Program).Assembly));
 builder.Services.AddAWSService<IAmazonS3>();
 builder.Services.AddAWSService<IAmazonSimpleNotificationService>();
 builder.Services.AddAWSService<IAmazonSQS>();
+builder.Services.AddAWSService<IAmazonKeyManagementService>();
 // Add Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
