@@ -106,7 +106,7 @@ static_resources:
                                     "kty": "RSA",
                                     "alg": "RS256",
                                     "use": "sig",
-                                    "n": "sqeJGov8nTaxpcqKnjOlt2_6YgBdm9vPX67brfmEY--M4mn7Tbt_Q76hDk44CvLvFll7amwO763rA5m9mQDTgmK57_E7zaF4T2A2B0xqg8V_f6EG5G9lBmtwqHX4mDW8B4ZKXX9KYzVK6wndoJsRu1rq1FmZMeapDpjXL1Rb0DVP9ZPxnvGDhVBxA83lzUhIRBX3_2CwrCrET9nCEDOAer7U9xKz-oVbXyuCvUwYCJPN02gOV_sBjHrW2T09bEsUW6s-vLspv9AVC5sjYduhAVrqmh1RGhZOPziwwa1DmvO5z_qEdDawSOki7dU8zxZQ5cX18BzkXZjuwhjQYP9vlw",
+                                    "n": "2Uv1xLGBOXxF3YrCbY_L4hEcnAtzfZgW8HIkBQzwihLryUgUQ6BmMI6sh2N7xiNO-UMCtWWTRsaAEi5kkt_Wd9dH8GLsbPBRK3lUCWVhOS6Pn8rw22pnqAJyyxYatzI_leOCUKiBG4Hv5_v7MgYPQHBrt0SCjRSN4FyTMKT2pGAR64FZfkBgeg7BnrjXPg11aHWbLQJxaSGIsUw1IRA8ONUMwrfreeuf6rj8Q_4VKAXosQw9NqDE1L272_AKUHkSVgGoiKcq1Rs0ugJSFMye1Ka8CYEMeGTsPDvMLU7ZMQfbRk0yHUNM3P5CxYF12G-TotN2dbTqIg3LEYB7onGNkw",
                                     "e": "AQAB"
                                   }
                                 ]
@@ -115,6 +115,19 @@ static_resources:
                           payload_in_metadata: "jwt_payload"
                           from_cookies:
                             - token
+                        cognito_admin_provider:
+                          issuer: "https://cognito-idp.ap-southeast-1.amazonaws.com/ap-southeast-1_J6WMG8ouT"
+                          remote_jwks:
+                            http_uri:
+                              uri: "https://cognito-idp.ap-southeast-1.amazonaws.com/ap-southeast-1_J6WMG8ouT/.well-known/jwks.json"
+                              cluster: jwks_cluster
+                              timeout: 5s
+                            cache_duration: 300s
+                          forward: true
+                          payload_in_metadata: "jwt_payload"
+                          from_headers:
+                            - name: Authorization
+                              value_prefix: "Bearer "
                       rules:
                         - match:
                             prefix: "/"
@@ -368,7 +381,27 @@ static_resources:
           - lb_endpoints:
               - endpoint:
                   address:
-                    socket_address:
+                     socket_address:
                       address: ${NOTIFICATION_SERVICE_HOST}
                       port_value: 5002
+    - name: jwks_cluster
+      type: LOGICAL_DNS
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 2s
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: jwks_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: cognito-idp.ap-southeast-1.amazonaws.com
+                      port_value: 443
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: cognito-idp.ap-southeast-1.amazonaws.com
+
 
