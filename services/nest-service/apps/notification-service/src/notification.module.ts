@@ -3,8 +3,7 @@ import { CoreModule } from '@nest-service/core';
 import { ConfigModule } from '@nestjs/config';
 import { NotificationService } from '@notification-service/core/services/notification.service';
 import { NotificationSubscriberService } from '@notification-service/core/services/subcribers/notification-subcriber.service';
-import { MailSubscriberService } from '@notification-service/core/services/subcribers/mail-subcriber.service';
-import { NotificationRepo } from '@notification-service/infras/repos/notification.repo';
+import { DynamoDBNotificationRepo } from '@notification-service/infras/repos/dynamodDBNotification.repo';
 import { MongooseModule } from '@nestjs/mongoose';
 import { INotificationRepo } from '@notification-service/core/interfaces/notification-repo.interface';
 import { INotification, NotificationSchema } from '@notification-service/infras/schema/notification.schema';
@@ -29,12 +28,11 @@ import { MailSenderRepo } from '@notification-service/infras/repos/mail-sender.r
     NotificationGateway,
     MailService,
     NotificationService,
-    // MailSubscriberService,
     NotificationSubscriberService,
     NotificationEmitterService,
     {
       provide: INotificationRepo,
-      useClass: NotificationRepo,
+      useClass: DynamoDBNotificationRepo, //MongoNotificationRepo
     },
     {
       provide: IMailSender,
@@ -42,4 +40,4 @@ import { MailSenderRepo } from '@notification-service/infras/repos/mail-sender.r
     },
   ],
 })
-export class NotificationModule {}
+export class NotificationModule { }
