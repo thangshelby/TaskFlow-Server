@@ -13,7 +13,7 @@ def extract_issue_keys(text):
 
 def handle_push_event(payload):
     commits = payload.get("commits", [])
-    print("Commits mesageeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:", commits.message)
+    print("Commits mesageeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:", commits[0]['message'])
     messages = []
     
     if not commits:
