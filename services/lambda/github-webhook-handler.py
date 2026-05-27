@@ -152,7 +152,7 @@ def lambda_handler(event, context):
             'TopicArn': topic_arn,
             'Message': json.dumps(envelope),
             'MessageGroupId': "asdasda",
-            'MessageDeduplicationId':date.today().isoformat() + str(uuid.uuid4()),
+            'MessageDeduplicationId':str(uuid.uuid4()),
             'MessageAttributes': {
                 'Action': {
                     'DataType': 'String',
