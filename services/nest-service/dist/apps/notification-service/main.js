@@ -1210,16 +1210,16 @@ const core_1 = __webpack_require__(1);
 const config_1 = __webpack_require__(3);
 const notification_service_1 = __webpack_require__(36);
 const notification_subcriber_service_1 = __webpack_require__(42);
-const notification_repo_1 = __webpack_require__(44);
+const dynamodDBNotification_repo_1 = __webpack_require__(44);
 const mongoose_1 = __webpack_require__(14);
 const notification_repo_interface_1 = __webpack_require__(38);
-const notification_schema_1 = __webpack_require__(46);
-const notification_controller_1 = __webpack_require__(48);
-const health_controller_1 = __webpack_require__(49);
+const notification_schema_1 = __webpack_require__(48);
+const notification_controller_1 = __webpack_require__(49);
+const health_controller_1 = __webpack_require__(50);
 const notification_websocket_1 = __webpack_require__(39);
-const mail_service_1 = __webpack_require__(50);
-const mail_sender_interface_1 = __webpack_require__(51);
-const mail_sender_repo_1 = __webpack_require__(52);
+const mail_service_1 = __webpack_require__(51);
+const mail_sender_interface_1 = __webpack_require__(52);
+const mail_sender_repo_1 = __webpack_require__(53);
 let NotificationModule = class NotificationModule {
 };
 exports.NotificationModule = NotificationModule;
@@ -1242,7 +1242,7 @@ exports.NotificationModule = NotificationModule = __decorate([
             notification_websocket_1.NotificationEmitterService,
             {
                 provide: notification_repo_interface_1.INotificationRepo,
-                useClass: notification_repo_1.NotificationRepo,
+                useClass: dynamodDBNotification_repo_1.DynamoDBNotificationRepo,
             },
             {
                 provide: mail_sender_interface_1.IMailSender,
@@ -1721,94 +1721,250 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
 var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.NotificationRepo = void 0;
+exports.DynamoDBNotificationRepo = void 0;
 const common_1 = __webpack_require__(4);
-const mongoose_1 = __webpack_require__(14);
-const mongoose_2 = __webpack_require__(45);
-const notification_schema_1 = __webpack_require__(46);
+const config_1 = __webpack_require__(3);
+const client_dynamodb_1 = __webpack_require__(45);
+const lib_dynamodb_1 = __webpack_require__(46);
 const mapper_1 = __webpack_require__(47);
-let NotificationRepo = class NotificationRepo {
-    notificationModel;
-    constructor(notificationModel) {
-        this.notificationModel = notificationModel;
+const uuid_1 = __webpack_require__(8);
+let DynamoDBNotificationRepo = class DynamoDBNotificationRepo {
+    configService;
+    docClient;
+    tableName = 'taskflow';
+    constructor(configService) {
+        this.configService = configService;
+        const region = this.configService.get('AWS_REGION', 'ap-southeast-1');
+        const accessKeyId = this.configService.get('AWS_ACCESS_KEY_ID');
+        const secretAccessKey = this.configService.get('AWS_SECRET_ACCESS_KEY');
+        const endpoint = this.configService.get('DYNAMODB_ENDPOINT');
+        const clientConfig = { region };
+        if (accessKeyId && secretAccessKey) {
+            clientConfig.credentials = { accessKeyId, secretAccessKey };
+        }
+        if (endpoint) {
+            clientConfig.endpoint = endpoint;
+        }
+        const client = new client_dynamodb_1.DynamoDBClient(clientConfig);
+        this.docClient = lib_dynamodb_1.DynamoDBDocumentClient.from(client, {
+            marshallOptions: {
+                removeUndefinedValues: true,
+            },
+        });
+    }
+    mapToMongoSchemaShape(item) {
+        return {
+            _id: item.id,
+            recipientId: item.recipentId,
+            actorId: item.actorId,
+            type: item.type,
+            referenceId: item.referenceId,
+            referenceType: item.referenceType,
+            content: item.content,
+            isRead: item.isRead,
+            createdAt: new Date(item.createdAt),
+        };
     }
     async create(notification) {
-        const newNotification = new this.notificationModel(notification);
-        await newNotification.save();
+        const notiId = notification.id || (0, uuid_1.v4)();
+        const createdAtTs = notification.createdAt
+            ? new Date(notification.createdAt).getTime()
+            : Date.now();
+        const updatedAtTs = Date.now();
+        const item = {
+            id: notiId,
+            recipentId: notification.recipientId,
+            actorId: notification.actorId || '',
+            type: notification.type,
+            referenceId: notification.referenceId || '',
+            referenceType: notification.referenceType || '',
+            content: notification.content || '',
+            isRead: notification.isRead ?? false,
+            createdAt: createdAtTs,
+            updatedAt: updatedAtTs,
+        };
+        await this.docClient.send(new lib_dynamodb_1.PutCommand({
+            TableName: this.tableName,
+            Item: item,
+        }));
+        notification.id = notiId;
         return notification;
     }
     async countAll(params) {
-        const filter = {};
-        if (params?.userId) {
-            filter.recipientId = params.userId;
+        if (!params?.userId) {
+            return 0;
         }
-        if (params?.projectId) {
-            filter.referenceType = 'project';
-            filter.referenceId = params.projectId;
+        const queryParams = {
+            TableName: this.tableName,
+            KeyConditionExpression: 'recipentId = :recipientId',
+            ExpressionAttributeValues: {
+                ':recipientId': params.userId,
+            },
+        };
+        const filterExpressions = [];
+        if (params.projectId) {
+            filterExpressions.push('referenceType = :refType AND referenceId = :refId');
+            queryParams.ExpressionAttributeValues[':refType'] = 'project';
+            queryParams.ExpressionAttributeValues[':refId'] = params.projectId;
         }
-        if (params?.sprintId) {
-            filter.referenceType = 'sprint';
-            filter.referenceId = params.sprintId;
+        else if (params.sprintId) {
+            filterExpressions.push('referenceType = :refType AND referenceId = :refId');
+            queryParams.ExpressionAttributeValues[':refType'] = 'sprint';
+            queryParams.ExpressionAttributeValues[':refId'] = params.sprintId;
         }
-        return this.notificationModel.countDocuments(filter);
+        if (filterExpressions.length > 0) {
+            queryParams.FilterExpression = filterExpressions.join(' AND ');
+        }
+        const result = await this.docClient.send(new lib_dynamodb_1.QueryCommand(queryParams));
+        return result.Count ?? 0;
     }
     async listAll(params) {
-        const filter = {};
-        if (params.userId) {
-            filter.recipientId = params.userId;
+        if (!params.userId) {
+            return [];
         }
+        const queryParams = {
+            TableName: this.tableName,
+            KeyConditionExpression: 'recipentId = :recipientId',
+            ExpressionAttributeValues: {
+                ':recipientId': params.userId,
+            },
+            ScanIndexForward: false,
+        };
+        const filterExpressions = [];
         if (params.projectId) {
-            filter.referenceType = 'project';
-            filter.referenceId = params.projectId;
+            filterExpressions.push('referenceType = :refType AND referenceId = :refId');
+            queryParams.ExpressionAttributeValues[':refType'] = 'project';
+            queryParams.ExpressionAttributeValues[':refId'] = params.projectId;
         }
-        if (params.sprintId) {
-            filter.referenceType = 'sprint';
-            filter.referenceId = params.sprintId;
+        else if (params.sprintId) {
+            filterExpressions.push('referenceType = :refType AND referenceId = :refId');
+            queryParams.ExpressionAttributeValues[':refType'] = 'sprint';
+            queryParams.ExpressionAttributeValues[':refId'] = params.sprintId;
         }
+        if (filterExpressions.length > 0) {
+            queryParams.FilterExpression = filterExpressions.join(' AND ');
+        }
+        const result = await this.docClient.send(new lib_dynamodb_1.QueryCommand(queryParams));
+        const items = result.Items ?? [];
         const page = params.page ?? 1;
         const limit = params.limit ?? 10;
         const skip = (page - 1) * limit;
-        const notifications = await this.notificationModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean();
-        return mapper_1.NotificationMapper.toDomainList(notifications);
+        const paginatedItems = items.slice(skip, skip + limit);
+        const mongoShapeItems = paginatedItems.map((item) => this.mapToMongoSchemaShape(item));
+        return mapper_1.NotificationMapper.toDomainList(mongoShapeItems);
     }
     async update(params) {
         const { notiId, isRead } = params;
-        const updated = await this.notificationModel.findByIdAndUpdate(notiId, { isRead: isRead }, { new: true }).lean();
-        if (!updated) {
+        const scanResult = await this.docClient.send(new lib_dynamodb_1.ScanCommand({
+            TableName: this.tableName,
+            FilterExpression: 'id = :id',
+            ExpressionAttributeValues: {
+                ':id': notiId,
+            },
+        }));
+        const item = scanResult.Items?.[0];
+        if (!item) {
             throw new Error(`Notification with ID ${notiId} not found.`);
         }
-        return mapper_1.NotificationMapper.toDomain(updated);
+        const updatedResult = await this.docClient.send(new lib_dynamodb_1.UpdateCommand({
+            TableName: this.tableName,
+            Key: {
+                recipentId: item.recipentId,
+                createdAt: item.createdAt,
+            },
+            UpdateExpression: 'set isRead = :isRead, updatedAt = :updatedAt',
+            ExpressionAttributeValues: {
+                ':isRead': isRead,
+                ':updatedAt': Date.now(),
+            },
+            ReturnValues: 'ALL_NEW',
+        }));
+        const updatedItem = updatedResult.Attributes;
+        return mapper_1.NotificationMapper.toDomain(this.mapToMongoSchemaShape(updatedItem));
     }
     async bulkUpdate(params) {
         const { userId, isRead } = params;
-        const result = await this.notificationModel.updateMany({ recipientId: userId }, { $set: { isRead: isRead } });
-        if (result.modifiedCount === 0) {
+        const queryResult = await this.docClient.send(new lib_dynamodb_1.QueryCommand({
+            TableName: this.tableName,
+            KeyConditionExpression: 'recipentId = :recipientId',
+            ExpressionAttributeValues: {
+                ':recipientId': userId,
+            },
+        }));
+        const items = queryResult.Items ?? [];
+        if (items.length === 0) {
             throw new Error(`Notification not found with this user`);
         }
+        const itemsToUpdate = items.filter((item) => item.isRead !== isRead);
+        if (itemsToUpdate.length === 0) {
+            return { success: true };
+        }
+        await Promise.all(itemsToUpdate.map((item) => this.docClient.send(new lib_dynamodb_1.UpdateCommand({
+            TableName: this.tableName,
+            Key: {
+                recipentId: item.recipentId,
+                createdAt: item.createdAt,
+            },
+            UpdateExpression: 'set isRead = :isRead, updatedAt = :updatedAt',
+            ExpressionAttributeValues: {
+                ':isRead': isRead,
+                ':updatedAt': Date.now(),
+            },
+        }))));
         return { success: true };
     }
 };
-exports.NotificationRepo = NotificationRepo;
-exports.NotificationRepo = NotificationRepo = __decorate([
+exports.DynamoDBNotificationRepo = DynamoDBNotificationRepo;
+exports.DynamoDBNotificationRepo = DynamoDBNotificationRepo = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, mongoose_1.InjectModel)(notification_schema_1.INotification.name)),
-    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object])
-], NotificationRepo);
+    __metadata("design:paramtypes", [typeof (_a = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _a : Object])
+], DynamoDBNotificationRepo);
 
 
 /***/ }),
 /* 45 */
 /***/ ((module) => {
 
-module.exports = require("mongoose");
+module.exports = require("@aws-sdk/client-dynamodb");
 
 /***/ }),
 /* 46 */
+/***/ ((module) => {
+
+module.exports = require("@aws-sdk/lib-dynamodb");
+
+/***/ }),
+/* 47 */
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NotificationMapper = void 0;
+class NotificationMapper {
+    static toDomain(entity) {
+        return {
+            id: entity._id.toString(),
+            recipientId: entity.recipientId?.toString(),
+            actorId: entity.actorId?.toString(),
+            type: entity.type,
+            referenceId: entity.referenceId,
+            referenceType: entity.referenceType,
+            content: entity.content,
+            isRead: entity.isRead,
+            createdAt: entity.createdAt.toISOString(),
+        };
+    }
+    static toDomainList(entities) {
+        return entities.map((entity) => this.toDomain(entity));
+    }
+}
+exports.NotificationMapper = NotificationMapper;
+
+
+/***/ }),
+/* 48 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1876,35 +2032,7 @@ exports.NotificationSchema = mongoose_1.SchemaFactory.createForClass(INotificati
 
 
 /***/ }),
-/* 47 */
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.NotificationMapper = void 0;
-class NotificationMapper {
-    static toDomain(entity) {
-        return {
-            id: entity._id.toString(),
-            recipientId: entity.recipientId?.toString(),
-            actorId: entity.actorId?.toString(),
-            type: entity.type,
-            referenceId: entity.referenceId,
-            referenceType: entity.referenceType,
-            content: entity.content,
-            isRead: entity.isRead,
-            createdAt: entity.createdAt.toISOString(),
-        };
-    }
-    static toDomainList(entities) {
-        return entities.map((entity) => this.toDomain(entity));
-    }
-}
-exports.NotificationMapper = NotificationMapper;
-
-
-/***/ }),
-/* 48 */
+/* 49 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -2024,7 +2152,7 @@ exports.NotificationController = NotificationController = __decorate([
 
 
 /***/ }),
-/* 49 */
+/* 50 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -2062,7 +2190,7 @@ exports.HealthController = HealthController = __decorate([
 
 
 /***/ }),
-/* 50 */
+/* 51 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -2080,7 +2208,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MailService = void 0;
 const core_1 = __webpack_require__(1);
 const common_1 = __webpack_require__(4);
-const mail_sender_interface_1 = __webpack_require__(51);
+const mail_sender_interface_1 = __webpack_require__(52);
 let MailService = class MailService {
     userClientService;
     mailSender;
@@ -2119,7 +2247,7 @@ exports.MailService = MailService = __decorate([
 
 
 /***/ }),
-/* 51 */
+/* 52 */
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -2131,7 +2259,7 @@ exports.IMailSender = IMailSender;
 
 
 /***/ }),
-/* 52 */
+/* 53 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -2149,9 +2277,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MailSenderRepo = void 0;
 const common_1 = __webpack_require__(4);
 const config_1 = __webpack_require__(3);
-const nodemailer = __webpack_require__(53);
-const fs = __webpack_require__(54);
-const handlebars = __webpack_require__(55);
+const nodemailer = __webpack_require__(54);
+const fs = __webpack_require__(55);
+const handlebars = __webpack_require__(56);
 const path_1 = __webpack_require__(18);
 let MailSenderRepo = class MailSenderRepo {
     configService;
@@ -2193,19 +2321,19 @@ exports.MailSenderRepo = MailSenderRepo = __decorate([
 
 
 /***/ }),
-/* 53 */
+/* 54 */
 /***/ ((module) => {
 
 module.exports = require("nodemailer");
 
 /***/ }),
-/* 54 */
+/* 55 */
 /***/ ((module) => {
 
 module.exports = require("fs");
 
 /***/ }),
-/* 55 */
+/* 56 */
 /***/ ((module) => {
 
 module.exports = require("handlebars");

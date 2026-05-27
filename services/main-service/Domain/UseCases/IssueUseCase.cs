@@ -223,42 +223,46 @@ public class IssueUseCase
                 }
             }
 
-            var newUrls = new HashSet<string>();
-            foreach (var att in updateData.Attachments)
-            {
-                try
-                {
-                    using var doc = JsonDocument.Parse(att);
-                    if (doc.RootElement.TryGetProperty("url", out var urlElement))
-                    {
-                        var url = urlElement.GetString();
-                        if (!string.IsNullOrEmpty(url)) newUrls.Add(url);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to parse new attachment: {Att}", att);
-                }
-            }
+            // var newUrls = new HashSet<string>();
+            // foreach (var att in updateData.Attachments)
+            // {
+            //     try
+            //     {
+            //         using var doc = JsonDocument.Parse(att);
+            //         if (doc.RootElement.TryGetProperty("url", out var urlElement))
+            //         {
+            //             var url = urlElement.GetString();
+            //             if (!string.IsNullOrEmpty(url)) 
+            //             {
+            //                 _logger.LogInformation("Attachment added via UpdateIssue: {Url}", url);
+            //                 newUrls.Add(url);
+            //             }
+            //         }
+            //     }
+            //     catch (Exception ex)
+            //     {
+            //         _logger.LogError(ex, "Failed to parse new attachment: {Att}", att);
+            //     }
+            // }
 
-            foreach (var oldUrl in oldUrls)
-            {
-                if (!newUrls.Contains(oldUrl))
-                {
-                    _logger.LogInformation("Attachment removed via UpdateIssue, deleting from S3: {Url}", oldUrl);
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await _s3Repository.DeleteFile(oldUrl);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Background S3 deletion failed for url: {Url}", oldUrl);
-                        }
-                    });
-                }
-            }
+            // foreach (var oldUrl in oldUrls)
+            // {
+            //     if (!newUrls.Contains(oldUrl))
+            //     {
+            //         _logger.LogInformation("Attachment removed via UpdateIssue, deleting from S3: {Url}", oldUrl);
+            //         _ = Task.Run(async () =>
+            //         {
+            //             try
+            //             {
+            //                 await _s3Repository.DeleteFile(oldUrl);
+            //             }
+            //             catch (Exception ex)
+            //             {
+            //                 _logger.LogError(ex, "Background S3 deletion failed for url: {Url}", oldUrl);
+            //             }
+            //         });
+            //     }
+            // }
         }
 
         await Task.WhenAll(notifyTask, activityTask, emailTask);

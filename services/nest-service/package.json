@@ -22,6 +22,8 @@
     "test:e2e": "jest --config ./apps/nest-service2/test/jest-e2e.json"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1015.0",
+    "@aws-sdk/lib-dynamodb": "^3.1015.0",
     "@aws-sdk/client-sqs": "^3.1015.0",
     "@grpc/grpc-js": "^1.13.4",
     "@grpc/reflection": "^1.0.4",

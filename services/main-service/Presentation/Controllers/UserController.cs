@@ -13,6 +13,10 @@ using AutoMapper;
 using System.Net.Http;
 using System.Text.Json;
 using MainService.Domain.Interfaces;
+using Amazon.KeyManagementService;
+using Amazon.KeyManagementService.Model;
+using System.IO;
+using System.Text;
 
 public class UserController : UserService.UserServiceBase
 {
@@ -25,6 +29,7 @@ public class UserController : UserService.UserServiceBase
     private readonly UserUseCase _userUseCase;
     private readonly ILogger<UserController> _logger;
     private readonly IConfiguration _configuration;
+    private readonly IAmazonKeyManagementService _kmsClient;
 
     public UserController(
         IValidator<CreateUserReq> createUserValidator,
@@ -35,7 +40,8 @@ public class UserController : UserService.UserServiceBase
         UserUseCase userUseCase,
         ILogger<UserController> logger,
         IConfiguration configuration,
-        IMapper mapper)
+        IMapper mapper,
+        IAmazonKeyManagementService kmsClient)
     {
         _createUserValidator = createUserValidator ?? throw new ArgumentNullException(nameof(createUserValidator));
         _loginUserValidator = loginUserValidator ?? throw new ArgumentNullException(nameof(loginUserValidator));
@@ -46,6 +52,7 @@ public class UserController : UserService.UserServiceBase
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        _kmsClient = kmsClient ?? throw new ArgumentNullException(nameof(kmsClient));
     }
 
     public override async Task<UpdateUserRes> UpdateUser(UpdateUserReq request, ServerCallContext context)
@@ -691,13 +698,7 @@ public class UserController : UserService.UserServiceBase
 
     private async Task SetJwtToken(UserDomain user, ServerCallContext context)
     {
-        string? privateKeyPem = _configuration["JWT_SECRET"];
-        if (string.IsNullOrEmpty(privateKeyPem))
-        {
-            throw new Exception("Private key not found in configuration.");
-        }
-
-        string jwtToken = CreateJwtToken(user, privateKeyPem);
+        string jwtToken = await CreateJwtTokenWithKmsAsync(user);
 
         var metadata = new Metadata
         {
@@ -706,37 +707,55 @@ public class UserController : UserService.UserServiceBase
         await context.WriteResponseHeadersAsync(metadata);
     }
 
-    private static string CreateJwtToken(UserDomain user, string privateKeyPem)
+    private async Task<string> CreateJwtTokenWithKmsAsync(UserDomain user)
     {
-        var rsa = RSA.Create();
-        rsa.ImportFromPem(privateKeyPem.ToCharArray());
-
-        var securityKey = new RsaSecurityKey(rsa);
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.RsaSha256);
-
-        var claims = new[]
+        string? kmsKeyId = "5a84dcaa-c085-43ec-b536-6eed6635765a";
+        if (string.IsNullOrEmpty(kmsKeyId))
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id!),
-            new Claim(JwtRegisteredClaimNames.Name, user.Email),
-            new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-            new Claim(JwtRegisteredClaimNames.Exp, DateTimeOffset.UtcNow.AddHours(24).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-            new Claim(JwtRegisteredClaimNames.Iss, "127.0.0.1"),
-            new Claim("role", user.Role.ToString()),
-            new Claim("userId", user.Id!),
-            new Claim("isVerified", user.IsVerified.ToString().ToLower()),
+            throw new Exception("KMS Key ID not found in configuration.");
+        }
+
+        // 1. Create Header
+        var header = new { alg = "RS256", typ = "JWT" };
+        string encodedHeader = Base64UrlEncoder.Encode(JsonSerializer.Serialize(header));
+
+        // 2. Create Payload
+        var payload = new
+        {
+            sub = user.Id,
+            name = user.Email,
+            iat = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            exp = DateTimeOffset.UtcNow.AddHours(24).ToUnixTimeSeconds(),
+            role = user.Role.ToString(),
+            userId = user.Id,
+            isVerified = user.IsVerified.ToString().ToLower()
+        };
+        string encodedPayload = Base64UrlEncoder.Encode(JsonSerializer.Serialize(payload));
+
+        // 3. Prepare message to sign
+        string messageToSign = $"{encodedHeader}.{encodedPayload}";
+        byte[] messageBytes = Encoding.UTF8.GetBytes(messageToSign);
+
+        // 4. Hash message with SHA256
+        byte[] digest;
+        using (var sha256 = SHA256.Create())
+        {
+            digest = sha256.ComputeHash(messageBytes);
+        }
+
+        // 5. Call AWS KMS to sign
+        var signRequest = new SignRequest
+        {
+            KeyId = kmsKeyId,
+            Message = new MemoryStream(digest),
+            MessageType = MessageType.DIGEST,
+            SigningAlgorithm = SigningAlgorithmSpec.RSASSA_PKCS1_V1_5_SHA_256
         };
 
-        var tokenDescriptor = new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddHours(24),
-            Issuer = "127.0.0.1",
-            SigningCredentials = credentials
-        };
+        var signResponse = await _kmsClient.SignAsync(signRequest);
 
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-
-        return tokenHandler.WriteToken(token);
+        // 6. Encode signature and form complete JWT
+        string signature = Base64UrlEncoder.Encode(signResponse.Signature.ToArray());
+        return $"{messageToSign}.{signature}";
     }
 }

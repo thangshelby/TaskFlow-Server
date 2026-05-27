@@ -9,8 +9,9 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="16.1.1" />
-    <PackageReference Include="AWSSDK.Core" Version="4.0.3.19" />
+    <PackageReference Include="AWSSDK.Core" Version="4.0.7.2" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.25" />
+    <PackageReference Include="AWSSDK.KeyManagementService" Version="4.0.11" />
     <PackageReference Include="AWSSDK.S3" Version="4.0.4" />
     <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.5.12" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="4.0.2.20" />
