@@ -709,7 +709,7 @@ public class UserController : UserService.UserServiceBase
 
     private async Task<string> CreateJwtTokenWithKmsAsync(UserDomain user)
     {
-        string? kmsKeyId = _configuration["KMS_KEY_ID"];
+        string? kmsKeyId = "5a84dcaa-c085-43ec-b536-6eed6635765a";
         if (string.IsNullOrEmpty(kmsKeyId))
         {
             throw new Exception("KMS Key ID not found in configuration.");
