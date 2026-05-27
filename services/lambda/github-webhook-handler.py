@@ -1,3 +1,4 @@
+from datetime import date
 import hashlib, hmac, json, os, boto3, uuid, re
 
 QUEUE_TOPIC_NAME = "notifications"
@@ -13,7 +14,7 @@ def extract_issue_keys(text):
 
 def handle_push_event(payload):
     commits = payload.get("commits", [])
-    print("Commits mesageeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:", commits[0]['message'])
+    print("Commits mesageeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:", commits[0]['message'], date.today().isoformat() + str(uuid.uuid4()))
     messages = []
     
     if not commits:
@@ -150,8 +151,8 @@ def lambda_handler(event, context):
         params = {
             'TopicArn': topic_arn,
             'Message': json.dumps(envelope),
-            'MessageGroupId': QUEUE_TOPIC_NAME,
-            'MessageDeduplicationId': str(uuid.uuid4()),
+            'MessageGroupId': "asdasda",
+            'MessageDeduplicationId':date.today().isoformat() + str(uuid.uuid4()),
             'MessageAttributes': {
                 'Action': {
                     'DataType': 'String',
